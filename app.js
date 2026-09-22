@@ -1,1266 +1,1418 @@
-/* =========================================================
-   MONEY TRANSFER BEAST — app.js
-   Demo / prototype only
-   Demo PIN: 1234
-   ========================================================= */
-
-const KEY = "mtb_beast_v3";
+const KEY = "mtb_beast_final";
 const DEMO_PIN = "1234";
 
 const DEFAULT_SOURCES = {
-  MPESA: [
-    { id: "mpesa1", label: "0712345678 • Primary" },
-    { id: "mpesa2", label: "0798765432 • Secondary" }
+  "M-PESA": [
+    ["0712345678", "Primary"],
+    ["0798765432", "Secondary"]
   ],
-  AIRTEL: [
-    { id: "airtel1", label: "0734567890 • Primary" },
-    { id: "airtel2", label: "0787654321 • Secondary" }
+  "AIRTEL": [
+    ["0734567890", "Primary"],
+    ["0787654321", "Secondary"]
   ],
-  BANK: [
-    { id: "bank1", label: "KCB Bank •••• 4582" },
-    { id: "bank2", label: "Equity Bank •••• 9134" },
-    { id: "bank3", label: "Co-operative Bank •••• 2210" }
+  "BANK": [
+    ["KCB •••• 4582", "KCB Account"],
+    ["Equity •••• 9134", "Equity Account"],
+    ["Co-operative •••• 2210", "Co-op Account"]
   ],
-  CARD: [
-    { id: "card1", label: "BEAST Visa •••• 4821" },
-    { id: "card2", label: "M-PESA Card •••• 7720" },
-    { id: "card3", label: "Demo Mastercard •••• 1188" }
+  "CARD": [
+    ["BEAST Visa •••• 4821", "Visa"],
+    ["M-PESA Card •••• 7720", "M-PESA Card"],
+    ["Demo Mastercard •••• 1188", "Mastercard"]
   ],
-  WALLET: [
-    { id: "wallet1", label: "BEAST Wallet • Main wallet" },
-    { id: "wallet2", label: "M-PESA Wallet • 0712345678" },
-    { id: "wallet3", label: "Airtel Money Wallet • 0798765432" }
+  "WALLET": [
+    ["BEAST Wallet Main", "Wallet"],
+    ["M-PESA Wallet 0712345678", "M-PESA Wallet"],
+    ["Airtel Money Wallet 0798765432", "Airtel Wallet"]
   ]
 };
 
-let state = JSON.parse(localStorage.getItem(KEY)) || {
-  balance: 5000,
-  history: [],
-  dark: false,
-  settings: {
-    securityAlerts: true,
-    notifications: true,
-    screenProtection: true
-  },
-  trustedDevices: [],
-  sources: DEFAULT_SOURCES
+let state =
+  JSON.parse(localStorage.getItem(KEY) || "null") || {
+    balance: 5000,
+    history: [],
+    dark: false,
+    settings: {
+      securityAlerts: true,
+      notifications: true,
+      screenProtection: true
+    },
+    sources: DEFAULT_SOURCES
+  };
+
+state.sources = {
+  ...DEFAULT_SOURCES,
+  ...(state.sources || {})
 };
+
+let sendVerified = false;
+let receiveWithdrawVerified = false;
+let generalWithdrawVerified = false;
+let receiveTerminalVerified = false;
+
+let pendingAuth = null;
+
+let receiveSession = false;
+
+let currentLoginType = "PHONE";
+let currentLipa = "POCHI";
+let currentReceive = "BILL";
+
+/* ------------------------------
+   HELPERS
+------------------------------ */
 
 const $ = id => document.getElementById(id);
 
-function money(value) {
-  return `KES ${Number(value || 0).toLocaleString("en-KE", {
+const money = amount =>
+  "KES " +
+  Number(amount || 0).toLocaleString("en-KE", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  })}`;
-}
+  });
 
 function save() {
   localStorage.setItem(KEY, JSON.stringify(state));
 }
 
 function toast(message) {
-  const el = $("toast");
-  if (!el) return;
+  const element = $("toast");
 
-  el.textContent = message;
-  el.classList.add("show");
+  element.textContent = message;
+  element.classList.add("show");
 
-  clearTimeout(window.__toastTimer);
-  window.__toastTimer = setTimeout(() => {
-    el.classList.remove("show");
-  }, 2800);
+  setTimeout(() => {
+    element.classList.remove("show");
+  }, 2400);
 }
 
 function feeFor(amount) {
+  amount = Number(amount) || 0;
+
   if (amount < 1000) return 7;
   if (amount <= 10000) return 30;
+
   return 50;
 }
 
-function updateBalance() {
-  if ($("balance")) {
-    $("balance").textContent = money(state.balance);
-  }
+function renderBalance() {
+  $("balance").textContent = money(state.balance);
 }
 
-function openPanel(panelId) {
-  document.querySelectorAll(".panel").forEach(panel => {
-    panel.classList.remove("active-panel");
+function updateBalance(amount) {
+  state.balance = Math.max(
+    0,
+    state.balance + Number(amount)
+  );
+
+  save();
+  renderBalance();
+}
+
+function addHistory(type, details, amount) {
+  state.history.push({
+    type,
+    details,
+    amount: money(amount),
+    time: new Date().toLocaleString()
   });
 
-  const panel = $(panelId);
-  if (panel) {
-    panel.classList.add("active-panel");
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth"
-    });
-  }
-
-  closeMenu();
+  save();
+  renderHistory();
 }
 
+function renderHistory() {
+  const element = $("historyList");
+
+  if (!state.history.length) {
+    element.innerHTML =
+      '<div class="empty-state">No transactions yet.</div>';
+
+    return;
+  }
+
+  element.innerHTML = state.history
+    .slice()
+    .reverse()
+    .map(
+      item => `
+        <div class="history-item">
+          <b>${item.type}</b>
+          <div>${item.details}</div>
+          <small>${item.time} • ${item.amount}</small>
+        </div>
+      `
+    )
+    .join("");
+}
+
+/* ------------------------------
+   PANELS
+------------------------------ */
+
+function openPanel(id) {
+  document
+    .querySelectorAll(".panel")
+    .forEach(panel =>
+      panel.classList.remove("active-panel")
+    );
+
+  $(id).classList.add("active-panel");
+
+  closeMenu();
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
+
+/* ------------------------------
+   MENU
+------------------------------ */
+
 function openMenu() {
-  $("sideMenu")?.classList.add("open");
-  $("menuOverlay")?.classList.add("show");
+  $("sideMenu").classList.add("open");
+  $("menuOverlay").classList.add("show");
 }
 
 function closeMenu() {
-  $("sideMenu")?.classList.remove("open");
-  $("menuOverlay")?.classList.remove("show");
+  $("sideMenu").classList.remove("open");
+  $("menuOverlay").classList.remove("show");
 }
 
-/* =========================================================
-   SOURCE PICKERS
-   ========================================================= */
+$("menuBtn").onclick = openMenu;
+$("closeMenu").onclick = closeMenu;
+$("menuOverlay").onclick = closeMenu;
 
-function renderSourcePicker(type, pickerId, selectedId = null) {
-  const picker = $(pickerId);
-  if (!picker) return;
-
-  const list = state.sources[type] || [];
-
-  picker.innerHTML = "";
-
-  if (!list.length) {
-    picker.innerHTML = `<div class="empty-state">No linked sources found.</div>`;
-    picker.classList.remove("hidden");
-    return;
-  }
-
-  list.forEach((source, index) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "source-option";
-
-    if ((selectedId && source.id === selectedId) || (!selectedId && index === 0)) {
-      button.classList.add("selected");
-      picker.dataset.selected = source.id;
-    }
-
-    button.dataset.sourceId = source.id;
-    button.textContent = source.label;
-
-    button.addEventListener("click", () => {
-      picker.querySelectorAll(".source-option").forEach(x => {
-        x.classList.remove("selected");
-      });
-
-      button.classList.add("selected");
-      picker.dataset.selected = source.id;
-    });
-
-    picker.appendChild(button);
+document
+  .querySelectorAll(".menu-item[data-open]")
+  .forEach(button => {
+    button.onclick = () =>
+      openPanel(button.dataset.open);
   });
 
-  picker.classList.remove("hidden");
-}
+$("menuTheme").onclick = () => {
+  state.dark = !state.dark;
 
-function selectedSource(pickerId) {
-  const picker = $(pickerId);
-  if (!picker) return null;
+  document.body.classList.toggle(
+    "dark",
+    state.dark
+  );
 
-  const id = picker.dataset.selected;
-  if (!id) return null;
+  save();
+  closeMenu();
+};
 
-  for (const type of Object.keys(state.sources)) {
-    const found = state.sources[type].find(item => item.id === id);
-    if (found) return found;
+/* ------------------------------
+   QUICK SERVICES
+------------------------------ */
+
+document
+  .querySelectorAll(".service-card")
+  .forEach(button => {
+    button.onclick = () => {
+      const panel = button.dataset.panel;
+
+      openPanel(panel);
+
+      if (
+        panel === "receivePanel" &&
+        !receiveSession
+      ) {
+        openBuyerLogin();
+      }
+    };
+  });
+
+$("copyBeastId").onclick = () => {
+  const id = $("beastId").textContent;
+
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(id);
   }
 
-  return null;
+  toast("BEAST ID copied");
+};
+
+/* ------------------------------
+   SOURCE PICKER
+------------------------------ */
+
+function renderPicker(
+  pickerId,
+  group,
+  onSelect
+) {
+  const box = $(pickerId);
+  const list = state.sources[group] || [];
+
+  box.innerHTML = list
+    .map(
+      (source, index) => `
+        <button
+          class="source-option ${
+            index === 0 ? "selected" : ""
+          }"
+          data-index="${index}">
+          <b>${source[0]}</b><br>
+          <small>${source[1]}</small>
+        </button>
+      `
+    )
+    .join("");
+
+  box.dataset.selected = "0";
+
+  box
+    .querySelectorAll(".source-option")
+    .forEach(button => {
+      button.onclick = () => {
+        box
+          .querySelectorAll(".source-option")
+          .forEach(item =>
+            item.classList.remove("selected")
+          );
+
+        button.classList.add("selected");
+
+        box.dataset.selected =
+          button.dataset.index;
+
+        if (onSelect) {
+          onSelect(
+            list[Number(button.dataset.index)]
+          );
+        }
+      };
+    });
 }
 
-function showSourcePicker(type, pickerId) {
-  renderSourcePicker(type, pickerId);
+function selectedSource(pickerId, group) {
+  const box = $(pickerId);
+  const list = state.sources[group] || [];
+
+  return (
+    list[Number(box.dataset.selected || 0)] ||
+    list[0]
+  );
 }
 
-/* =========================================================
-   SEND
-   ========================================================= */
+/* ------------------------------
+   AUTHORIZATION MODAL
+------------------------------ */
 
-let sendRecipientVerified = false;
+function showAuth(title, description, callback) {
+  pendingAuth = callback;
 
-$("verifySendRecipient")?.addEventListener("click", () => {
-  const phone = $("sendPhone")?.value.trim();
+  $("authTitle").textContent = title;
+  $("authDescription").textContent =
+    description;
 
-  if (!phone || phone.length < 9) {
-    toast("Enter a valid recipient phone number.");
+  $("authPin").value = "";
+
+  $("authModal").classList.remove("hidden");
+
+  setTimeout(() => {
+    $("authPin").focus();
+  }, 50);
+}
+
+function closeAuth() {
+  $("authModal").classList.add("hidden");
+  pendingAuth = null;
+}
+
+function completeWithAuth(
+  title,
+  description,
+  callback
+) {
+  showAuth(
+    title,
+    description,
+    () => {
+      callback();
+      closeAuth();
+    }
+  );
+}
+
+$("authClose").onclick = closeAuth;
+
+$("authorizeBtn").onclick = () => {
+  if ($("authPin").value !== DEMO_PIN) {
+    toast("Wrong demo PIN");
     return;
   }
 
-  sendRecipientVerified = true;
+  const callback = pendingAuth;
 
-  $("sendRecipientResult")?.classList.remove("hidden");
+  closeAuth();
 
-  if ($("sendRecipientResult")) {
-    $("sendRecipientResult").innerHTML = `
-      <strong>Recipient verified</strong>
-      <br>
-      KRISH TEST RECIPIENT
-      <br>
-      <small>${phone}</small>
-    `;
+  if (callback) {
+    callback();
   }
+};
 
-  toast("Recipient verified.");
-});
+/* ------------------------------
+   SEND MONEY
+------------------------------ */
 
-$("sendSource")?.addEventListener("change", e => {
-  showSourcePicker(e.target.value, "sendSourcePicker");
-});
+$("verifySendRecipient").onclick = () => {
+  const phone = $("sendPhone").value.trim();
 
-$("sendBtn")?.addEventListener("click", () => {
-  if (!sendRecipientVerified) {
-    toast("Verify the recipient first.");
+  if (!phone) {
+    toast("Enter receiver number");
     return;
   }
 
-  const phone = $("sendPhone")?.value.trim();
-  const amount = Number($("sendAmount")?.value);
-  const source = $("sendSource")?.value;
+  sendVerified = true;
+
+  $("sendRecipientResult").innerHTML = `
+    ✓ Recipient verified<br>
+    <b>${phone}</b><br>
+    <small>KRISH TEST RECIPIENT</small>
+  `;
+
+  $("sendRecipientResult")
+    .classList.remove("hidden");
+
+  toast("Recipient verified");
+};
+
+function setupSendSource() {
+  renderPicker(
+    "sendSourcePicker",
+    $("sendSource").value
+  );
+}
+
+$("sendSource").onchange =
+  setupSendSource;
+
+$("sendBtn").onclick = () => {
+  const amount =
+    Number($("sendAmount").value);
+
+  if (!sendVerified) {
+    toast("Verify recipient first");
+    return;
+  }
 
   if (!amount || amount <= 0) {
-    toast("Enter a valid amount.");
+    toast("Enter amount");
     return;
   }
 
-  if (amount > state.balance) {
-    toast("Insufficient demo balance.");
+  const fee = feeFor(amount);
+  const total = amount + fee;
+
+  if (total > state.balance) {
+    toast("Insufficient demo balance");
     return;
   }
 
-  if (!source) {
-    toast("Select a payment source.");
-    return;
-  }
+  completeWithAuth(
+    "AUTHORIZE SEND",
+    `Send ${money(amount)} + ${money(fee)} fee?`,
+    () => {
+      updateBalance(-total);
 
-  const selected = selectedSource("sendSourcePicker");
+      addHistory(
+        "SEND",
+        `To ${$("sendPhone").value} • Fee ${money(
+          fee
+        )}`,
+        amount
+      );
 
-  requestAuthorization({
-    type: "send",
-    amount,
-    fee: feeFor(amount),
-    description: `Send to ${phone}`,
-    source: selected?.label || source
-  });
-});
+      receipt("SEND", amount, fee);
 
-/* =========================================================
+      sendVerified = false;
+
+      $("sendRecipientResult")
+        .classList.add("hidden");
+    }
+  );
+};
+
+/* ------------------------------
    LIPA NA
-   ========================================================= */
+------------------------------ */
 
-let currentLipaType = "pochi";
-let lipaVerified = false;
+document
+  .querySelectorAll(".lipa-tab")
+  .forEach(button => {
+    button.onclick = () => {
+      currentLipa =
+        button.dataset.type;
 
-document.querySelectorAll(".lipa-tab").forEach(tab => {
-  tab.addEventListener("click", () => {
-    document.querySelectorAll(".lipa-tab").forEach(x => {
-      x.classList.remove("active");
-    });
+      document
+        .querySelectorAll(".lipa-tab")
+        .forEach(item =>
+          item.classList.remove("active")
+        );
 
-    tab.classList.add("active");
-    currentLipaType = tab.dataset.type;
-    lipaVerified = false;
+      button.classList.add("active");
 
-    renderLipaForm();
+      renderLipa();
+    };
   });
-});
 
-function renderLipaForm() {
+function renderLipa() {
   const form = $("lipaForm");
-  if (!form) return;
 
-  if (currentLipaType === "pochi") {
-    form.innerHTML = `
-      <div class="field">
-        <label>Phone Number</label>
-        <input id="lipaPhone" inputmode="tel" placeholder="0712345678">
-      </div>
-
-      <button class="secondary-btn" id="verifyLipa">
-        VERIFY NUMBER
-      </button>
-
-      <div id="lipaResult" class="verify-box hidden"></div>
-
-      <div class="field">
-        <label>Amount</label>
-        <input id="lipaAmount" class="amount-input"
-          type="number" min="1" placeholder="KES 0">
-      </div>
-
-      <button class="primary-btn" id="lipaPay">
-        PAY WITH POCHI
-      </button>
-    `;
-  }
-
-  if (currentLipaType === "buygoods") {
-    form.innerHTML = `
-      <div class="field">
-        <label>Till Number</label>
-        <input id="lipaTill" inputmode="numeric" placeholder="123456">
-      </div>
-
-      <button class="secondary-btn" id="verifyLipa">
-        VERIFY TILL
-      </button>
-
-      <div id="lipaResult" class="verify-box hidden"></div>
-
-      <div class="field">
-        <label>Amount</label>
-        <input id="lipaAmount" class="amount-input"
-          type="number" min="1" placeholder="KES 0">
-      </div>
-
-      <button class="primary-btn" id="lipaPay">
-        PAY BUY GOODS
-      </button>
-    `;
-  }
-
-  if (currentLipaType === "paybill") {
+  if (currentLipa === "BILL") {
     form.innerHTML = `
       <div class="field">
         <label>Business Number</label>
-        <input id="lipaBusiness" inputmode="numeric"
-          placeholder="Business Number">
+        <input
+          id="lipaBusiness"
+          placeholder="600000">
       </div>
 
       <div class="field">
         <label>Account Number</label>
-        <input id="lipaAccount" placeholder="Account Number">
+        <input
+          id="lipaAccount"
+          placeholder="ACCOUNT-001">
       </div>
+    `;
+  } else {
+    const label =
+      currentLipa === "POCHI"
+        ? "Phone Number"
+        : "Till Number";
 
-      <button class="secondary-btn" id="verifyLipa">
-        VERIFY PAYMENT DETAILS
-      </button>
+    const placeholder =
+      currentLipa === "POCHI"
+        ? "0712345678"
+        : "123456";
 
-      <div id="lipaResult" class="verify-box hidden"></div>
-
+    form.innerHTML = `
       <div class="field">
-        <label>Amount</label>
-        <input id="lipaAmount" class="amount-input"
-          type="number" min="1" placeholder="KES 0">
+        <label>${label}</label>
+        <input
+          id="lipaTarget"
+          placeholder="${placeholder}">
       </div>
-
-      <button class="primary-btn" id="lipaPay">
-        PAY BILL
-      </button>
     `;
   }
 
-  $("verifyLipa")?.addEventListener("click", verifyLipa);
-  $("lipaPay")?.addEventListener("click", submitLipa);
+  form.innerHTML += `
+    <div class="field">
+      <label>Amount</label>
+
+      <div class="amount-input">
+        <span>KES</span>
+        <input
+          id="lipaAmount"
+          type="number"
+          min="1"
+          placeholder="0.00">
+      </div>
+    </div>
+
+    <button
+      id="lipaVerify"
+      class="secondary-btn">
+      VERIFY DETAILS
+    </button>
+
+    <div
+      id="lipaResult"
+      class="verify-box hidden">
+    </div>
+
+    <button
+      id="lipaPay"
+      class="primary-btn">
+      PAY NOW
+    </button>
+  `;
+
+  let verified = false;
+
+  $("lipaVerify").onclick = () => {
+    verified = true;
+
+    $("lipaResult").textContent =
+      "✓ Payment details verified";
+
+    $("lipaResult")
+      .classList.remove("hidden");
+  };
+
+  $("lipaPay").onclick = () => {
+    const amount =
+      Number($("lipaAmount").value);
+
+    if (!verified) {
+      toast("Verify details first");
+      return;
+    }
+
+    if (!amount || amount <= 0) {
+      toast("Enter amount");
+      return;
+    }
+
+    const fee = feeFor(amount);
+    const total = amount + fee;
+
+    if (total > state.balance) {
+      toast("Insufficient demo balance");
+      return;
+    }
+
+    completeWithAuth(
+      "AUTHORIZE PAYMENT",
+      `Pay ${money(amount)} + ${money(fee)} fee?`,
+      () => {
+        updateBalance(-total);
+
+        addHistory(
+          "LIPA NA",
+          `${currentLipa} • Fee ${money(fee)}`,
+          amount
+        );
+
+        receipt(
+          "LIPA NA",
+          amount,
+          fee
+        );
+      }
+    );
+  };
 }
 
-function verifyLipa() {
-  if (currentLipaType === "pochi") {
-    const value = $("lipaPhone")?.value.trim();
+/* ------------------------------
+   RECEIVE LOGIN
+------------------------------ */
 
-    if (!value) {
-      toast("Enter the Pochi phone number.");
-      return;
-    }
-  }
+function openBuyerLogin() {
+  $("buyerLoginModal")
+    .classList.remove("hidden");
 
-  if (currentLipaType === "buygoods") {
-    const value = $("lipaTill")?.value.trim();
+  $("loginIdentifier").value = "";
+  $("loginPassword").value = "";
 
-    if (!value) {
-      toast("Enter the Till Number.");
-      return;
-    }
-  }
-
-  if (currentLipaType === "paybill") {
-    const business = $("lipaBusiness")?.value.trim();
-    const account = $("lipaAccount")?.value.trim();
-
-    if (!business || !account) {
-      toast("Enter both Business Number and Account Number.");
-      return;
-    }
-  }
-
-  lipaVerified = true;
-
-  const result = $("lipaResult");
-  result?.classList.remove("hidden");
-
-  if (result) {
-    result.innerHTML = `
-      <strong>Payment details verified</strong>
-      <br>
-      Ready for authorization.
-    `;
-  }
-
-  toast("Payment details verified.");
+  setTimeout(() => {
+    $("loginIdentifier").focus();
+  }, 50);
 }
 
-function submitLipa() {
-  if (!lipaVerified) {
-    toast("Verify payment details first.");
-    return;
-  }
+function closeBuyerLogin() {
+  $("buyerLoginModal")
+    .classList.add("hidden");
+}
 
-  const amount = Number($("lipaAmount")?.value);
+$("receiveLoginBtn").onclick =
+  openBuyerLogin;
 
-  if (!amount || amount <= 0) {
-    toast("Enter a valid amount.");
-    return;
-  }
+$("buyerLoginClose").onclick =
+  closeBuyerLogin;
 
-  if (amount > state.balance) {
-    toast("Insufficient demo balance.");
-    return;
-  }
+/* LOGIN TYPE */
 
-  let description = "Lipa Na payment";
+document
+  .querySelectorAll(".login-tab")
+  .forEach(button => {
+    button.onclick = () => {
+      currentLoginType =
+        button.dataset.loginType;
 
-  if (currentLipaType === "pochi") {
-    description = `Pochi • ${$("lipaPhone").value}`;
-  }
+      document
+        .querySelectorAll(".login-tab")
+        .forEach(item =>
+          item.classList.remove("active")
+        );
 
-  if (currentLipaType === "buygoods") {
-    description = `Buy Goods • Till ${$("lipaTill").value}`;
-  }
+      button.classList.add("active");
 
-  if (currentLipaType === "paybill") {
-    description =
-      `Pay Bill • ${$("lipaBusiness").value} / ${$("lipaAccount").value}`;
-  }
+      const labels = {
+        PHONE: [
+          "Phone Number",
+          "0712345678"
+        ],
 
-  requestAuthorization({
-    type: "lipa",
-    amount,
-    fee: feeFor(amount),
-    description,
-    source: "Selected BEAST source"
+        BEAST: [
+          "BEAST ID",
+          "BEAST-TEST-001"
+        ],
+
+        ACCOUNT: [
+          "Account Number",
+          "4582"
+        ]
+      };
+
+      $("loginIdentifierLabel")
+        .textContent =
+        labels[currentLoginType][0];
+
+      $("loginIdentifier").placeholder =
+        labels[currentLoginType][1];
+    };
   });
-}
 
-/* =========================================================
-   RECEIVE — SELL / RECEIVE PAYMENT
-   ========================================================= */
+/* BUYER LOGIN CONFIRM */
 
-let receiveSellType = "paybill";
-let receiveSellVerified = false;
+$("buyerLoginConfirm").onclick = () => {
+  const identifier =
+    $("loginIdentifier")
+      .value
+      .trim();
 
-document.querySelectorAll(".receive-option").forEach(option => {
-  option.addEventListener("click", () => {
-    document.querySelectorAll(".receive-option").forEach(x => {
-      x.classList.remove("active");
-    });
+  const password =
+    $("loginPassword")
+      .value
+      .trim();
 
-    option.classList.add("active");
+  let valid = false;
 
-    receiveSellType = option.dataset.receiveType;
-    receiveSellVerified = false;
+  if (
+    currentLoginType === "PHONE" &&
+    identifier === "0712345678"
+  ) {
+    valid = true;
+  }
 
-    renderReceiveSellForm();
+  if (
+    currentLoginType === "BEAST" &&
+    identifier.toUpperCase() ===
+      "BEAST-TEST-001"
+  ) {
+    valid = true;
+  }
+
+  if (
+    currentLoginType === "ACCOUNT" &&
+    identifier === "4582"
+  ) {
+    valid = true;
+  }
+
+  if (!valid || password !== DEMO_PIN) {
+    toast(
+      "Login details not verified. Demo PIN is 1234."
+    );
+
+    return;
+  }
+
+  /*
+    RECEIVE SESSION STARTS ONLY AFTER
+    SUCCESSFUL BUYER LOGIN
+  */
+
+  receiveSession = true;
+
+  closeBuyerLogin();
+
+  $("receiveLocked")
+    .classList.add("hidden");
+
+  $("receiveContent")
+    .classList.remove("hidden");
+
+  receiveTerminalVerified = false;
+
+  toast(
+    "Buyer verified. Receive opened."
+  );
+};
+
+/* ------------------------------
+   RECEIVE TERMINAL
+------------------------------ */
+
+$("receiveDeviceVerify").onclick =
+  () => {
+    receiveTerminalVerified = true;
+
+    $("receiveSecurityAlert")
+      .querySelector("span")
+      .textContent =
+      "✓ Terminal verified for this Receive session.";
+
+    toast("Terminal verified");
+  };
+
+/* ------------------------------
+   RECEIVE SELL / PAYMENT
+------------------------------ */
+
+document
+  .querySelectorAll(".receive-option")
+  .forEach(button => {
+    button.onclick = () => {
+      currentReceive =
+        button.dataset.receiveType;
+
+      document
+        .querySelectorAll(".receive-option")
+        .forEach(item =>
+          item.classList.remove("active")
+        );
+
+      button.classList.add("active");
+
+      renderReceiveSell();
+    };
   });
-});
 
-function renderReceiveSellForm() {
-  const form = $("receiveSellForm");
-  if (!form) return;
+function renderReceiveSell() {
+  const form =
+    $("receiveSellForm");
 
-  if (receiveSellType === "paybill") {
+  if (currentReceive === "BILL") {
     form.innerHTML = `
       <div class="detail-card">
+
         <div class="field">
           <label>Business Number</label>
-          <input id="receiveBusiness" inputmode="numeric"
-            placeholder="Business Number">
+          <input
+            id="receiveBusiness"
+            placeholder="600000">
         </div>
 
         <div class="field">
           <label>Account Number</label>
-          <input id="receiveAccount"
-            placeholder="Account Number">
+          <input
+            id="receiveAccount"
+            placeholder="ACCOUNT-001">
         </div>
 
-        <button class="secondary-btn" id="verifyReceiveSell">
-          VERIFY PAYMENT DETAILS
+        <button
+          class="secondary-btn"
+          id="receiveSellVerify">
+          VERIFY DETAILS
         </button>
 
-        <div id="receiveSellResult"
-          class="verify-box hidden"></div>
-
-        <div class="field">
-          <label>Amount Received</label>
-          <input id="receiveSellAmount"
-            class="amount-input"
-            type="number"
-            min="1"
-            placeholder="KES 0">
+        <div
+          id="receiveSellResult"
+          class="verify-box hidden">
         </div>
 
-        <button class="primary-btn" id="receiveSellBtn">
-          RECEIVE PAYMENT
-        </button>
       </div>
     `;
   }
 
-  if (receiveSellType === "buygoods") {
+  else if (currentReceive === "TILL") {
     form.innerHTML = `
       <div class="detail-card">
+
         <div class="field">
           <label>Till Number</label>
-          <input id="receiveTill"
-            inputmode="numeric"
-            placeholder="Till Number">
+          <input
+            id="receiveTill"
+            placeholder="123456">
         </div>
 
-        <button class="secondary-btn" id="verifyReceiveSell">
-          VERIFY TILL
+        <button
+          class="secondary-btn"
+          id="receiveSellVerify">
+          VERIFY DETAILS
         </button>
 
-        <div id="receiveSellResult"
-          class="verify-box hidden"></div>
-
-        <div class="field">
-          <label>Amount Received</label>
-          <input id="receiveSellAmount"
-            class="amount-input"
-            type="number"
-            min="1"
-            placeholder="KES 0">
+        <div
+          id="receiveSellResult"
+          class="verify-box hidden">
         </div>
 
-        <button class="primary-btn" id="receiveSellBtn">
-          RECEIVE PAYMENT
-        </button>
       </div>
     `;
   }
 
-  if (receiveSellType === "pochi") {
+  else {
     form.innerHTML = `
       <div class="detail-card">
+
         <div class="field">
           <label>Phone Number</label>
-          <input id="receivePhone"
+          <input
+            id="receivePochi"
             inputmode="tel"
             placeholder="0712345678">
         </div>
 
-        <button class="secondary-btn" id="verifyReceiveSell">
-          VERIFY PHONE
+        <button
+          class="secondary-btn"
+          id="receiveSellVerify">
+          VERIFY DETAILS
         </button>
 
-        <div id="receiveSellResult"
-          class="verify-box hidden"></div>
-
-        <div class="field">
-          <label>Amount Received</label>
-          <input id="receiveSellAmount"
-            class="amount-input"
-            type="number"
-            min="1"
-            placeholder="KES 0">
+        <div
+          id="receiveSellResult"
+          class="verify-box hidden">
         </div>
 
-        <button class="primary-btn" id="receiveSellBtn">
-          RECEIVE PAYMENT
-        </button>
       </div>
     `;
   }
 
-  $("verifyReceiveSell")?.addEventListener(
-    "click",
-    verifyReceiveSell
-  );
+  form.innerHTML += `
+    <div class="field">
+      <label>Amount Received</label>
 
-  $("receiveSellBtn")?.addEventListener(
-    "click",
-    submitReceiveSell
-  );
+      <div class="amount-input">
+        <span>KES</span>
+
+        <input
+          id="receiveSellAmount"
+          type="number"
+          min="1"
+          placeholder="0.00">
+      </div>
+    </div>
+
+    <button
+      id="receiveSellBtn"
+      class="primary-btn">
+      CONFIRM RECEIVE
+    </button>
+  `;
+
+  let verified = false;
+
+  $("receiveSellVerify").onclick =
+    () => {
+      verified = true;
+
+      $("receiveSellResult")
+        .textContent =
+        "✓ Details verified";
+
+      $("receiveSellResult")
+        .classList.remove("hidden");
+    };
+
+  $("receiveSellBtn").onclick =
+    () => {
+      const amount =
+        Number(
+          $("receiveSellAmount").value
+        );
+
+      if (!verified) {
+        toast(
+          "Verify payment details first"
+        );
+
+        return;
+      }
+
+      if (!amount || amount <= 0) {
+        toast("Enter amount");
+        return;
+      }
+
+      completeWithAuth(
+        "AUTHORIZE RECEIVE",
+        `Receive ${money(amount)} into the demo account?`,
+        () => {
+          updateBalance(amount);
+
+          addHistory(
+            "RECEIVE",
+            `${currentReceive} payment`,
+            amount
+          );
+
+          receipt(
+            "RECEIVE",
+            amount,
+            0
+          );
+
+          /*
+            IMPORTANT:
+            After Receive is completed,
+            the Receive session is destroyed.
+          */
+
+          logoutReceive();
+        }
+      );
+    };
 }
 
-function verifyReceiveSell() {
-  let valid = false;
+renderReceiveSell();
 
-  if (receiveSellType === "paybill") {
-    valid =
-      Boolean($("receiveBusiness")?.value.trim()) &&
-      Boolean($("receiveAccount")?.value.trim());
-  }
+/* ------------------------------
+   AGENT DETAILS
+------------------------------ */
 
-  if (receiveSellType === "buygoods") {
-    valid = Boolean($("receiveTill")?.value.trim());
-  }
+function agentHTML(id) {
+  return `
+    <div class="detail-card">
 
-  if (receiveSellType === "pochi") {
-    valid = Boolean($("receivePhone")?.value.trim());
-  }
-
-  if (!valid) {
-    toast("Enter all required payment details.");
-    return;
-  }
-
-  receiveSellVerified = true;
-
-  const result = $("receiveSellResult");
-  result?.classList.remove("hidden");
-
-  if (result) {
-    result.innerHTML = `
-      <strong>Details verified</strong>
-      <br>
-      Ready for customer authorization.
-    `;
-  }
-
-  toast("Payment details verified.");
-}
-
-function submitReceiveSell() {
-  if (!receiveSellVerified) {
-    toast("Verify the payment details first.");
-    return;
-  }
-
-  const amount = Number($("receiveSellAmount")?.value);
-
-  if (!amount || amount <= 0) {
-    toast("Enter the amount received.");
-    return;
-  }
-
-  requestAuthorization({
-    type: "receive",
-    amount,
-    fee: 0,
-    description: `Receive • ${receiveSellType.toUpperCase()}`,
-    source: "Customer payment"
-  });
-}
-
-/* =========================================================
-   RECEIVE — WITHDRAW
-   ========================================================= */
-
-let receiveWithdrawVerified = false;
-
-$("receiveWithdrawSource")?.addEventListener("change", e => {
-  receiveWithdrawVerified = false;
-
-  renderWithdrawSource(
-    e.target.value,
-    "receiveWithdrawSourcePicker",
-    "receiveAgentDetails"
-  );
-});
-
-function renderWithdrawSource(type, pickerId, agentId) {
-  if (!type) {
-    $(pickerId)?.classList.add("hidden");
-
-    if ($(agentId)) {
-      $(agentId).innerHTML = "";
-    }
-
-    return;
-  }
-
-  renderSourcePicker(type, pickerId);
-
-  const agent = $(agentId);
-
-  if (!agent) return;
-
-  if (type === "MPESA" || type === "AIRTEL") {
-    agent.innerHTML = `
       <div class="field">
         <label>Agent Number</label>
-        <input id="${agentId}Agent"
+
+        <input
+          id="${id}Number"
           inputmode="tel"
           placeholder="0712345678">
       </div>
 
       <div class="field">
         <label>Store Number</label>
-        <input id="${agentId}Store"
-          placeholder="Store Number">
+
+        <input
+          id="${id}Store"
+          placeholder="STORE-001">
       </div>
 
-      <button class="secondary-btn"
-        id="${agentId}Verify">
+      <button
+        class="secondary-btn"
+        id="${id}Verify">
         VERIFY WITHDRAWAL DETAILS
       </button>
 
-      <div id="${agentId}VerifyResult"
-        class="verify-box hidden"></div>
-    `;
-
-    $(`${agentId}Verify`)?.addEventListener("click", () => {
-      verifyWithdrawAgent(agentId);
-    });
-  } else {
-    agent.innerHTML = `
-      <div class="verify-box">
-        <strong>Source selected</strong>
-        <br>
-        No agent/store details required for this source.
+      <div
+        id="${id}VerifyResult"
+        class="verify-box hidden">
       </div>
-    `;
-  }
 
-  agent.classList.remove("hidden");
+    </div>
+  `;
 }
 
-function verifyWithdrawAgent(agentId) {
-  const agent = $(`${agentId}Agent`)?.value.trim();
-  const store = $(`${agentId}Store`)?.value.trim();
+function setupAgent(id) {
+  $(id).innerHTML =
+    agentHTML(id);
 
-  if (!agent || !store) {
-    toast("Enter Agent Number and Store Number.");
-    return;
-  }
-
-  receiveWithdrawVerified = true;
-
-  const result = $(`${agentId}VerifyResult`);
-  result?.classList.remove("hidden");
-
-  if (result) {
-    result.innerHTML = `
-      <strong>Withdrawal details verified</strong>
-      <br>
-      Agent and Store confirmed.
-    `;
-  }
-
-  toast("Withdrawal details verified.");
+  $(id + "Verify").onclick =
+    () => verifyAgent(id);
 }
 
-$("receiveWithdrawBtn")?.addEventListener("click", () => {
-  const sourceType = $("receiveWithdrawSource")?.value;
-  const amount = Number($("receiveWithdrawAmount")?.value);
+function verifyAgent(id) {
+  const agent =
+    $(id + "Number");
 
-  if (!sourceType) {
-    toast("Select the withdrawal source.");
-    return;
-  }
+  const store =
+    $(id + "Store");
 
-  const source = selectedSource("receiveWithdrawSourcePicker");
-
-  if (!source) {
-    toast("Select the exact source or line.");
-    return;
-  }
+  const result =
+    $(id + "VerifyResult");
 
   if (
-    (sourceType === "MPESA" || sourceType === "AIRTEL") &&
-    !receiveWithdrawVerified
+    !agent ||
+    !store ||
+    !agent.value.trim() ||
+    !store.value.trim()
   ) {
-    toast("Verify Agent Number and Store Number first.");
+    toast(
+      "Enter agent and store number"
+    );
+
     return;
   }
 
-  if (!amount || amount <= 0) {
-    toast("Enter a valid withdrawal amount.");
-    return;
+  result.innerHTML =
+    "✓ Agent and store details verified.";
+
+  result.classList.remove("hidden");
+
+  if (id === "receiveAgentDetails") {
+    receiveWithdrawVerified = true;
   }
 
-  if (amount > state.balance) {
-    toast("Insufficient demo balance.");
-    return;
-  }
-
-  requestAuthorization({
-    type: "withdraw",
-    amount,
-    fee: feeFor(amount),
-    description: `Agent withdrawal • ${source.label}`,
-    source: source.label
-  });
-});
-
-/* =========================================================
-   GENERAL WITHDRAW
-   ========================================================= */
-
-let generalWithdrawVerified = false;
-
-$("withdrawSource")?.addEventListener("change", e => {
-  generalWithdrawVerified = false;
-
-  renderWithdrawSource(
-    e.target.value,
-    "withdrawSourcePicker",
-    "withdrawAgentDetails"
-  );
-});
-
-$("withdrawBtn")?.addEventListener("click", () => {
-  const sourceType = $("withdrawSource")?.value;
-  const amount = Number($("withdrawAmount")?.value);
-
-  if (!sourceType) {
-    toast("Select the withdrawal source.");
-    return;
-  }
-
-  const source = selectedSource("withdrawSourcePicker");
-
-  if (!source) {
-    toast("Select the exact source or line.");
-    return;
-  }
-
-  if (
-    (sourceType === "MPESA" || sourceType === "AIRTEL") &&
-    !generalWithdrawVerified
-  ) {
-    toast("Verify Agent Number and Store Number first.");
-    return;
-  }
-
-  if (!amount || amount <= 0) {
-    toast("Enter a valid withdrawal amount.");
-    return;
-  }
-
-  if (amount > state.balance) {
-    toast("Insufficient demo balance.");
-    return;
-  }
-
-  requestAuthorization({
-    type: "withdraw",
-    amount,
-    fee: feeFor(amount),
-    description: `Withdrawal • ${source.label}`,
-    source: source.label
-  });
-});
-
-/* Fix the general agent verification flag */
-document.addEventListener("click", event => {
-  if (event.target?.id === "withdrawAgentDetailsVerify") {
+  if (id === "withdrawAgentDetails") {
     generalWithdrawVerified = true;
   }
-});
+}
 
-/* =========================================================
-   AUTHORIZATION
-   ========================================================= */
+/* ------------------------------
+   RECEIVE WITHDRAW SOURCE
+------------------------------ */
 
-let pendingTransaction = null;
+function setupWithdrawSource(
+  selectId,
+  pickerId,
+  agentId
+) {
+  const group =
+    $(selectId).value;
 
-function requestAuthorization(transaction) {
-  pendingTransaction = transaction;
+  renderPicker(
+    pickerId,
+    group
+  );
 
-  const modal = $("authModal");
+  if (
+    group === "M-PESA" ||
+    group === "AIRTEL"
+  ) {
+    setupAgent(agentId);
+  } else {
+    $(agentId).innerHTML = `
+      <div class="detail-card">
+        ✓ Selected linked account/card/wallet
+        will be used.
+      </div>
+    `;
+  }
+}
 
-  if (!modal) return;
+$("receiveWithdrawSource").onchange =
+  () => {
+    receiveWithdrawVerified = false;
 
-  $("authDescription").textContent =
-    `${transaction.description} • ${money(transaction.amount)}`;
+    setupWithdrawSource(
+      "receiveWithdrawSource",
+      "receiveWithdrawSourcePicker",
+      "receiveAgentDetails"
+    );
+  };
 
-  $("authPin").value = "";
+/* RECEIVE WITHDRAW */
 
-  modal.classList.remove("hidden");
+$("receiveWithdrawBtn").onclick =
+  () => {
+    if (!receiveSession) {
+      openBuyerLogin();
+      return;
+    }
+
+    const group =
+      $("receiveWithdrawSource").value;
+
+    const amount =
+      Number(
+        $("receiveWithdrawAmount").value
+      );
+
+    if (!receiveTerminalVerified) {
+      toast(
+        "Verify this terminal first"
+      );
+
+      return;
+    }
+
+    if (
+      (group === "M-PESA" ||
+        group === "AIRTEL") &&
+      !receiveWithdrawVerified
+    ) {
+      toast(
+        "Verify agent and store details first"
+      );
+
+      return;
+    }
+
+    if (!amount || amount <= 0) {
+      toast("Enter amount");
+      return;
+    }
+
+    if (amount > state.balance) {
+      toast(
+        "Insufficient demo balance"
+      );
+
+      return;
+    }
+
+    completeWithAuth(
+      "AUTHORIZE WITHDRAWAL",
+      `Withdraw ${money(amount)} from the selected source?`,
+      () => {
+        updateBalance(-amount);
+
+        const source =
+          selectedSource(
+            "receiveWithdrawSourcePicker",
+            group
+          );
+
+        addHistory(
+          "AGENT WITHDRAW",
+          `${group} • ${
+            source?.[0] || ""
+          }`,
+          amount
+        );
+
+        receipt(
+          "AGENT WITHDRAW",
+          amount,
+          0
+        );
+
+        /*
+          Automatically end the
+          Receive session after completion.
+        */
+
+        logoutReceive();
+      }
+    );
+  };
+
+/* ------------------------------
+   GENERAL WITHDRAW
+------------------------------ */
+
+$("withdrawSource").onchange =
+  () => {
+    generalWithdrawVerified = false;
+
+    setupWithdrawSource(
+      "withdrawSource",
+      "withdrawSourcePicker",
+      "withdrawAgentDetails"
+    );
+  };
+
+$("withdrawBtn").onclick =
+  () => {
+    const group =
+      $("withdrawSource").value;
+
+    const amount =
+      Number(
+        $("withdrawAmount").value
+      );
+
+    if (
+      (group === "M-PESA" ||
+        group === "AIRTEL") &&
+      !generalWithdrawVerified
+    ) {
+      toast(
+        "Verify agent and store details first"
+      );
+
+      return;
+    }
+
+    if (!amount || amount <= 0) {
+      toast("Enter amount");
+      return;
+    }
+
+    if (amount > state.balance) {
+      toast(
+        "Insufficient demo balance"
+      );
+
+      return;
+    }
+
+    completeWithAuth(
+      "AUTHORIZE WITHDRAWAL",
+      `Withdraw ${money(amount)}?`,
+      () => {
+        updateBalance(-amount);
+
+        const source =
+          selectedSource(
+            "withdrawSourcePicker",
+            group
+          );
+
+        addHistory(
+          "WITHDRAW",
+          `${group} • ${
+            source?.[0] || ""
+          }`,
+          amount
+        );
+
+        receipt(
+          "WITHDRAW",
+          amount,
+          0
+        );
+      }
+    );
+  };
+
+/* ------------------------------
+   RECEIVE AUTO LOGOUT
+------------------------------ */
+
+function logoutReceive() {
+  receiveSession = false;
+
+  receiveTerminalVerified = false;
+  receiveWithdrawVerified = false;
+
+  /*
+    Hide Receive immediately after
+    the completed transaction.
+  */
+
+  $("receiveContent")
+    .classList.add("hidden");
+
+  $("receiveLocked")
+    .classList.remove("hidden");
+
+  /*
+    Clear sensitive Receive fields.
+  */
+
+  const ids = [
+    "receiveSellAmount",
+    "receiveWithdrawAmount"
+  ];
+
+  ids.forEach(id => {
+    if ($(id)) {
+      $(id).value = "";
+    }
+  });
+
+  /*
+    Return automatically to
+    the buyer login screen.
+  */
 
   setTimeout(() => {
-    $("authPin")?.focus();
-  }, 100);
+    openBuyerLogin();
+  }, 500);
 }
 
-$("authorizeBtn")?.addEventListener("click", authorizeTransaction);
-
-$("authPin")?.addEventListener("keydown", event => {
-  if (event.key === "Enter") {
-    authorizeTransaction();
-  }
-});
-
-function authorizeTransaction() {
-  if (!pendingTransaction) return;
-
-  const pin = $("authPin")?.value || "";
-
-  if (pin !== DEMO_PIN) {
-    toast("Incorrect demo PIN.");
-    return;
-  }
-
-  completeTransaction(pendingTransaction);
-
-  pendingTransaction = null;
-  $("authModal")?.classList.add("hidden");
-}
-
-/* =========================================================
-   COMPLETE TRANSACTION
-   ========================================================= */
-
-function completeTransaction(tx) {
-  const fee = Number(tx.fee || 0);
-
-  if (tx.type === "receive") {
-    state.balance += Number(tx.amount);
-
-    addHistory({
-      type: "receive",
-      title: tx.description,
-      amount: Number(tx.amount),
-      fee: 0,
-      source: tx.source
-    });
-
-    updateBalance();
-    showReceipt({
-      title: "Payment Received",
-      amount: tx.amount,
-      fee: 0,
-      total: tx.amount,
-      source: tx.source
-    });
-
-    save();
-    return;
-  }
-
-  const total = Number(tx.amount) + fee;
-
-  if (total > state.balance) {
-    toast("Insufficient demo balance.");
-    return;
-  }
-
-  state.balance -= total;
-
-  addHistory({
-    type: tx.type,
-    title: tx.description,
-    amount: Number(tx.amount),
-    fee,
-    source: tx.source
-  });
-
-  updateBalance();
-
-  showReceipt({
-    title: tx.type === "withdraw"
-      ? "Withdrawal Complete"
-      : tx.type === "lipa"
-        ? "Payment Complete"
-        : "Transfer Complete",
-    amount: tx.amount,
-    fee,
-    total,
-    source: tx.source
-  });
-
-  save();
-}
-
-/* =========================================================
-   HISTORY
-   ========================================================= */
-
-function addHistory(item) {
-  state.history.unshift({
-    id: Date.now(),
-    date: new Date().toLocaleString("en-KE"),
-    ...item
-  });
-
-  state.history = state.history.slice(0, 100);
-  renderHistory();
-}
-
-function renderHistory() {
-  const list = $("historyList");
-  if (!list) return;
-
-  if (!state.history.length) {
-    list.innerHTML = `
-      <div class="empty-state">
-        No transactions yet.
-      </div>
-    `;
-    return;
-  }
-
-  list.innerHTML = state.history.map(item => {
-    const positive = item.type === "receive";
-
-    return `
-      <div class="history-item">
-        <div>
-          <strong>${escapeHTML(item.title)}</strong>
-          <small>
-            ${escapeHTML(item.date)}
-            <br>
-            ${escapeHTML(item.source || "")}
-          </small>
-        </div>
-
-        <div>
-          <strong>
-            ${positive ? "+" : "-"}${money(item.amount)}
-          </strong>
-
-          ${
-            item.fee
-              ? `<small>Fee: ${money(item.fee)}</small>`
-              : ""
-          }
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
-/* =========================================================
+/* ------------------------------
    RECEIPT
-   ========================================================= */
+------------------------------ */
 
-function showReceipt(data) {
-  const modal = $("receiptModal");
-  const content = $("receiptContent");
-
-  if (!modal || !content) return;
-
-  content.innerHTML = `
-    <div class="success-icon">✓</div>
-
-    <h3>${escapeHTML(data.title)}</h3>
+function receipt(
+  type,
+  amount,
+  fee
+) {
+  $("receiptContent").innerHTML = `
+    <div class="receipt-row">
+      <span>Type</span>
+      <b>${type}</b>
+    </div>
 
     <div class="receipt-row">
       <span>Amount</span>
-      <strong>${money(data.amount)}</strong>
+      <b>${money(amount)}</b>
     </div>
 
     <div class="receipt-row">
       <span>Fee</span>
-      <strong>${money(data.fee)}</strong>
+      <b>${money(fee)}</b>
     </div>
 
     <div class="receipt-row">
-      <span>Total</span>
-      <strong>${money(data.total)}</strong>
-    </div>
-
-    <div class="receipt-row">
-      <span>Source</span>
-      <strong>${escapeHTML(data.source || "")}</strong>
-    </div>
-
-    <div class="receipt-row">
-      <span>Status</span>
-      <strong>COMPLETED</strong>
+      <span>Time</span>
+      <b>${new Date().toLocaleTimeString()}</b>
     </div>
   `;
 
-  modal.classList.remove("hidden");
+  $("receiptModal")
+    .classList.remove("hidden");
 }
 
-document.querySelectorAll(".modal-close").forEach(button => {
-  button.addEventListener("click", () => {
-    button.closest(".modal")?.classList.add("hidden");
-  });
+$("receiptClose").onclick =
+  () =>
+    $("receiptModal")
+      .classList.add("hidden");
+
+$("receiptDone").onclick =
+  () =>
+    $("receiptModal")
+      .classList.add("hidden");
+
+/* ------------------------------
+   SETTINGS
+------------------------------ */
+
+[
+  "securityAlertsToggle",
+  "notificationsToggle",
+  "screenProtectionToggle"
+].forEach(id => {
+  $(id).onchange = () => {
+    state.settings = {
+      securityAlerts:
+        $("securityAlertsToggle").checked,
+
+      notifications:
+        $("notificationsToggle").checked,
+
+      screenProtection:
+        $("screenProtectionToggle").checked
+    };
+
+    save();
+  };
 });
 
-/* =========================================================
-   SECURITY
-   ========================================================= */
+/* ------------------------------
+   BROWSER SECURITY
+------------------------------ */
 
-$("receiveDeviceVerify")?.addEventListener("click", () => {
-  const alertBox = $("receiveSecurityAlert");
-
-  if (alertBox) {
-    alertBox.innerHTML = `
-      <strong>Terminal verified ✓</strong>
-      <br>
-      Secure activity may continue on this terminal.
-    `;
+document.addEventListener(
+  "visibilitychange",
+  () => {
+    if (
+      state.settings.screenProtection &&
+      document.hidden
+    ) {
+      toast(
+        "Session paused while page is hidden."
+      );
+    }
   }
+);
 
-  toast("Terminal verified.");
-});
+window.addEventListener(
+  "blur",
+  () => {
+    if (
+      state.settings.screenProtection
+    ) {
+      toast(
+        "Security check: terminal focus lost."
+      );
+    }
+  }
+);
 
 /*
-  Browser limitation:
-  A static website cannot reliably detect every Android
-  screenshot or screen-recording method.
-
-  We can pause sensitive activity when the page loses
-  visibility/focus, but this is NOT universal screenshot
-  detection.
+  NOTE:
+  A normal GitHub Pages browser cannot
+  universally detect Android screenshots
+  or every screen-recording method.
+  Strong OS-level protection belongs in
+  a future native Android app.
 */
 
-document.addEventListener("visibilitychange", () => {
-  if (!state.settings.screenProtection) return;
+/* ------------------------------
+   STARTUP
+------------------------------ */
 
-  if (document.hidden) {
-    document.title = "PAUSED • MONEY TRANSFER BEAST";
-    toast("Secure activity paused.");
-  } else {
-    document.title = "MONEY TRANSFER BEAST";
-  }
-});
+document.body.classList.toggle(
+  "dark",
+  state.dark
+);
 
-window.addEventListener("blur", () => {
-  if (!state.settings.screenProtection) return;
+renderBalance();
+renderHistory();
 
-  toast("Secure activity paused.");
-});
+setupSendSource();
 
-/* =========================================================
-   SETTINGS
-   ========================================================= */
+setupWithdrawSource(
+  "withdrawSource",
+  "withdrawSourcePicker",
+  "withdrawAgentDetails"
+);
 
-function updateSettingsUI() {
-  if ($("securityAlertsToggle")) {
-    $("securityAlertsToggle").checked =
-      state.settings.securityAlerts;
-  }
-
-  if ($("notificationsToggle")) {
-    $("notificationsToggle").checked =
-      state.settings.notifications;
-  }
-
-  if ($("screenProtectionToggle")) {
-    $("screenProtectionToggle").checked =
-      state.settings.screenProtection;
-  }
-}
-
-$("securityAlertsToggle")?.addEventListener("change", e => {
-  state.settings.securityAlerts = e.target.checked;
-  save();
-});
-
-$("notificationsToggle")?.addEventListener("change", e => {
-  state.settings.notifications = e.target.checked;
-  save();
-});
-
-$("screenProtectionToggle")?.addEventListener("change", e => {
-  state.settings.screenProtection = e.target.checked;
-  save();
-});
-
-/* =========================================================
-   DARK / LIGHT MODE
-   ========================================================= */
-
-function applyTheme() {
-  document.body.classList.toggle("dark", state.dark);
-
-  if ($("menuTheme")) {
-    $("menuTheme").textContent =
-      state.dark ? "☀️ Light Mode" : "🌙 Dark Mode";
-  }
-}
-
-$("menuTheme")?.addEventListener("click", () => {
-  state.dark = !state.dark;
-  applyTheme();
-  save();
-});
-
-/* =========================================================
-   MENU
-   ========================================================= */
-
-$("menuBtn")?.addEventListener("click", openMenu);
-$("closeMenu")?.addEventListener("click", closeMenu);
-$("menuOverlay")?.addEventListener("click", closeMenu);
-
-document.querySelectorAll(".menu-item[data-open]").forEach(item => {
-  item.addEventListener("click", () => {
-    openPanel(item.dataset.open);
-  });
-});
-
-/* =========================================================
-   QUICK SERVICE CARDS
-   ========================================================= */
-
-document.querySelectorAll(".service-card[data-panel]").forEach(card => {
-  card.addEventListener("click", () => {
-    openPanel(card.dataset.panel);
-  });
-});
-
-/* =========================================================
-   BEAST ID COPY
-   ========================================================= */
-
-$("copyBeastId")?.addEventListener("click", async () => {
-  const id = $("beastId")?.textContent.trim();
-
-  try {
-    await navigator.clipboard.writeText(id);
-    toast("BEAST ID copied.");
-  } catch {
-    toast("BEAST ID: " + id);
-  }
-});
-
-/* =========================================================
-   HELPERS
-   ========================================================= */
-
-function escapeHTML(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-/* =========================================================
-   INITIALIZE
-   ========================================================= */
-
-function init() {
-  updateBalance();
-  applyTheme();
-  updateSettingsUI();
-  renderHistory();
-
-  renderLipaForm();
-  renderReceiveSellForm();
-
-  if ($("sendSource")) {
-    showSourcePicker(
-      $("sendSource").value || "MPESA",
-      "sendSourcePicker"
-    );
-  }
-
-  if ($("receiveWithdrawSource")?.value) {
-    renderWithdrawSource(
-      $("receiveWithdrawSource").value,
-      "receiveWithdrawSourcePicker",
-      "receiveAgentDetails"
-    );
-  }
-
-  if ($("withdrawSource")?.value) {
-    renderWithdrawSource(
-      $("withdrawSource").value,
-      "withdrawSourcePicker",
-      "withdrawAgentDetails"
-    );
-  }
-}
-
-init();
+setupWithdrawSource(
+  "receiveWithdrawSource",
+  "receiveWithdrawSourcePicker",
+  "receiveAgentDetails"
+);
