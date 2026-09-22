@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#07111f">
+  <meta name="theme-color" content="#111827">
   <title>MONEY TRANSFER BEAST</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -12,131 +12,78 @@
 
 <header class="topbar">
   <div class="brand">
-    <div class="brand-mark">B</div>
-    <div>
-      <strong>MONEY TRANSFER</strong>
-      <span>BEAST</span>
-    </div>
+    <span class="brand-mark">B</span>
+    <span>MONEY TRANSFER BEAST</span>
   </div>
-
-  <button id="menuBtn" class="icon-btn" aria-label="Menu">☰</button>
+  <button id="menuBtn" class="icon-btn">☰</button>
 </header>
 
-<!-- SIDE MENU -->
 <aside id="sideMenu" class="side-menu">
   <div class="menu-head">
     <strong>BEAST MENU</strong>
     <button id="closeMenu" class="close-btn">×</button>
   </div>
 
-  <button class="menu-item" data-open="securityPanel">
-    🛡️ Security
-  </button>
-
-  <button class="menu-item" data-open="settingsPanel">
-    ⚙️ Settings
-  </button>
-
-  <button class="menu-item" id="menuTheme">
-    🌙 Dark Mode
-  </button>
+  <button class="menu-item" data-open="securityPanel">🔐 Security</button>
+  <button class="menu-item" data-open="settingsPanel">⚙️ Settings</button>
+  <button id="menuTheme" class="menu-item">🌙 Dark / Light Mode</button>
 </aside>
 
 <div id="menuOverlay" class="menu-overlay"></div>
 
 <main class="container">
 
-  <!-- DEMO NOTICE -->
   <div class="demo-banner">
-    <strong>DEMO ENVIRONMENT</strong>
-    <span>
-      No real money is moved. Transactions are simulated locally.
-    </span>
+    DEMO MODE — No real money moves in this prototype.
   </div>
 
-  <!-- IDENTITY -->
   <section class="identity-card">
     <div>
-      <small>BEAST ACCOUNT</small>
+      <small>ACCOUNT HOLDER</small>
       <h2>KRISH TEST ACCOUNT</h2>
-      <p>
-        BEAST ID:
-        <strong id="beastId">BEAST-TEST-001</strong>
-      </p>
+      <span id="beastId">BEAST-TEST-001</span>
     </div>
-
-    <button id="copyBeastId" class="small-btn">
-      COPY
-    </button>
+    <button id="copyBeastId" class="small-btn">COPY ID</button>
   </section>
 
-  <!-- BALANCE -->
   <section class="balance-card">
-    <small>AVAILABLE BALANCE</small>
+    <small>BEAST DEMO WALLET</small>
     <div id="balance">KES 5,000.00</div>
-    <span>BEAST DEMO WALLET</span>
   </section>
 
-  <!-- QUICK SERVICES -->
   <section class="quick-grid">
-
     <button class="service-card" data-panel="sendPanel">
-      <span class="service-icon">↗️</span>
-      <strong>Send</strong>
-      <small>Transfer money</small>
+      <b>↗</b><span>Send</span>
     </button>
 
     <button class="service-card" data-panel="lipaPanel">
-      <span class="service-icon">💳</span>
-      <strong>Lipa Na</strong>
-      <small>Pay merchants</small>
+      <b>▣</b><span>Lipa Na</span>
     </button>
 
     <button class="service-card" data-panel="receivePanel">
-      <span class="service-icon">💰</span>
-      <strong>Receive</strong>
-      <small>Sell / Withdraw</small>
+      <b>↓</b><span>Receive</span>
     </button>
 
     <button class="service-card" data-panel="withdrawPanel">
-      <span class="service-icon">🏧</span>
-      <strong>Withdraw</strong>
-      <small>Agent withdrawal</small>
+      <b>🏧</b><span>Withdraw</span>
     </button>
 
     <button class="service-card" data-panel="historyPanel">
-      <span class="service-icon">📜</span>
-      <strong>History</strong>
-      <small>Transactions</small>
+      <b>↔</b><span>History</span>
     </button>
 
     <button class="service-card" data-panel="securityPanel">
-      <span class="service-icon">🛡️</span>
-      <strong>Security</strong>
-      <small>Protect account</small>
+      <b>🛡</b><span>Security</span>
     </button>
-
   </section>
-
 
   <!-- SEND -->
   <section id="sendPanel" class="panel active-panel">
-
-    <div class="panel-title">
-      <div>
-        <small>TRANSFER</small>
-        <h2>Send Money</h2>
-      </div>
-      <span class="status-dot">SECURE</span>
-    </div>
+    <h3 class="panel-title">SEND MONEY</h3>
 
     <div class="field">
       <label>Receiver Phone Number</label>
-      <input
-        id="sendPhone"
-        inputmode="tel"
-        placeholder="0712345678"
-      >
+      <input id="sendPhone" inputmode="tel" placeholder="0712345678">
     </div>
 
     <button id="verifySendRecipient" class="secondary-btn">
@@ -147,19 +94,16 @@
 
     <div class="field">
       <label>Amount</label>
-      <input
-        id="sendAmount"
-        class="amount-input"
-        type="number"
-        min="1"
-        placeholder="KES 0"
-      >
+      <div class="amount-input">
+        <span>KES</span>
+        <input id="sendAmount" type="number" min="1" placeholder="0.00">
+      </div>
     </div>
 
     <div class="field">
       <label>Pay From</label>
       <select id="sendSource">
-        <option value="MPESA">M-PESA</option>
+        <option value="M-PESA">M-PESA</option>
         <option value="AIRTEL">Airtel Money</option>
         <option value="BANK">Bank Account</option>
         <option value="CARD">Card</option>
@@ -172,185 +116,159 @@
     <button id="sendBtn" class="primary-btn">
       SEND MONEY
     </button>
-
   </section>
-
 
   <!-- LIPA NA -->
   <section id="lipaPanel" class="panel">
-
-    <div class="panel-title">
-      <div>
-        <small>PAYMENTS</small>
-        <h2>Lipa Na</h2>
-      </div>
-    </div>
+    <h3 class="panel-title">LIPA NA BEAST</h3>
 
     <div class="tabs">
-      <button class="lipa-tab active" data-type="pochi">
-        Pochi
-      </button>
-
-      <button class="lipa-tab" data-type="buygoods">
-        Buy Goods
-      </button>
-
-      <button class="lipa-tab" data-type="paybill">
-        Pay Bill
-      </button>
+      <button class="lipa-tab active" data-type="POCHI">Pochi</button>
+      <button class="lipa-tab" data-type="TILL">Buy Goods</button>
+      <button class="lipa-tab" data-type="BILL">Pay Bill</button>
     </div>
 
     <div id="lipaForm"></div>
-
   </section>
-
 
   <!-- RECEIVE -->
   <section id="receivePanel" class="panel">
 
-    <div class="panel-title">
-      <div>
-        <small>AGENT / TERMINAL</small>
-        <h2>Receive</h2>
-      </div>
-      <span class="status-dot">SECURE</span>
-    </div>
+    <h3 class="panel-title">
+      <span>RECEIVE</span>
+      <span class="status-dot">● SECURE</span>
+    </h3>
 
-    <!-- TERMINAL SECURITY -->
-    <div id="receiveSecurityAlert" class="security-alert">
-      <strong>Security Alert</strong>
-      <br>
-      A secure terminal verification is required before sensitive activity.
-    </div>
+    <!-- LOGIN GATE -->
+    <div id="receiveLocked" class="receive-lock">
 
-    <button id="receiveDeviceVerify" class="secondary-btn">
-      VERIFY THIS TERMINAL
-    </button>
+      <div class="lock-icon">🔐</div>
 
+      <h3>BUYER LOGIN REQUIRED</h3>
 
-    <!-- SELL / RECEIVE -->
-    <div class="receive-card">
+      <p>
+        Authenticate before Receive opens on this terminal.
+      </p>
 
-      <div class="receive-card-head">
-        <div>
-          <small>SELL / RECEIVE PAYMENT</small>
-          <h3>Choose Payment Type</h3>
-        </div>
-      </div>
-
-      <div class="receive-options">
-
-        <button
-          class="receive-option active"
-          data-receive-type="paybill"
-        >
-          <span>📄</span>
-          <strong>Pay Bill</strong>
-          <small>Business + Account</small>
-        </button>
-
-        <button
-          class="receive-option"
-          data-receive-type="buygoods"
-        >
-          <span>🛒</span>
-          <strong>Buy Goods</strong>
-          <small>Till Number</small>
-        </button>
-
-        <button
-          class="receive-option"
-          data-receive-type="pochi"
-        >
-          <span>📱</span>
-          <strong>Pochi</strong>
-          <small>Phone Number</small>
-        </button>
-
-      </div>
-
-      <div id="receiveSellForm"></div>
-
-    </div>
-
-
-    <!-- RECEIVE WITHDRAW -->
-    <div class="receive-card">
-
-      <div class="receive-card-head">
-        <div>
-          <small>WITHDRAW</small>
-          <h3>Withdraw Through Agent</h3>
-        </div>
-      </div>
-
-      <div class="receive-note">
-        Select the source first. For M-PESA and Airtel Money,
-        all linked lines can be selected before entering agent details.
-      </div>
-
-      <div class="field">
-        <label>Withdrawal Source</label>
-
-        <select id="receiveWithdrawSource">
-          <option value="">Select Source</option>
-          <option value="MPESA">M-PESA</option>
-          <option value="AIRTEL">Airtel Money</option>
-          <option value="BANK">Bank Account</option>
-          <option value="CARD">Card</option>
-          <option value="WALLET">BEAST Wallet</option>
-        </select>
-      </div>
-
-      <div
-        id="receiveWithdrawSourcePicker"
-        class="source-picker hidden"
-      ></div>
-
-      <div
-        id="receiveAgentDetails"
-        class="detail-card hidden"
-      ></div>
-
-      <div class="field">
-        <label>Amount</label>
-        <input
-          id="receiveWithdrawAmount"
-          class="amount-input"
-          type="number"
-          min="1"
-          placeholder="KES 0"
-        >
-      </div>
-
-      <button
-        id="receiveWithdrawBtn"
-        class="primary-btn"
-      >
-        WITHDRAW
+      <button id="receiveLoginBtn" class="primary-btn">
+        LOGIN TO RECEIVE
       </button>
 
     </div>
 
-  </section>
+    <!-- RECEIVE CONTENT -->
+    <div id="receiveContent" class="hidden">
 
+      <div class="security-alert" id="receiveSecurityAlert">
+
+        <b>SECURE TERMINAL</b>
+
+        <span>
+          Buyer authentication is required before each Receive session.
+        </span>
+
+        <button id="receiveDeviceVerify" class="secondary-btn">
+          VERIFY THIS TERMINAL
+        </button>
+
+      </div>
+
+      <!-- SELL / RECEIVE -->
+      <div class="receive-card">
+
+        <div class="receive-card-head">
+          <h3>SELL / RECEIVE PAYMENT</h3>
+          <span>All options</span>
+        </div>
+
+        <div class="receive-options">
+
+          <button
+            class="receive-option active"
+            data-receive-type="BILL">
+            📄 Pay Bill
+          </button>
+
+          <button
+            class="receive-option"
+            data-receive-type="TILL">
+            🛒 Buy Goods
+          </button>
+
+          <button
+            class="receive-option"
+            data-receive-type="POCHI">
+            📱 Pochi
+          </button>
+
+        </div>
+
+        <div id="receiveSellForm"></div>
+
+      </div>
+
+      <!-- RECEIVE WITHDRAW -->
+      <div class="receive-card">
+
+        <div class="receive-card-head">
+          <h3>WITHDRAW</h3>
+          <span>Agent terminal</span>
+        </div>
+
+        <div class="field">
+          <label>Source</label>
+
+          <select id="receiveWithdrawSource">
+            <option value="M-PESA">M-PESA</option>
+            <option value="AIRTEL">Airtel Money</option>
+            <option value="BANK">Bank Account</option>
+            <option value="CARD">Card</option>
+            <option value="WALLET">BEAST Wallet</option>
+          </select>
+        </div>
+
+        <div id="receiveWithdrawSourcePicker"
+             class="source-picker"></div>
+
+        <div id="receiveAgentDetails"></div>
+
+        <div class="field">
+          <label>Amount</label>
+
+          <div class="amount-input">
+            <span>KES</span>
+            <input
+              id="receiveWithdrawAmount"
+              type="number"
+              min="1"
+              placeholder="0.00">
+          </div>
+        </div>
+
+        <button id="receiveWithdrawBtn" class="primary-btn">
+          WITHDRAW
+        </button>
+
+      </div>
+
+      <div class="receive-note">
+        One-screen terminal flow: choose source, verify details,
+        authorize, then complete.
+      </div>
+
+    </div>
+  </section>
 
   <!-- GENERAL WITHDRAW -->
   <section id="withdrawPanel" class="panel">
 
-    <div class="panel-title">
-      <div>
-        <small>WITHDRAWAL</small>
-        <h2>Withdraw Money</h2>
-      </div>
-    </div>
+    <h3 class="panel-title">WITHDRAW</h3>
 
     <div class="field">
-      <label>Withdrawal Source</label>
+      <label>Source</label>
 
       <select id="withdrawSource">
-        <option value="">Select Source</option>
-        <option value="MPESA">M-PESA</option>
+        <option value="M-PESA">M-PESA</option>
         <option value="AIRTEL">Airtel Money</option>
         <option value="BANK">Bank Account</option>
         <option value="CARD">Card</option>
@@ -358,26 +276,22 @@
       </select>
     </div>
 
-    <div
-      id="withdrawSourcePicker"
-      class="source-picker hidden"
-    ></div>
+    <div id="withdrawSourcePicker"
+         class="source-picker"></div>
 
-    <div
-      id="withdrawAgentDetails"
-      class="detail-card hidden"
-    ></div>
+    <div id="withdrawAgentDetails"></div>
 
     <div class="field">
       <label>Amount</label>
 
-      <input
-        id="withdrawAmount"
-        class="amount-input"
-        type="number"
-        min="1"
-        placeholder="KES 0"
-      >
+      <div class="amount-input">
+        <span>KES</span>
+        <input
+          id="withdrawAmount"
+          type="number"
+          min="1"
+          placeholder="0.00">
+      </div>
     </div>
 
     <button id="withdrawBtn" class="primary-btn">
@@ -386,53 +300,52 @@
 
   </section>
 
-
   <!-- HISTORY -->
   <section id="historyPanel" class="panel">
 
-    <div class="panel-title">
-      <div>
-        <small>ACCOUNT ACTIVITY</small>
-        <h2>History</h2>
+    <h3 class="panel-title">TRANSACTION HISTORY</h3>
+
+    <div id="historyList" class="history-list">
+      <div class="empty-state">
+        No transactions yet.
       </div>
     </div>
 
-    <div id="historyList" class="history-list"></div>
-
   </section>
-
 
   <!-- SECURITY -->
   <section id="securityPanel" class="panel">
 
-    <div class="panel-title">
-      <div>
-        <small>PROTECTION</small>
-        <h2>Security</h2>
-      </div>
-    </div>
+    <h3 class="panel-title">SECURITY</h3>
 
     <div class="security-list">
 
       <div class="security-item">
-        <strong>🔐 PIN Authorization</strong>
+        <b>Identity verification</b>
+        <span>Required for protected actions.</span>
+      </div>
+
+      <div class="security-item">
+        <b>PIN authorization</b>
         <span>Required before completing transactions.</span>
       </div>
 
       <div class="security-item">
-        <strong>👤 Recipient Verification</strong>
-        <span>Recipient identity is displayed before sending.</span>
+        <b>Receive login gate</b>
+        <span>Buyer must authenticate before Receive opens.</span>
       </div>
 
       <div class="security-item">
-        <strong>📷 Terminal Verification</strong>
-        <span>Secure terminal verification can be required.</span>
-      </div>
-
-      <div class="security-item">
-        <strong>🛡️ Screen Protection</strong>
+        <b>Session logout</b>
         <span>
-          Sensitive activity pauses when the page loses visibility.
+          Receive returns to login after completion.
+        </span>
+      </div>
+
+      <div class="security-item">
+        <b>Screen protection</b>
+        <span>
+          Browser-level visibility protection only in this demo.
         </span>
       </div>
 
@@ -440,53 +353,32 @@
 
   </section>
 
-
   <!-- SETTINGS -->
   <section id="settingsPanel" class="panel">
 
-    <div class="panel-title">
-      <div>
-        <small>BEAST CONTROL</small>
-        <h2>Settings</h2>
-      </div>
-    </div>
+    <h3 class="panel-title">SETTINGS</h3>
 
     <div class="settings-list">
 
       <label class="setting-row">
-        <div>
-          <strong>Security Alerts</strong>
-          <span>Show account security warnings.</span>
-        </div>
-        <input
-          type="checkbox"
-          id="securityAlertsToggle"
-          checked
-        >
+        <span>Security alerts</span>
+        <input id="securityAlertsToggle"
+               type="checkbox"
+               checked>
       </label>
 
       <label class="setting-row">
-        <div>
-          <strong>Notifications</strong>
-          <span>Show transaction notifications.</span>
-        </div>
-        <input
-          type="checkbox"
-          id="notificationsToggle"
-          checked
-        >
+        <span>Notifications</span>
+        <input id="notificationsToggle"
+               type="checkbox"
+               checked>
       </label>
 
       <label class="setting-row">
-        <div>
-          <strong>Screen Protection</strong>
-          <span>Pause sensitive activity when page visibility changes.</span>
-        </div>
-        <input
-          type="checkbox"
-          id="screenProtectionToggle"
-          checked
-        >
+        <span>Screen protection</span>
+        <input id="screenProtectionToggle"
+               type="checkbox"
+               checked>
       </label>
 
     </div>
@@ -495,67 +387,139 @@
 
 </main>
 
-
-<!-- AUTHORIZATION MODAL -->
+<!-- TRANSACTION AUTHORIZATION -->
 <div id="authModal" class="modal hidden">
 
   <div class="modal-card">
 
-    <button class="modal-close">×</button>
+    <button class="modal-close" id="authClose">×</button>
 
-    <div class="modal-icon">
-      🔐
-    </div>
+    <div class="modal-icon">🔐</div>
 
-    <h2>Authorize Transaction</h2>
+    <h2 id="authTitle">AUTHORIZE</h2>
 
     <p id="authDescription">
-      Enter your secure PIN to continue.
+      Enter your demo PIN to authorize this action.
     </p>
 
     <div class="field">
-      <label>BEAST PIN</label>
-
+      <label>PIN</label>
       <input
         id="authPin"
         type="password"
         inputmode="numeric"
-        maxlength="4"
-        placeholder="••••"
-      >
+        maxlength="6"
+        placeholder="1234">
     </div>
 
     <button id="authorizeBtn" class="primary-btn">
-      AUTHORIZE
+      CONFIRM
     </button>
 
   </div>
-
 </div>
 
+<!-- BUYER LOGIN -->
+<div id="buyerLoginModal" class="modal hidden">
 
-<!-- RECEIPT MODAL -->
+  <div class="modal-card">
+
+    <button class="modal-close" id="buyerLoginClose">×</button>
+
+    <div class="modal-icon">👤</div>
+
+    <h2>BUYER LOGIN</h2>
+
+    <p>
+      Authenticate before opening Receive.
+    </p>
+
+    <div class="tabs">
+
+      <button
+        class="login-tab active"
+        data-login-type="PHONE">
+        Phone
+      </button>
+
+      <button
+        class="login-tab"
+        data-login-type="BEAST">
+        BEAST ID
+      </button>
+
+      <button
+        class="login-tab"
+        data-login-type="ACCOUNT">
+        Account
+      </button>
+
+    </div>
+
+    <div class="field">
+
+      <label id="loginIdentifierLabel">
+        Phone Number
+      </label>
+
+      <input
+        id="loginIdentifier"
+        placeholder="0712345678">
+
+    </div>
+
+    <div class="field">
+
+      <label>Password / PIN</label>
+
+      <input
+        id="loginPassword"
+        type="password"
+        inputmode="numeric"
+        maxlength="6"
+        placeholder="1234">
+
+    </div>
+
+    <button id="buyerLoginConfirm"
+            class="primary-btn">
+      VERIFY & OPEN RECEIVE
+    </button>
+
+    <small class="demo-help">
+      Demo login: phone 0712345678,
+      BEAST-TEST-001, or account 4582 + PIN 1234.
+    </small>
+
+  </div>
+</div>
+
+<!-- RECEIPT -->
 <div id="receiptModal" class="modal hidden">
 
   <div class="modal-card">
 
-    <button class="modal-close">×</button>
+    <button class="modal-close" id="receiptClose">×</button>
+
+    <div class="modal-icon success-icon">✓</div>
+
+    <h2>TRANSACTION COMPLETE</h2>
 
     <div id="receiptContent"></div>
 
-  </div>
+    <button id="receiptDone"
+            class="primary-btn">
+      DONE
+    </button>
 
+  </div>
 </div>
 
-
-<!-- TOAST -->
 <div id="toast" class="toast"></div>
 
-
 <footer>
-  MONEY TRANSFER BEAST • DEMO ONLY
+  Money Transfer Beast • DEMO PROTOTYPE
 </footer>
-
 
 <script src="app.js"></script>
 
