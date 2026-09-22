@@ -1,22 +1,33 @@
 /* =========================================================
    MONEY TRANSFER BEAST
-   STYLE.CSS
+   style.css
    ========================================================= */
 
 :root {
-  --bg: #f4f7fb;
+  --bg: #f3f6fa;
   --card: #ffffff;
   --card-2: #f8fafc;
-  --text: #101828;
-  --muted: #667085;
-  --border: #e4e7ec;
+  --text: #111827;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+
   --primary: #111827;
   --primary-2: #1f2937;
-  --accent: #00a86b;
-  --accent-light: #e7f8f1;
-  --danger: #e63946;
-  --warning: #f59e0b;
-  --shadow: 0 10px 30px rgba(16, 24, 40, 0.08);
+
+  --accent: #16a34a;
+  --accent-dark: #15803d;
+  --accent-soft: #dcfce7;
+
+  --blue: #2563eb;
+  --blue-soft: #dbeafe;
+
+  --orange: #f59e0b;
+  --orange-soft: #fef3c7;
+
+  --red: #dc2626;
+  --red-soft: #fee2e2;
+
+  --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
   --radius: 20px;
 }
 
@@ -41,7 +52,7 @@ body {
 
   background: var(--bg);
   color: var(--text);
-  line-height: 1.5;
+  line-height: 1.45;
   min-height: 100vh;
 }
 
@@ -50,49 +61,57 @@ body {
    ========================================================= */
 
 body.dark {
-  --bg: #070b12;
-  --card: #101722;
-  --card-2: #151d29;
-  --text: #f8fafc;
-  --muted: #98a2b3;
-  --border: #263241;
-  --primary: #f8fafc;
+  --bg: #080d14;
+  --card: #111827;
+  --card-2: #172033;
+  --text: #f9fafb;
+  --muted: #9ca3af;
+  --border: #263244;
+
+  --primary: #f9fafb;
   --primary-2: #e5e7eb;
-  --accent: #21d18b;
-  --accent-light: #102b22;
+
+  --accent-soft: #123b24;
+  --blue-soft: #172d52;
+  --orange-soft: #493714;
+  --red-soft: #451c20;
+
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 /* =========================================================
-   TOP BAR
+   HEADER
    ========================================================= */
 
 .topbar {
-  width: 100%;
-  padding: 18px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 
   display: flex;
   align-items: center;
   justify-content: space-between;
 
+  padding: 15px 16px;
+
   background: var(--card);
   border-bottom: 1px solid var(--border);
 
-  position: sticky;
-  top: 0;
-  z-index: 20;
+  backdrop-filter: blur(15px);
 }
 
-.topbar h1 {
-  font-size: 20px;
+.brand {
+  font-size: 17px;
   font-weight: 900;
   letter-spacing: -0.5px;
 }
 
-.topbar p {
-  font-size: 12px;
-  color: var(--muted);
+.brand-sub {
   margin-top: 2px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
 }
 
 .icon-btn {
@@ -100,7 +119,7 @@ body.dark {
   height: 42px;
 
   border: 1px solid var(--border);
-  border-radius: 50%;
+  border-radius: 13px;
 
   background: var(--card-2);
   color: var(--text);
@@ -114,18 +133,21 @@ body.dark {
    ========================================================= */
 
 .demo-banner {
-  width: 100%;
-  padding: 9px 14px;
+  padding: 10px 14px;
 
+  background: var(--orange-soft);
+  color: #92400e;
+
+  border-bottom: 1px solid #fcd34d;
+
+  font-size: 11px;
+  font-weight: 600;
   text-align: center;
+}
 
-  background: #fff4d6;
-  color: #8a5a00;
-
-  font-size: 12px;
-  font-weight: 800;
-
-  border-bottom: 1px solid #f4d58a;
+body.dark .demo-banner {
+  color: #fbbf24;
+  border-color: #6b4f10;
 }
 
 /* =========================================================
@@ -133,57 +155,66 @@ body.dark {
    ========================================================= */
 
 main {
-  width: min(100%, 760px);
+  width: min(100%, 720px);
   margin: auto;
-  padding: 16px;
+  padding: 15px;
 }
 
 /* =========================================================
-   GENERAL CARDS
+   BEAST ID CARD
    ========================================================= */
 
-.identity-card,
-.transaction-card,
-.sources-card,
-.security-card,
-.security-stack {
+.beast-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 17px;
+
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+
   box-shadow: var(--shadow);
+  margin-bottom: 14px;
 }
 
-/* =========================================================
-   IDENTITY CARD
-   ========================================================= */
+.small-label,
+.eyebrow {
+  display: block;
 
-.identity-card {
-  padding: 18px;
+  color: var(--muted);
 
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 12px;
-
-  margin-bottom: 16px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
 }
 
-.identity-card h2 {
+.beast-card h2 {
+  margin-top: 4px;
   font-size: 20px;
-  margin: 2px 0;
 }
 
-.identity-card p {
+.beast-card p {
+  margin-top: 3px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
 }
 
-.small-label {
-  color: var(--muted);
+.small-btn {
+  padding: 9px 12px;
+
+  border: 1px solid var(--border);
+  border-radius: 10px;
+
+  background: var(--card-2);
+  color: var(--text);
+
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: 1px;
+
+  cursor: pointer;
 }
 
 /* =========================================================
@@ -194,41 +225,20 @@ main {
   position: relative;
   overflow: hidden;
 
-  margin-bottom: 22px;
   padding: 22px;
 
-  min-height: 190px;
-
-  border-radius: 25px;
-
-  background:
-    linear-gradient(
-      135deg,
-      #0b111b 0%,
-      #172232 50%,
-      #0d1724 100%
-    );
+  background: linear-gradient(
+    135deg,
+    #111827,
+    #1f2937
+  );
 
   color: white;
+  border-radius: 24px;
 
-  box-shadow:
-    0 20px 40px rgba(0, 0, 0, 0.18);
-}
+  box-shadow: 0 18px 40px rgba(17, 24, 39, 0.25);
 
-.money-card::before {
-  content: "";
-
-  position: absolute;
-
-  width: 190px;
-  height: 190px;
-
-  right: -70px;
-  top: -70px;
-
-  border-radius: 50%;
-
-  border: 35px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 22px;
 }
 
 .money-card::after {
@@ -236,68 +246,53 @@ main {
 
   position: absolute;
 
-  width: 130px;
-  height: 130px;
+  width: 180px;
+  height: 180px;
 
-  left: -70px;
-  bottom: -70px;
+  right: -70px;
+  top: -70px;
 
   border-radius: 50%;
 
-  background: rgba(0, 168, 107, 0.12);
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.money-card-top {
-  position: relative;
-  z-index: 2;
-
+.money-top,
+.money-footer {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-}
-
-.money-card-top span {
-  font-size: 10px;
-  opacity: 0.65;
-  letter-spacing: 1px;
-  font-weight: 700;
-}
-
-.money-card-top h2 {
-  font-size: 32px;
-  margin-top: 5px;
-  letter-spacing: -1px;
-}
-
-.beast-logo {
-  width: 52px;
-  height: 52px;
-
-  border-radius: 15px;
-
-  display: flex;
   align-items: center;
-  justify-content: center;
-
-  background: rgba(255, 255, 255, 0.09);
-
-  font-size: 28px;
 }
 
-.money-card-bottom {
-  position: absolute;
+.money-top {
+  color: #cbd5e1;
 
-  left: 22px;
-  right: 22px;
-  bottom: 20px;
-
-  display: flex;
-  justify-content: space-between;
-
-  font-size: 11px;
+  font-size: 9px;
+  font-weight: 800;
   letter-spacing: 1px;
+}
 
-  opacity: 0.65;
+.status-dot {
+  color: #86efac;
+}
+
+.balance {
+  margin: 13px 0 20px;
+
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: -1.5px;
+}
+
+.money-footer {
+  padding-top: 13px;
+
+  border-top: 1px solid rgba(255,255,255,0.12);
+
+  color: #cbd5e1;
+
+  font-size: 9px;
+  font-weight: 700;
 }
 
 /* =========================================================
@@ -305,173 +300,177 @@ main {
    ========================================================= */
 
 .quick-section {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
-.quick-section h2 {
-  font-size: 18px;
-  margin-bottom: 12px;
+.quick-section h3 {
+  margin-bottom: 10px;
+
+  font-size: 15px;
 }
 
 .quick-grid {
   display: grid;
-
   grid-template-columns: repeat(3, 1fr);
-
-  gap: 10px;
+  gap: 9px;
 }
 
 .quick-btn {
-  min-height: 95px;
-
-  padding: 12px 8px;
-
-  border: 1px solid var(--border);
-  border-radius: 17px;
-
-  background: var(--card);
-
-  color: var(--text);
+  min-height: 88px;
 
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
 
-  gap: 8px;
+  padding: 9px;
 
-  font-weight: 700;
-  font-size: 12px;
+  background: var(--card);
+  color: var(--text);
+
+  border: 1px solid var(--border);
+  border-radius: 16px;
+
+  box-shadow: 0 5px 15px rgba(0,0,0,0.04);
 
   cursor: pointer;
-
-  transition:
-    transform 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.quick-btn span {
-  font-size: 25px;
-}
-
-.quick-btn:hover {
-  transform: translateY(-2px);
-  border-color: var(--accent);
+  transition: 0.18s ease;
 }
 
 .quick-btn:active {
   transform: scale(0.96);
 }
 
-/* =========================================================
-   SECTION HEADING
-   ========================================================= */
-
-.section-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  gap: 12px;
-
-  margin-bottom: 20px;
+.quick-btn span {
+  font-size: 22px;
+  margin-bottom: 4px;
 }
 
-.section-heading h2 {
-  font-size: 20px;
-  margin-top: 2px;
+.quick-btn strong {
+  font-size: 11px;
 }
 
-.secure-badge {
-  padding: 6px 9px;
-
-  border-radius: 20px;
-
-  background: var(--accent-light);
-  color: var(--accent);
-
-  font-size: 10px;
-  font-weight: 800;
-
-  white-space: nowrap;
+.quick-btn small {
+  color: var(--muted);
+  font-size: 9px;
 }
 
 /* =========================================================
    TRANSACTION CARD
    ========================================================= */
 
-.transaction-card {
-  padding: 18px;
-  margin-bottom: 18px;
+.transaction-card,
+.section-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+
+  box-shadow: var(--shadow);
+
+  margin-bottom: 16px;
 }
 
-/* =========================================================
-   PANELS
-   ========================================================= */
+.transaction-card {
+  overflow: hidden;
+}
 
 .panel {
-  display: none;
+  padding: 18px;
 }
 
-.panel.active {
-  display: block;
+.hidden {
+  display: none !important;
 }
 
 /* =========================================================
-   FORM ELEMENTS
+   PANEL HEADER
+   ========================================================= */
+
+.panel-heading,
+.section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-bottom: 15px;
+}
+
+.panel-heading h2,
+.section-title h2 {
+  margin-top: 3px;
+  font-size: 21px;
+  letter-spacing: -0.5px;
+}
+
+.panel-icon {
+  width: 44px;
+  height: 44px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 14px;
+
+  background: var(--card-2);
+
+  font-size: 21px;
+}
+
+.description {
+  margin-bottom: 18px;
+
+  color: var(--muted);
+
+  font-size: 12px;
+}
+
+/* =========================================================
+   FORMS
    ========================================================= */
 
 label {
   display: block;
 
-  margin-top: 15px;
-  margin-bottom: 7px;
+  margin: 14px 0 6px;
 
-  font-size: 12px;
+  color: var(--text);
+
+  font-size: 11px;
   font-weight: 800;
-
-  color: var(--muted);
 }
 
 input,
 select {
   width: 100%;
 
-  min-height: 50px;
+  min-height: 48px;
 
-  padding: 0 14px;
-
-  border-radius: 13px;
-
-  border: 1px solid var(--border);
+  padding: 12px 13px;
 
   background: var(--card-2);
   color: var(--text);
 
+  border: 1px solid var(--border);
+  border-radius: 13px;
+
   outline: none;
 
-  font-size: 15px;
+  font: inherit;
+  font-size: 13px;
+
+  transition: 0.18s ease;
 }
 
 input:focus,
 select:focus {
-  border-color: var(--accent);
+  border-color: var(--blue);
 
   box-shadow:
-    0 0 0 3px rgba(0, 168, 107, 0.1);
+    0 0 0 3px rgba(37, 99, 235, 0.10);
 }
 
-.input-row {
-  display: flex;
-  gap: 8px;
-}
-
-.input-row input {
-  flex: 1;
-}
-
-.input-row .verify-btn {
-  width: 90px;
+input::placeholder {
+  color: var(--muted);
 }
 
 /* =========================================================
@@ -483,380 +482,533 @@ button {
 }
 
 .primary-btn,
-.secondary-btn,
-.verify-btn {
+.secondary-btn {
+  width: 100%;
+
   min-height: 48px;
+
+  margin-top: 14px;
 
   border-radius: 13px;
 
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 900;
 
   cursor: pointer;
 
-  transition:
-    transform 0.15s ease,
-    opacity 0.15s ease;
+  transition: 0.18s ease;
 }
 
 .primary-btn {
-  width: 100%;
-
-  margin-top: 18px;
-
   border: none;
 
   background: var(--primary);
   color: var(--card);
-
-  font-size: 13px;
 }
 
-.primary-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
+.primary-btn:active,
+.secondary-btn:active {
+  transform: scale(0.98);
 }
 
-.primary-btn:disabled {
-  opacity: 0.35;
+.primary-btn:disabled,
+.secondary-btn:disabled {
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 .secondary-btn {
-  padding: 0 15px;
-
   border: 1px solid var(--border);
 
   background: var(--card-2);
   color: var(--text);
-
-  font-size: 12px;
-}
-
-.secondary-btn:hover {
-  border-color: var(--accent);
-}
-
-.verify-btn {
-  border: 1px solid var(--border);
-
-  background: var(--card-2);
-  color: var(--text);
-
-  font-size: 12px;
 }
 
 /* =========================================================
-   VERIFICATION BOX
+   VERIFICATION
    ========================================================= */
 
 .verification-box {
-  margin-top: 12px;
-
-  padding: 13px;
-
-  border-radius: 14px;
-
-  border: 1px solid rgba(0, 168, 107, 0.25);
-
-  background: var(--accent-light);
-
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 11px;
+
+  margin-top: 12px;
+  padding: 12px;
+
+  background: var(--accent-soft);
+
+  border: 1px solid rgba(22, 163, 74, 0.25);
+  border-radius: 14px;
 }
 
-.verification-box span {
-  color: var(--accent);
+.verified-icon {
+  width: 34px;
+  height: 34px;
 
-  font-size: 11px;
-  font-weight: 800;
-}
+  flex: 0 0 34px;
 
-.verification-box strong {
-  font-size: 15px;
-}
+  display: grid;
+  place-items: center;
 
-.verification-box small {
-  color: var(--muted);
-  font-size: 11px;
-}
-
-/* =========================================================
-   HIDDEN
-   ========================================================= */
-
-.hidden {
-  display: none !important;
-}
-
-/* =========================================================
-   RECEIVE
-   ========================================================= */
-
-.receive-box {
-  text-align: center;
-
-  padding: 20px 8px;
-}
-
-.receive-icon {
-  width: 70px;
-  height: 70px;
-
-  margin: 0 auto 15px;
+  background: var(--accent);
+  color: white;
 
   border-radius: 50%;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: var(--accent-light);
-
-  font-size: 32px;
+  font-weight: 900;
 }
 
-.receive-box h3 {
-  font-size: 20px;
-  margin-bottom: 6px;
+.verification-box div:last-child {
+  min-width: 0;
 }
 
-.receive-box p {
-  max-width: 420px;
-  margin: auto;
+.verification-box span {
+  display: block;
+
+  color: var(--accent-dark);
+
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+}
+
+.verification-box strong {
+  display: block;
+
+  margin-top: 2px;
+
+  font-size: 12px;
+}
+
+.verification-box small {
+  display: block;
+
+  margin-top: 1px;
 
   color: var(--muted);
-  font-size: 13px;
+
+  font-size: 9px;
 }
 
-.beast-code {
-  display: inline-block;
+/* =========================================================
+   LIPA TABS
+   ========================================================= */
 
-  margin: 18px 0 12px;
+.mode-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
 
-  padding: 12px 18px;
+  gap: 6px;
 
-  border-radius: 12px;
+  padding: 5px;
 
   background: var(--card-2);
-  border: 1px solid var(--border);
 
-  font-size: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+
+  margin-bottom: 18px;
+}
+
+.mode-tab {
+  min-height: 40px;
+
+  border: none;
+  border-radius: 10px;
+
+  background: transparent;
+  color: var(--muted);
+
+  font-size: 11px;
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+.mode-tab.active {
+  background: var(--primary);
+  color: var(--card);
+}
+
+.lipa-mode {
+  animation: fadeIn 0.2s ease;
+}
+
+.mode-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 11px;
+
+  background: var(--card-2);
+
+  border-radius: 13px;
+
+  margin-bottom: 12px;
+}
+
+.mode-title > span {
+  font-size: 23px;
+}
+
+.mode-title strong {
+  display: block;
+  font-size: 12px;
+}
+
+.mode-title small {
+  display: block;
+
+  color: var(--muted);
+
+  font-size: 9px;
+}
+
+/* =========================================================
+   LOGIN SUCCESS
+   ========================================================= */
+
+.login-success {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 12px;
+
+  background: var(--accent-soft);
+
+  border: 1px solid rgba(22,163,74,0.2);
+  border-radius: 13px;
+
+  margin-bottom: 15px;
+}
+
+.login-success > span {
+  width: 32px;
+  height: 32px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 50%;
+
+  background: var(--accent);
+  color: white;
+
   font-weight: 900;
-  letter-spacing: 1px;
+}
+
+.login-success strong {
+  display: block;
+  font-size: 11px;
+}
+
+.login-success small {
+  display: block;
+  color: var(--muted);
+  font-size: 9px;
 }
 
 /* =========================================================
    HISTORY
    ========================================================= */
 
-.empty-history {
-  padding: 35px 10px;
+.history-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
 
-  text-align: center;
+  gap: 8px;
+
+  margin-bottom: 14px;
+}
+
+.history-summary > div {
+  padding: 12px;
+
+  background: var(--card-2);
+
+  border: 1px solid var(--border);
+  border-radius: 13px;
+}
+
+.history-summary span {
+  display: block;
 
   color: var(--muted);
 
-  font-size: 13px;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.history-summary strong {
+  display: block;
+
+  margin-top: 4px;
+
+  font-size: 14px;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .history-item {
   display: flex;
-
   align-items: center;
-  justify-content: space-between;
-
-  gap: 10px;
-
-  padding: 14px 0;
-
-  border-bottom: 1px solid var(--border);
-}
-
-.history-item:last-child {
-  border-bottom: none;
-}
-
-.history-left {
-  display: flex;
-  align-items: center;
-
   gap: 11px;
 
-  min-width: 0;
-}
-
-.history-icon {
-  width: 42px;
-  height: 42px;
-
-  flex: 0 0 42px;
-
-  border-radius: 13px;
+  padding: 12px;
 
   background: var(--card-2);
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+
+  cursor: pointer;
+
+  transition: 0.15s ease;
+}
+
+.history-item:active {
+  transform: scale(0.99);
+}
+
+.history-icon {
+  width: 40px;
+  height: 40px;
+
+  flex: 0 0 40px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 12px;
+
+  background: var(--blue-soft);
 
   font-size: 18px;
 }
 
-.history-info {
+.history-main {
   min-width: 0;
+  flex: 1;
 }
 
-.history-info strong {
+.history-main strong {
   display: block;
 
-  font-size: 13px;
+  font-size: 11px;
 
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.history-info small {
+.history-main small {
+  display: block;
+
   color: var(--muted);
-  font-size: 10px;
+
+  font-size: 9px;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .history-amount {
+  text-align: right;
+}
+
+.history-amount strong {
+  display: block;
+
+  font-size: 12px;
+}
+
+.history-amount small {
+  display: block;
+
+  margin-top: 2px;
+
+  color: var(--accent-dark);
+
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.empty-history {
+  padding: 30px 15px;
+
+  text-align: center;
+
+  color: var(--muted);
+}
+
+.empty-history span {
+  display: block;
+
+  margin-bottom: 8px;
+
+  font-size: 35px;
+}
+
+.empty-history strong {
+  display: block;
+
+  color: var(--text);
+
   font-size: 13px;
-  font-weight: 900;
-  white-space: nowrap;
 }
 
-.history-amount.out {
-  color: var(--danger);
-}
+.empty-history p {
+  margin-top: 3px;
 
-.history-amount.in {
-  color: var(--accent);
+  font-size: 10px;
 }
 
 /* =========================================================
-   SOURCES
+   SECTION CARDS
    ========================================================= */
 
-.sources-card {
+.section-card {
   padding: 18px;
-  margin-bottom: 18px;
 }
 
-.source-list {
-  display: flex;
-  flex-direction: column;
+.section-title {
+  margin-bottom: 13px;
 }
 
-.source {
+.source-row {
   display: flex;
   align-items: center;
+  gap: 10px;
 
-  gap: 11px;
-
-  padding: 13px 0;
+  padding: 12px 0;
 
   border-bottom: 1px solid var(--border);
 }
 
-.source:last-child {
+.source-row:last-child {
   border-bottom: none;
 }
 
-.source-icon {
-  width: 43px;
-  height: 43px;
+.source-logo {
+  width: 37px;
+  height: 37px;
 
-  border-radius: 13px;
+  display: grid;
+  place-items: center;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  flex: 0 0 37px;
 
   background: var(--card-2);
 
-  font-size: 20px;
+  border-radius: 11px;
+
+  font-size: 16px;
+  font-weight: 900;
 }
 
-.source div:nth-child(2) {
+.source-row div {
   flex: 1;
 }
 
-.source strong {
+.source-row strong {
   display: block;
-  font-size: 13px;
+
+  font-size: 11px;
 }
 
-.source small {
+.source-row small {
+  display: block;
+
   color: var(--muted);
-  font-size: 10px;
+
+  font-size: 9px;
 }
 
 .connected {
-  color: var(--accent);
+  padding: 5px 7px;
 
-  font-size: 10px;
-  font-weight: 800;
+  border-radius: 7px;
+
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+
+  font-size: 7px;
+  font-weight: 900;
 }
 
 /* =========================================================
-   SECURITY
+   CAMERA
    ========================================================= */
 
-.security-card {
-  padding: 18px;
-  margin-bottom: 18px;
+.camera-box {
+  display: grid;
+  gap: 12px;
 }
 
-.security-card > p {
-  color: var(--muted);
-  font-size: 13px;
-  margin-bottom: 15px;
+.camera-preview {
+  position: relative;
+
+  width: 100%;
+  min-height: 190px;
+
+  overflow: hidden;
+
+  display: grid;
+  place-items: center;
+
+  background: #05070a;
+
+  border-radius: 17px;
+
+  border: 1px solid var(--border);
 }
 
-.security-note {
-  display: block;
+.camera-preview video {
+  width: 100%;
+  height: 100%;
 
-  margin-top: 12px;
+  min-height: 190px;
+
+  object-fit: cover;
+
+  display: none;
+}
+
+#cameraPlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  color: #94a3b8;
+}
+
+#cameraPlaceholder span {
+  font-size: 35px;
+}
+
+#cameraPlaceholder small {
+  margin-top: 5px;
+  font-size: 9px;
+}
+
+.camera-info strong {
+  font-size: 12px;
+}
+
+.camera-info p {
+  margin-top: 4px;
 
   color: var(--muted);
 
   font-size: 10px;
-  line-height: 1.5;
-}
-
-.camera-area {
-  margin-top: 15px;
-}
-
-#cameraVideo {
-  width: 100%;
-
-  display: block;
-
-  border-radius: 15px;
-
-  background: #000;
-
-  max-height: 300px;
-
-  object-fit: cover;
-}
-
-.camera-status {
-  margin: 10px 0;
-
-  padding: 12px;
-
-  border-radius: 12px;
-
-  background: var(--accent-light);
-
-  color: var(--accent);
-
-  font-size: 12px;
-  font-weight: 700;
 }
 
 /* =========================================================
@@ -864,37 +1016,47 @@ button {
    ========================================================= */
 
 .security-stack {
-  padding: 18px;
-  margin-bottom: 18px;
-}
-
-.security-stack h2 {
-  font-size: 18px;
-  margin-bottom: 14px;
-}
-
-.security-items {
   display: grid;
+  gap: 7px;
 
-  grid-template-columns: repeat(2, 1fr);
-
-  gap: 8px;
+  margin-top: 15px;
 }
 
-.security-items div {
-  padding: 10px;
+.security-stack div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 
-  border-radius: 11px;
+  padding: 10px;
 
   background: var(--card-2);
 
-  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+}
 
-  font-size: 11px;
+.security-stack span {
+  width: 25px;
+  height: 25px;
+
+  display: grid;
+  place-items: center;
+
+  background: var(--primary);
+  color: var(--card);
+
+  border-radius: 7px;
+
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.security-stack strong {
+  font-size: 10px;
 }
 
 /* =========================================================
-   MODAL
+   MODALS
    ========================================================= */
 
 .modal {
@@ -902,52 +1064,54 @@ button {
 
   inset: 0;
 
-  z-index: 100;
+  z-index: 500;
 
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
 
-  padding: 18px;
+  padding: 12px;
 
-  background: rgba(0, 0, 0, 0.62);
+  background: rgba(0,0,0,0.55);
 
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(5px);
 }
 
-.modal-box {
+.modal-card {
   position: relative;
 
-  width: min(100%, 420px);
+  width: min(100%, 500px);
 
-  padding: 25px;
+  max-height: 90vh;
 
-  border-radius: 23px;
+  overflow-y: auto;
+
+  padding: 23px 18px 20px;
 
   background: var(--card);
 
-  border: 1px solid var(--border);
+  color: var(--text);
 
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+  border-radius: 24px 24px 18px 18px;
 
-  text-align: center;
+  box-shadow: 0 25px 70px rgba(0,0,0,0.3);
+
+  animation: modalUp 0.22s ease;
 }
 
-.close-btn {
+.modal-close {
   position: absolute;
 
-  right: 14px;
   top: 12px;
+  right: 12px;
 
   width: 34px;
   height: 34px;
 
+  border: none;
   border-radius: 50%;
 
-  border: 1px solid var(--border);
-
   background: var(--card-2);
-
   color: var(--text);
 
   font-size: 22px;
@@ -956,46 +1120,109 @@ button {
 }
 
 .modal-icon {
-  width: 65px;
-  height: 65px;
+  width: 50px;
+  height: 50px;
 
-  margin: 0 auto 13px;
+  display: grid;
+  place-items: center;
+
+  margin-bottom: 12px;
+
+  background: var(--blue-soft);
+
+  border-radius: 15px;
+
+  font-size: 24px;
+}
+
+.modal-card h2 {
+  margin: 4px 0 16px;
+
+  font-size: 22px;
+}
+
+.demo-pin-note {
+  margin-top: 7px;
+
+  color: var(--muted);
+
+  font-size: 9px;
+
+  text-align: center;
+}
+
+/* =========================================================
+   AUTH DETAILS
+   ========================================================= */
+
+.auth-details {
+  margin-bottom: 10px;
+
+  border: 1px solid var(--border);
+  border-radius: 14px;
+
+  overflow: hidden;
+}
+
+.auth-row,
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+
+  padding: 10px 12px;
+
+  border-bottom: 1px solid var(--border);
+}
+
+.auth-row:last-child,
+.receipt-row:last-child {
+  border-bottom: none;
+}
+
+.auth-row span,
+.receipt-row span {
+  color: var(--muted);
+
+  font-size: 9px;
+}
+
+.auth-row strong,
+.receipt-row strong {
+  max-width: 60%;
+
+  text-align: right;
+
+  font-size: 10px;
+}
+
+/* =========================================================
+   RECEIPT
+   ========================================================= */
+
+.receipt-success {
+  width: 54px;
+  height: 54px;
+
+  display: grid;
+  place-items: center;
+
+  margin-bottom: 12px;
+
+  background: var(--accent);
+  color: white;
 
   border-radius: 50%;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: var(--accent-light);
-
-  font-size: 28px;
+  font-size: 27px;
+  font-weight: 900;
 }
 
-.modal-box h2 {
-  font-size: 21px;
-}
+.receipt-details {
+  overflow: hidden;
 
-.modal-box p {
-  color: var(--muted);
-  font-size: 13px;
-  margin: 6px 0 16px;
-}
-
-.modal-box input {
-  text-align: center;
-
-  font-size: 22px;
-
-  letter-spacing: 8px;
-}
-
-.demo-pin {
-  margin-top: 10px;
-
-  color: var(--muted);
-
-  font-size: 11px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
 }
 
 /* =========================================================
@@ -1006,42 +1233,36 @@ button {
   position: fixed;
 
   left: 50%;
+  bottom: 20px;
 
-  bottom: 22px;
+  z-index: 1000;
 
-  transform: translateX(-50%) translateY(100px);
+  transform: translate(-50%, 120px);
 
-  z-index: 200;
+  width: min(calc(100% - 30px), 450px);
 
-  padding: 13px 18px;
-
-  border-radius: 30px;
+  padding: 12px 15px;
 
   background: #111827;
   color: white;
 
-  font-size: 12px;
+  border-radius: 13px;
+
+  text-align: center;
+
+  font-size: 11px;
   font-weight: 700;
 
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 12px 35px rgba(0,0,0,0.25);
 
   opacity: 0;
 
-  transition:
-    transform 0.25s ease,
-    opacity 0.25s ease;
-
-  max-width: calc(100% - 30px);
-
-  text-align: center;
+  transition: 0.25s ease;
 }
 
 .toast.show {
+  transform: translate(-50%, 0);
   opacity: 1;
-
-  transform:
-    translateX(-50%)
-    translateY(0);
 }
 
 /* =========================================================
@@ -1049,13 +1270,11 @@ button {
    ========================================================= */
 
 footer {
-  padding: 20px;
+  padding: 25px 15px 35px;
 
   text-align: center;
 
   color: var(--muted);
-
-  font-size: 11px;
 }
 
 footer strong {
@@ -1063,46 +1282,43 @@ footer strong {
 
   color: var(--text);
 
-  margin-bottom: 3px;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+footer span {
+  display: block;
+
+  margin-top: 4px;
+
+  font-size: 8px;
 }
 
 /* =========================================================
-   SMALL PHONES
+   ANIMATIONS
    ========================================================= */
 
-@media (max-width: 380px) {
-
-  main {
-    padding: 11px;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
   }
 
-  .topbar {
-    padding: 14px 12px;
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modalUp {
+  from {
+    opacity: 0;
+    transform: translateY(35px);
   }
 
-  .topbar h1 {
-    font-size: 17px;
-  }
-
-  .quick-grid {
-    gap: 7px;
-  }
-
-  .quick-btn {
-    min-height: 85px;
-    font-size: 10px;
-  }
-
-  .money-card-top h2 {
-    font-size: 27px;
-  }
-
-  .identity-card {
-    align-items: flex-start;
-  }
-
-  .identity-card h2 {
-    font-size: 17px;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -1110,10 +1326,10 @@ footer strong {
    TABLET / DESKTOP
    ========================================================= */
 
-@media (min-width: 700px) {
+@media (min-width: 650px) {
 
   main {
-    padding: 25px 20px;
+    padding: 25px;
   }
 
   .quick-grid {
@@ -1121,10 +1337,51 @@ footer strong {
   }
 
   .quick-btn {
-    min-height: 110px;
+    min-height: 95px;
   }
 
-  .money-card {
-    min-height: 210px;
+  .camera-box {
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+  }
+
+  .modal {
+    align-items: center;
+  }
+
+  .modal-card {
+    border-radius: 24px;
+  }
+}
+
+/* =========================================================
+   VERY SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 360px) {
+
+  main {
+    padding: 10px;
+  }
+
+  .quick-grid {
+    gap: 6px;
+  }
+
+  .quick-btn {
+    min-height: 78px;
+  }
+
+  .quick-btn span {
+    font-size: 19px;
+  }
+
+  .balance {
+    font-size: 29px;
+  }
+
+  .panel,
+  .section-card {
+    padding: 14px;
   }
 }
