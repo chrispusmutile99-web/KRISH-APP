@@ -1,853 +1,238 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#111827">
-  <title>MONEY TRANSFER BEAST</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MONEY TRANSFER BEAST</title>
+<link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-  <!-- HEADER -->
-  <header class="topbar">
-    <div>
-      <div class="brand">MONEY TRANSFER BEAST</div>
-      <div class="brand-sub">KENYA • DEMO PAYMENT PLATFORM</div>
-    </div>
-
-    <button id="themeBtn" class="icon-btn" aria-label="Toggle theme">☀️</button>
-  </header>
-
-  <!-- DEMO WARNING -->
-  <div class="demo-banner">
-    ⚠️ <strong>DEMO ONLY</strong> — No real money is moved.
-    Do not enter real PINs, passwords or banking credentials.
+<header class="topbar">
+  <div>
+    <div class="brand">🦁 MONEY TRANSFER BEAST</div>
+    <div class="brand-sub">IDENTITY • PAYMENTS • SECURITY</div>
   </div>
+  <button id="themeBtn" class="icon-btn">☀️</button>
+</header>
 
-  <main>
+<div class="demo-banner">DEMO / TEST MODE — NO REAL MONEY MOVES</div>
 
-    <!-- BEAST ID -->
-    <section class="beast-card">
-      <div>
-        <span class="small-label">YOUR BEAST ID</span>
-        <h2 id="beastId">BEAST-20481</h2>
-        <p>National identity-linked demo account</p>
-      </div>
+<main>
 
-      <button id="copyBeastBtn" class="small-btn">COPY</button>
-    </section>
-
-    <!-- MONEY CARD -->
-    <section class="money-card">
-      <div class="money-top">
-        <span>AVAILABLE BALANCE</span>
-        <span class="status-dot">● DEMO</span>
-      </div>
-
-      <div class="balance" id="balance">KSh 5,000.00</div>
-
-      <div class="money-footer">
-        <span>BEAST WALLET</span>
-        <span>•••• 20481</span>
-      </div>
-    </section>
-
-    <!-- QUICK ACTIONS -->
-    <section class="quick-section">
-      <h3>Quick Actions</h3>
-
-      <div class="quick-grid">
-
-        <button class="quick-btn" data-panel="sendPanel">
-          <span>💸</span>
-          <strong>Send</strong>
-          <small>Money</small>
-        </button>
-
-        <button class="quick-btn" data-panel="lipaPanel">
-          <span>🛒</span>
-          <strong>Lipa na</strong>
-          <small>BEAST</small>
-        </button>
-
-        <button class="quick-btn" data-panel="billsPanel">
-          <span>🧾</span>
-          <strong>Pay</strong>
-          <small>Bills</small>
-        </button>
-
-        <button class="quick-btn" data-panel="receivePanel">
-          <span>📥</span>
-          <strong>Receive</strong>
-          <small>Money</small>
-        </button>
-
-        <button class="quick-btn" data-panel="withdrawPanel">
-          <span>🏧</span>
-          <strong>Withdraw</strong>
-          <small>Agent</small>
-        </button>
-
-        <button class="quick-btn" data-panel="historyPanel">
-          <span>🕘</span>
-          <strong>History</strong>
-          <small>Transactions</small>
-        </button>
-
-      </div>
-    </section>
-
-    <!-- TRANSACTION AREA -->
-    <section class="transaction-card">
-
-      <!-- ================= SEND ================= -->
-      <div class="panel" id="sendPanel">
-
-        <div class="panel-heading">
-          <div>
-            <span class="eyebrow">FAST TRANSFER</span>
-            <h2>Send Money</h2>
-          </div>
-          <span class="panel-icon">💸</span>
-        </div>
-
-        <p class="description">
-          Enter the recipient number, verify the full name, choose your
-          payment source and authorize the transfer.
-        </p>
-
-        <label>Recipient Phone Number</label>
-        <input
-          id="sendPhone"
-          type="tel"
-          inputmode="numeric"
-          placeholder="07XXXXXXXX or 01XXXXXXXX"
-          maxlength="13"
-        >
-
-        <button id="verifySendBtn" class="secondary-btn">
-          🔎 Verify Recipient
-        </button>
-
-        <div id="sendRecipientBox" class="verification-box hidden">
-          <div class="verified-icon">✓</div>
-          <div>
-            <span>RECIPIENT VERIFIED</span>
-            <strong id="sendRecipientName">—</strong>
-            <small id="sendRecipientId">—</small>
-          </div>
-        </div>
-
-        <label>Amount</label>
-        <input
-          id="sendAmount"
-          type="number"
-          min="1"
-          placeholder="KSh amount"
-        >
-
-        <label>Pay From</label>
-        <select id="sendSource">
-          <option value="M-PESA">M-PESA</option>
-          <option value="Bank Account">Bank Account</option>
-          <option value="BEAST Card">BEAST Card</option>
-          <option value="BEAST Wallet">BEAST Wallet</option>
-        </select>
-
-        <button id="sendBtn" class="primary-btn" disabled>
-          SEND MONEY
-        </button>
-
-      </div>
-
-
-      <!-- ================= LIPA NA BEAST ================= -->
-      <div class="panel hidden" id="lipaPanel">
-
-        <div class="panel-heading">
-          <div>
-            <span class="eyebrow">MERCHANT PAYMENTS</span>
-            <h2>Lipa na BEAST</h2>
-          </div>
-          <span class="panel-icon">🛒</span>
-        </div>
-
-        <div class="mode-tabs">
-
-          <button class="mode-tab active" data-lipa-mode="pochi">
-            Pochi
-          </button>
-
-          <button class="mode-tab" data-lipa-mode="till">
-            Till
-          </button>
-
-          <button class="mode-tab" data-lipa-mode="paybill">
-            PayBill
-          </button>
-
-        </div>
-
-        <!-- POCHI -->
-        <div class="lipa-mode" id="pochiMode">
-
-          <div class="mode-title">
-            <span>📱</span>
-            <div>
-              <strong>Pochi la Biashara</strong>
-              <small>Pay using the business phone number</small>
-            </div>
-          </div>
-
-          <label>Business Phone Number</label>
-          <input
-            id="pochiPhone"
-            type="tel"
-            inputmode="numeric"
-            placeholder="07XXXXXXXX"
-            maxlength="13"
-          >
-
-          <button id="verifyPochiBtn" class="secondary-btn">
-            🔎 Verify Business
-          </button>
-
-          <div id="pochiVerifyBox" class="verification-box hidden">
-            <div class="verified-icon">✓</div>
-            <div>
-              <span>BUSINESS VERIFIED</span>
-              <strong id="pochiName">—</strong>
-              <small id="pochiId">—</small>
-            </div>
-          </div>
-
-          <label>Amount</label>
-          <input
-            id="pochiAmount"
-            type="number"
-            min="1"
-            placeholder="KSh amount"
-          >
-
-          <label>Pay From</label>
-          <select id="pochiSource">
-            <option value="M-PESA">M-PESA</option>
-            <option value="Bank Account">Bank Account</option>
-            <option value="BEAST Card">BEAST Card</option>
-            <option value="BEAST Wallet">BEAST Wallet</option>
-          </select>
-
-          <label>Transaction PIN</label>
-          <input
-            id="pochiPin"
-            type="password"
-            inputmode="numeric"
-            maxlength="4"
-            placeholder="DEMO PIN"
-          >
-
-          <button id="pochiBtn" class="primary-btn" disabled>
-            PAY POCHI
-          </button>
-
-        </div>
-
-
-        <!-- TILL -->
-        <div class="lipa-mode hidden" id="tillMode">
-
-          <div class="mode-title">
-            <span>🏪</span>
-            <div>
-              <strong>Till Payment</strong>
-              <small>Pay a registered business till</small>
-            </div>
-          </div>
-
-          <label>Till Number</label>
-          <input
-            id="tillNumber"
-            type="text"
-            inputmode="numeric"
-            placeholder="Enter Till Number"
-            maxlength="10"
-          >
-
-          <button id="verifyTillBtn" class="secondary-btn">
-            🔎 Verify Till
-          </button>
-
-          <div id="tillVerifyBox" class="verification-box hidden">
-            <div class="verified-icon">✓</div>
-            <div>
-              <span>TILL VERIFIED</span>
-              <strong id="tillName">—</strong>
-              <small id="tillId">—</small>
-            </div>
-          </div>
-
-          <label>Amount</label>
-          <input
-            id="tillAmount"
-            type="number"
-            min="1"
-            placeholder="KSh amount"
-          >
-
-          <label>Pay From</label>
-          <select id="tillSource">
-            <option value="M-PESA">M-PESA</option>
-            <option value="Bank Account">Bank Account</option>
-            <option value="BEAST Card">BEAST Card</option>
-            <option value="BEAST Wallet">BEAST Wallet</option>
-          </select>
-
-          <label>Transaction PIN</label>
-          <input
-            id="tillPin"
-            type="password"
-            inputmode="numeric"
-            maxlength="4"
-            placeholder="DEMO PIN"
-          >
-
-          <button id="tillBtn" class="primary-btn" disabled>
-            PAY TILL
-          </button>
-
-        </div>
-
-
-        <!-- PAYBILL -->
-        <div class="lipa-mode hidden" id="paybillMode">
-
-          <div class="mode-title">
-            <span>🧾</span>
-            <div>
-              <strong>PayBill</strong>
-              <small>Business number + account number</small>
-            </div>
-          </div>
-
-          <label>Business Number</label>
-          <input
-            id="paybillBusiness"
-            type="text"
-            inputmode="numeric"
-            placeholder="Business Number"
-            maxlength="10"
-          >
-
-          <label>Account Number</label>
-          <input
-            id="paybillAccount"
-            type="text"
-            placeholder="Account Number"
-            maxlength="30"
-          >
-
-          <button id="verifyPaybillBtn" class="secondary-btn">
-            🔎 Verify PayBill
-          </button>
-
-          <div id="paybillVerifyBox" class="verification-box hidden">
-            <div class="verified-icon">✓</div>
-            <div>
-              <span>PAYBILL VERIFIED</span>
-              <strong id="paybillName">—</strong>
-              <small id="paybillId">—</small>
-            </div>
-          </div>
-
-          <label>Amount</label>
-          <input
-            id="paybillAmount"
-            type="number"
-            min="1"
-            placeholder="KSh amount"
-          >
-
-          <label>Pay From</label>
-          <select id="paybillSource">
-            <option value="M-PESA">M-PESA</option>
-            <option value="Bank Account">Bank Account</option>
-            <option value="BEAST Card">BEAST Card</option>
-            <option value="BEAST Wallet">BEAST Wallet</option>
-          </select>
-
-          <label>Transaction PIN</label>
-          <input
-            id="paybillPin"
-            type="password"
-            inputmode="numeric"
-            maxlength="4"
-            placeholder="DEMO PIN"
-          >
-
-          <button id="paybillBtn" class="primary-btn" disabled>
-            PAY PAYBILL
-          </button>
-
-        </div>
-
-      </div>
-
-
-      <!-- ================= BILLS ================= -->
-      <div class="panel hidden" id="billsPanel">
-
-        <div class="panel-heading">
-          <div>
-            <span class="eyebrow">BILL PAYMENTS</span>
-            <h2>Pay Bills</h2>
-          </div>
-          <span class="panel-icon">🧾</span>
-        </div>
-
-        <label>Bill Type</label>
-        <select id="billType">
-          <option value="">Select bill</option>
-          <option>Electricity</option>
-          <option>Water</option>
-          <option>Internet</option>
-          <option>TV</option>
-          <option>School Fees</option>
-          <option>Other</option>
-        </select>
-
-        <label>Account / Meter Number</label>
-        <input
-          id="billAccount"
-          type="text"
-          placeholder="Enter account or meter number"
-        >
-
-        <button id="verifyBillBtn" class="secondary-btn">
-          🔎 Verify Bill
-        </button>
-
-        <div id="billVerifyBox" class="verification-box hidden">
-          <div class="verified-icon">✓</div>
-          <div>
-            <span>BILL ACCOUNT VERIFIED</span>
-            <strong id="billName">—</strong>
-            <small id="billId">—</small>
-          </div>
-        </div>
-
-        <label>Amount</label>
-        <input
-          id="billAmount"
-          type="number"
-          min="1"
-          placeholder="KSh amount"
-        >
-
-        <label>Pay From</label>
-        <select id="billSource">
-          <option value="M-PESA">M-PESA</option>
-          <option value="Bank Account">Bank Account</option>
-          <option value="BEAST Card">BEAST Card</option>
-          <option value="BEAST Wallet">BEAST Wallet</option>
-        </select>
-
-        <button id="billBtn" class="primary-btn" disabled>
-          PAY BILL
-        </button>
-
-      </div>
-
-
-      <!-- ================= RECEIVE ================= -->
-      <div class="panel hidden" id="receivePanel">
-
-        <div class="panel-heading">
-          <div>
-            <span class="eyebrow">SECURE TRANSFER</span>
-            <h2>Receive / Transfer</h2>
-          </div>
-          <span class="panel-icon">📥</span>
-        </div>
-
-        <!-- LOGIN -->
-        <div id="receiveLogin">
-
-          <p class="description">
-            Sign in to your BEAST account before accessing the transfer area.
-          </p>
-
-          <label>BEAST ID / Phone / Account Code</label>
-          <input
-            id="receiveLoginCode"
-            type="text"
-            placeholder="BEAST-20481"
-          >
-
-          <label>Password</label>
-          <input
-            id="receivePassword"
-            type="password"
-            placeholder="Demo password"
-          >
-
-          <button id="receiveLoginBtn" class="primary-btn">
-            SECURE LOGIN
-          </button>
-
-        </div>
-
-        <!-- TRANSFER AFTER LOGIN -->
-        <div id="receiveTransfer" class="hidden">
-
-          <div class="login-success">
-            <span>✓</span>
-            <div>
-              <strong>Secure session active</strong>
-              <small id="receiveUserLabel">BEAST-20481</small>
-            </div>
-          </div>
-
-          <label>Recipient Phone / BEAST ID</label>
-          <input
-            id="receiveRecipient"
-            type="text"
-            placeholder="07XXXXXXXX or BEAST-XXXXX"
-          >
-
-          <button id="verifyReceiveBtn" class="secondary-btn">
-            🔎 Verify Recipient
-          </button>
-
-          <div id="receiveVerifyBox" class="verification-box hidden">
-            <div class="verified-icon">✓</div>
-            <div>
-              <span>RECIPIENT VERIFIED</span>
-              <strong id="receiveRecipientName">—</strong>
-              <small id="receiveRecipientId">—</small>
-            </div>
-          </div>
-
-          <label>Amount</label>
-          <input
-            id="receiveAmount"
-            type="number"
-            min="1"
-            placeholder="KSh amount"
-          >
-
-          <label>Pay From</label>
-          <select id="receiveSource">
-            <option value="M-PESA">M-PESA</option>
-            <option value="Bank Account">Bank Account</option>
-            <option value="BEAST Card">BEAST Card</option>
-            <option value="BEAST Wallet">BEAST Wallet</option>
-          </select>
-
-          <button id="receiveTransferBtn" class="primary-btn" disabled>
-            AUTHORIZE TRANSFER
-          </button>
-
-        </div>
-
-      </div>
-
-
-      <!-- ================= WITHDRAW ================= -->
-      <div class="panel hidden" id="withdrawPanel">
-
-        <div class="panel-heading">
-          <div>
-            <span class="eyebrow">CASH OUT</span>
-            <h2>Withdraw</h2>
-          </div>
-          <span class="panel-icon">🏧</span>
-        </div>
-
-        <label>Agent Phone Number</label>
-        <input
-          id="withdrawPhone"
-          type="tel"
-          inputmode="numeric"
-          placeholder="07XXXXXXXX"
-          maxlength="13"
-        >
-
-        <button id="verifyAgentBtn" class="secondary-btn">
-          🔎 Verify Agent
-        </button>
-
-        <div id="agentVerifyBox" class="verification-box hidden">
-          <div class="verified-icon">✓</div>
-          <div>
-            <span>AGENT VERIFIED</span>
-            <strong id="agentName">—</strong>
-            <small id="agentId">—</small>
-          </div>
-        </div>
-
-        <label>Amount</label>
-        <input
-          id="withdrawAmount"
-          type="number"
-          min="1"
-          placeholder="KSh amount"
-        >
-
-        <label>Withdraw From</label>
-        <select id="withdrawSource">
-          <option value="BEAST Wallet">BEAST Wallet</option>
-          <option value="M-PESA">M-PESA</option>
-          <option value="Bank Account">Bank Account</option>
-        </select>
-
-        <button id="withdrawBtn" class="primary-btn" disabled>
-          WITHDRAW
-        </button>
-
-      </div>
-
-
-      <!-- ================= HISTORY ================= -->
-      <div class="panel hidden" id="historyPanel">
-
-        <div class="panel-heading">
-          <div>
-            <span class="eyebrow">ACCOUNT RECORD</span>
-            <h2>Transaction History</h2>
-          </div>
-          <span class="panel-icon">🕘</span>
-        </div>
-
-        <div class="history-summary">
-          <div>
-            <span>Total Transactions</span>
-            <strong id="historyCount">0</strong>
-          </div>
-
-          <div>
-            <span>Current Balance</span>
-            <strong id="historyBalance">KSh 5,000.00</strong>
-          </div>
-        </div>
-
-        <div id="historyList" class="history-list">
-          <!-- JavaScript inserts transactions -->
-        </div>
-
-        <div id="emptyHistory" class="empty-history">
-          <span>🕘</span>
-          <strong>No transactions yet</strong>
-          <p>Your completed demo transactions will appear here.</p>
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- AUTHORIZED SOURCES -->
-    <section class="section-card">
-
-      <div class="section-title">
-        <div>
-          <span class="eyebrow">CONNECTED SOURCES</span>
-          <h2>Authorized Accounts</h2>
-        </div>
-        <span>🔐</span>
-      </div>
-
-      <div class="source-row">
-        <span class="source-logo">M</span>
-        <div>
-          <strong>M-PESA</strong>
-          <small>Authorized payment source</small>
-        </div>
-        <span class="connected">CONNECTED</span>
-      </div>
-
-      <div class="source-row">
-        <span class="source-logo">🏦</span>
-        <div>
-          <strong>Bank Account</strong>
-          <small>Demo linked account</small>
-        </div>
-        <span class="connected">CONNECTED</span>
-      </div>
-
-      <div class="source-row">
-        <span class="source-logo">💳</span>
-        <div>
-          <strong>BEAST Card</strong>
-          <small>Demo payment card</small>
-        </div>
-        <span class="connected">CONNECTED</span>
-      </div>
-
-      <div class="source-row">
-        <span class="source-logo">🐲</span>
-        <div>
-          <strong>BEAST Wallet</strong>
-          <small>Internal demo wallet</small>
-        </div>
-        <span class="connected">CONNECTED</span>
-      </div>
-
-    </section>
-
-
-    <!-- SECURITY -->
-    <section class="section-card">
-
-      <div class="section-title">
-        <div>
-          <span class="eyebrow">PROTECTION</span>
-          <h2>Security Check</h2>
-        </div>
-        <span>🛡️</span>
-      </div>
-
-      <div class="camera-box">
-
-        <div class="camera-preview">
-          <video id="cameraPreview" autoplay muted playsinline></video>
-          <div id="cameraPlaceholder">
-            <span>📷</span>
-            <small>Camera environment check</small>
-          </div>
-        </div>
-
-        <div class="camera-info">
-          <strong>Front Camera Check</strong>
-          <p>
-            Demo environment check before sensitive transactions.
-            Browser camera access cannot guarantee detection of an external
-            camera recording the screen.
-          </p>
-
-          <button id="cameraBtn" class="secondary-btn">
-            START CAMERA CHECK
-          </button>
-        </div>
-
-      </div>
-
-      <div class="security-stack">
-
-        <div>
-          <span>01</span>
-          <strong>Identity Verification</strong>
-        </div>
-
-        <div>
-          <span>02</span>
-          <strong>Account Authentication</strong>
-        </div>
-
-        <div>
-          <span>03</span>
-          <strong>Recipient Verification</strong>
-        </div>
-
-        <div>
-          <span>04</span>
-          <strong>Transaction Authorization</strong>
-        </div>
-
-        <div>
-          <span>05</span>
-          <strong>Fraud & Risk Controls</strong>
-        </div>
-
-        <div>
-          <span>06</span>
-          <strong>Audit Trail</strong>
-        </div>
-
-      </div>
-
-    </section>
-
-  </main>
-
-
-  <!-- AUTHORIZATION MODAL -->
-  <div id="authModal" class="modal hidden">
-
-    <div class="modal-card">
-
-      <button id="closeModalBtn" class="modal-close">×</button>
-
-      <div class="modal-icon">🔐</div>
-
-      <span class="eyebrow">FINAL AUTHORIZATION</span>
-
-      <h2>Confirm Transaction</h2>
-
-      <div id="authDetails" class="auth-details">
-        <!-- JavaScript fills this -->
-      </div>
-
-      <label>Demo Authorization PIN</label>
-
-      <input
-        id="authPin"
-        type="password"
-        inputmode="numeric"
-        maxlength="4"
-        placeholder="Enter demo PIN"
-      >
-
-      <p class="demo-pin-note">
-        Demo PIN: <strong>1234</strong>
-      </p>
-
-      <button id="confirmAuthBtn" class="primary-btn">
-        CONFIRM & COMPLETE
-      </button>
-
-    </div>
-
+<section class="beast-card">
+  <div>
+    <span class="small-label">BEAST ID</span>
+    <h2 id="beastName">KRISH TEST ACCOUNT</h2>
+    <p id="beastId">BEAST-TEST-001</p>
   </div>
+  <button id="copyBeastBtn" class="small-btn">COPY ID</button>
+</section>
 
-
-  <!-- RECEIPT MODAL -->
-  <div id="receiptModal" class="modal hidden">
-
-    <div class="modal-card receipt-card">
-
-      <button id="closeReceiptBtn" class="modal-close">×</button>
-
-      <div class="receipt-success">✓</div>
-
-      <span class="eyebrow">TRANSACTION RECEIPT</span>
-
-      <h2>Transaction Details</h2>
-
-      <div id="receiptDetails" class="receipt-details">
-        <!-- JavaScript fills this -->
-      </div>
-
-      <button id="receiptDoneBtn" class="primary-btn">
-        DONE
-      </button>
-
-    </div>
-
+<section class="money-card">
+  <div class="money-top">
+    <span>DEMO AVAILABLE BALANCE</span>
+    <span class="status-dot">● ACTIVE</span>
   </div>
+  <div id="balance" class="balance">KSh 5,000.00</div>
+  <div class="money-footer">
+    <span>BEAST TEST WALLET</span>
+    <span>KENYA • DEMO</span>
+  </div>
+</section>
 
+<section class="quick-section">
+<h3>Services</h3>
+<div class="quick-grid">
+  <button class="quick-btn" data-panel="sendPanel"><span>💸</span><strong>Send</strong><small>Money</small></button>
+  <button class="quick-btn" data-panel="lipaPanel"><span>🛒</span><strong>Lipa Na</strong><small>Business</small></button>
+  <button class="quick-btn" data-panel="receivePanel"><span>📥</span><strong>Receive</strong><small>Secure terminal</small></button>
+  <button class="quick-btn" data-panel="withdrawPanel"><span>🏧</span><strong>Withdraw</strong><small>Agent</small></button>
+  <button class="quick-btn" data-panel="historyPanel"><span>📜</span><strong>History</strong><small>Transactions</small></button>
+  <button class="quick-btn" data-panel="securityPanel"><span>🛡️</span><strong>Security</strong><small>Protection</small></button>
+</div>
+</section>
 
-  <!-- TOAST -->
-  <div id="toast" class="toast"></div>
+<section id="sendPanel" class="transaction-card panel hidden">
+<div class="panel-heading"><div><span class="eyebrow">FAST TRANSFER</span><h2>Send Money</h2></div><div class="panel-icon">💸</div></div>
+<p class="description">Enter a number and verify the full recipient name before money can be sent.</p>
 
+<label>Recipient phone number</label>
+<input id="sendPhone" inputmode="numeric" maxlength="10" placeholder="0712345678">
 
-  <footer>
-    <strong>MONEY TRANSFER BEAST</strong>
-    <span>DEMO PROTOTYPE • NO REAL MONEY MOVEMENT</span>
-  </footer>
+<button id="verifySendBtn" class="secondary-btn">VERIFY RECIPIENT</button>
 
-  <script src="app.js"></script>
+<div id="sendRecipientBox" class="verification-box hidden">
+<div class="verified-icon">✓</div>
+<div><span>VERIFIED RECIPIENT</span><strong id="sendRecipientName"></strong><small id="sendRecipientId"></small></div>
+</div>
 
+<label>Amount</label>
+<input id="sendAmount" type="number" min="1" placeholder="KES">
+
+<label>Pay from</label>
+<select id="sendSource">
+<option>M-PESA</option><option>BEAST Wallet</option><option>Bank Account</option><option>BEAST Card</option>
+</select>
+
+<button id="sendBtn" class="primary-btn" disabled>SEND MONEY</button>
+</section>
+
+<section id="lipaPanel" class="transaction-card panel hidden">
+<div class="panel-heading"><div><span class="eyebrow">BUSINESS PAYMENTS</span><h2>Lipa Na BEAST</h2></div><div class="panel-icon">🛒</div></div>
+<p class="description">Choose one business payment type. Only the fields for that payment type are displayed.</p>
+
+<div class="mode-tabs">
+<button class="mode-tab active" data-lipa-mode="pochi">Pochi</button>
+<button class="mode-tab" data-lipa-mode="till">Till</button>
+<button class="mode-tab" data-lipa-mode="paybill">PayBill</button>
+</div>
+
+<div id="pochiMode" class="lipa-mode">
+<div class="mode-title"><span>📱</span><div><strong>Pochi la Biashara</strong><small>Business phone number</small></div></div>
+<label>Business phone number</label>
+<input id="pochiPhone" inputmode="numeric" maxlength="10" placeholder="0712345678">
+<button id="verifyPochiBtn" class="secondary-btn">VERIFY BUSINESS</button>
+<div id="pochiVerifyBox" class="verification-box hidden"><div class="verified-icon">✓</div><div><span>VERIFIED BUSINESS</span><strong id="pochiName"></strong><small id="pochiId"></small></div></div>
+<label>Amount</label><input id="pochiAmount" type="number" min="1" placeholder="KES">
+<label>Business payment PIN</label><input id="pochiPin" type="password" maxlength="4" inputmode="numeric" placeholder="4-digit demo PIN">
+<label>Pay from</label><select id="pochiSource"><option>M-PESA</option><option>BEAST Wallet</option><option>Bank Account</option><option>BEAST Card</option></select>
+<button id="pochiBtn" class="primary-btn" disabled>PAY POCHI</button>
+</div>
+
+<div id="tillMode" class="lipa-mode hidden">
+<div class="mode-title"><span>🏪</span><div><strong>Till Payment</strong><small>Store till number</small></div></div>
+<label>Till number</label><input id="tillNumber" inputmode="numeric" maxlength="10" placeholder="123456">
+<button id="verifyTillBtn" class="secondary-btn">VERIFY TILL</button>
+<div id="tillVerifyBox" class="verification-box hidden"><div class="verified-icon">✓</div><div><span>VERIFIED TILL</span><strong id="tillName"></strong><small id="tillId"></small></div></div>
+<label>Amount</label><input id="tillAmount" type="number" min="1" placeholder="KES">
+<label>Till payment PIN</label><input id="tillPin" type="password" maxlength="4" inputmode="numeric" placeholder="4-digit demo PIN">
+<label>Pay from</label><select id="tillSource"><option>M-PESA</option><option>BEAST Wallet</option><option>Bank Account</option><option>BEAST Card</option></select>
+<button id="tillBtn" class="primary-btn" disabled>PAY TILL</button>
+</div>
+
+<div id="paybillMode" class="lipa-mode hidden">
+<div class="mode-title"><span>🧾</span><div><strong>PayBill</strong><small>Business + account number</small></div></div>
+<label>Business number</label><input id="paybillBusiness" inputmode="numeric" maxlength="10" placeholder="123456">
+<label>Account number</label><input id="paybillAccount" maxlength="30" placeholder="Account number">
+<button id="verifyPaybillBtn" class="secondary-btn">VERIFY ACCOUNT</button>
+<div id="paybillVerifyBox" class="verification-box hidden"><div class="verified-icon">✓</div><div><span>VERIFIED ACCOUNT</span><strong id="paybillName"></strong><small id="paybillId"></small></div></div>
+<label>Amount</label><input id="paybillAmount" type="number" min="1" placeholder="KES">
+<label>PayBill PIN</label><input id="paybillPin" type="password" maxlength="4" inputmode="numeric" placeholder="4-digit demo PIN">
+<label>Pay from</label><select id="paybillSource"><option>M-PESA</option><option>BEAST Wallet</option><option>Bank Account</option><option>BEAST Card</option></select>
+<button id="paybillBtn" class="primary-btn" disabled>PAY BILL</button>
+</div>
+</section>
+
+<section id="receivePanel" class="transaction-card panel hidden">
+<div class="panel-heading"><div><span class="eyebrow">TEMPORARY SECURE TERMINAL</span><h2>Receive</h2></div><div class="panel-icon">📥</div></div>
+<p class="description">The buyer logs into their own BEAST account on the seller's phone, tablet or terminal. Leaving Receive locks the session again.</p>
+
+<div id="receiveLogin">
+<label>Buyer phone number OR BEAST ID</label>
+<input id="receiveLoginCode" placeholder="0712345678 or BEAST-TEST-001">
+<label>Password</label>
+<input id="receivePassword" type="password" placeholder="Demo password">
+<button id="receiveLoginBtn" class="primary-btn">SECURE LOGIN</button>
+<p class="demo-pin-note">Test: 0700000001 or BEAST-BUYER-001 / beast123</p>
+</div>
+
+<div id="receiveTransfer" class="hidden">
+<div class="login-success"><span>✓</span><div><strong>Buyer authenticated</strong><small id="receiveUserLabel"></small></div></div>
+
+<label>Where do you want to send/pay?</label>
+<select id="receiveDestinationType">
+<option>Send Money</option><option>Pochi la Biashara</option><option>Till</option><option>PayBill</option>
+</select>
+
+<label>Recipient / Business number</label>
+<input id="receiveRecipient" inputmode="text" placeholder="Phone, Till or Business number">
+
+<button id="verifyReceiveBtn" class="secondary-btn">VERIFY DESTINATION</button>
+
+<div id="receiveVerifyBox" class="verification-box hidden">
+<div class="verified-icon">✓</div>
+<div><span>DESTINATION VERIFIED</span><strong id="receiveRecipientName"></strong><small id="receiveRecipientId"></small></div>
+</div>
+
+<label>Amount</label>
+<input id="receiveAmount" type="number" min="1" placeholder="KES">
+
+<label>Pay from</label>
+<select id="receiveSource"><option>M-PESA</option><option>BEAST Wallet</option><option>Bank Account</option><option>BEAST Card</option></select>
+
+<button id="receiveTransferBtn" class="primary-btn" disabled>CONTINUE</button>
+<button id="receiveLogoutBtn" class="secondary-btn">END BUYER SESSION</button>
+</div>
+</section>
+
+<section id="withdrawPanel" class="transaction-card panel hidden">
+<div class="panel-heading"><div><span class="eyebrow">CASH OUT</span><h2>Withdraw</h2></div><div class="panel-icon">🏧</div></div>
+<p class="description">Use the agent number. A future mobile version can allow selecting a saved agent number from phone contacts.</p>
+
+<label>Agent phone number</label>
+<input id="withdrawPhone" inputmode="numeric" maxlength="10" placeholder="0712345678">
+<button id="verifyAgentBtn" class="secondary-btn">VERIFY AGENT</button>
+<div id="agentVerifyBox" class="verification-box hidden"><div class="verified-icon">✓</div><div><span>VERIFIED AGENT</span><strong id="agentName"></strong><small id="agentId"></small></div></div>
+
+<label>Amount</label>
+<input id="withdrawAmount" type="number" min="1" placeholder="KES">
+<label>Withdraw from</label>
+<select id="withdrawSource"><option>BEAST Wallet</option><option>M-PESA</option><option>Bank Account</option><option>BEAST Card</option></select>
+<button id="withdrawBtn" class="primary-btn" disabled>WITHDRAW</button>
+</section>
+
+<section id="historyPanel" class="section-card panel hidden">
+<div class="section-title"><div><span class="eyebrow">AUDIT TRAIL</span><h2>History</h2></div></div>
+<div class="history-summary"><div><span>Transactions</span><strong id="historyCount">0</strong></div><div><span>Balance</span><strong id="historyBalance">KSh 5,000.00</strong></div></div>
+<div id="historyList" class="history-list"></div>
+<div id="emptyHistory" class="empty-history"><span>📜</span><strong>No transactions yet</strong><p>Completed demo transactions will appear here with amount, time, date and transaction ID.</p></div>
+</section>
+
+<section id="securityPanel" class="section-card panel hidden">
+<div class="section-title"><div><span class="eyebrow">PROTECTION</span><h2>Security</h2></div></div>
+<div class="camera-box">
+<div class="camera-preview"><video id="cameraPreview" autoplay playsinline></video><div id="cameraPlaceholder"><span>📷</span><small>Front camera environment check</small></div></div>
+<div class="camera-info"><strong>Camera check</strong><p>The production app can use camera/device security checks. This browser demo only requests camera permission.</p><button id="cameraBtn" class="primary-btn">START CAMERA CHECK</button></div>
+</div>
+<div class="security-stack">
+<div><span>01</span><strong>Recipient name verification</strong></div>
+<div><span>02</span><strong>Step-up authentication for Receive</strong></div>
+<div><span>03</span><strong>Fresh login for every Receive user</strong></div>
+<div><span>04</span><strong>Transaction receipt + audit history</strong></div>
+</div>
+</section>
+
+</main>
+
+<footer><strong>MONEY TRANSFER BEAST</strong><span>DEMO / TEST SYSTEM • NO REAL MONEY MOVEMENT</span></footer>
+
+<div id="authModal" class="modal hidden">
+<div class="modal-card">
+<button id="closeModalBtn" class="modal-close">×</button>
+<div class="modal-icon">🔐</div>
+<span class="eyebrow">FINAL AUTHORIZATION</span>
+<h2>Confirm Transaction</h2>
+<div id="authDetails" class="auth-details"></div>
+<label>Transaction authorization PIN</label>
+<input id="authPin" type="password" maxlength="4" inputmode="numeric" placeholder="Demo PIN">
+<p class="demo-pin-note">Demo authorization PIN: 1234</p>
+<button id="confirmAuthBtn" class="primary-btn">AUTHORIZE & COMPLETE</button>
+</div>
+</div>
+
+<div id="receiptModal" class="modal hidden">
+<div class="modal-card">
+<div class="receipt-success">✓</div>
+<span class="eyebrow">TRANSACTION COMPLETE</span>
+<h2>Transaction Receipt</h2>
+<div id="receiptDetails" class="receipt-details"></div>
+<button id="receiptDoneBtn" class="primary-btn">DONE</button>
+<button id="closeReceiptBtn" class="secondary-btn">CLOSE</button>
+</div>
+</div>
+
+<div id="toast" class="toast"></div>
+<script src="app.js"></script>
 </body>
 </html>
