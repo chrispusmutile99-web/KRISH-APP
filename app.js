@@ -1,52 +1,239 @@
 /* =========================================================
    MONEY TRANSFER BEAST
-   CURRENT CUSTOMER + OWNER/ADMIN SYSTEM
+   Customer + Owner/Admin + Fee/Revenue + BEAST AI
+   DEMO / LOCAL STORAGE VERSION
    ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
 
+  /* =======================================================
+     STORAGE
+  ======================================================= */
+
   const KEY = "mtb_beast_v7";
-  const REG_KEY = "mtb_beast_registration_v4";
-  const ADMIN_KEY = "mtb_beast_admin_v1";
+  const REG_KEY = "mtb_beast_registration_v5";
+
+  const DEFAULT_STATE = {
+    registered: false,
+    fullName: "",
+    phone: "",
+    nationalId: "",
+    beastId: "",
+    beastPin: "",
+    balance: 0,
+    dark: true,
+
+    settings: {
+      securityAlerts: true,
+      notifications: true
+    },
+
+    sources: [
+      {
+        id: "mpesa1",
+        type: "M-PESA",
+        provider: "Safaricom M-PESA",
+        number: "0712345678",
+        label: "Primary Line",
+        balance: 2500
+      },
+      {
+        id: "mpesa2",
+        type: "M-PESA",
+        provider: "Safaricom M-PESA",
+        number: "0798765432",
+        label: "Secondary Line",
+        balance: 1200
+      },
+      {
+        id: "airtel1",
+        type: "Airtel Money",
+        provider: "Airtel Money",
+        number: "0734567890",
+        label: "Primary Line",
+        balance: 1500
+      },
+      {
+        id: "airtel2",
+        type: "Airtel Money",
+        provider: "Airtel Money",
+        number: "0787654321",
+        label: "Secondary Line",
+        balance: 900
+      },
+      {
+        id: "bank1",
+        type: "Bank",
+        provider: "KCB Bank",
+        number: "KCB •••• 4582",
+        label: "Savings",
+        balance: 8500
+      },
+      {
+        id: "bank2",
+        type: "Bank",
+        provider: "Equity Bank",
+        number: "Equity •••• 9134",
+        label: "Current",
+        balance: 4200
+      },
+      {
+        id: "bank3",
+        type: "Bank",
+        provider: "Co-operative Bank",
+        number: "Co-operative •••• 2210",
+        label: "Savings",
+        balance: 6700
+      },
+      {
+        id: "card1",
+        type: "Card",
+        provider: "BEAST Visa",
+        number: "BEAST Visa •••• 4821",
+        label: "Debit",
+        balance: 3000
+      },
+      {
+        id: "card2",
+        type: "Card",
+        provider: "M-PESA Card",
+        number: "M-PESA Card •••• 7720",
+        label: "Prepaid",
+        balance: 1800
+      },
+      {
+        id: "card3",
+        type: "Card",
+        provider: "Demo Mastercard",
+        number: "Mastercard •••• 1188",
+        label: "Debit",
+        balance: 2200
+      },
+      {
+        id: "wallet1",
+        type: "BEAST Wallet",
+        provider: "BEAST Wallet",
+        number: "Main Wallet",
+        label: "Personal Wallet",
+        balance: 5000
+      }
+    ],
+
+    history: [],
+
+    ownerLedger: {
+      beastFees: 0,
+      providerCosts: 0,
+      refunds: 0,
+      transactions: []
+    },
+
+    securityLogs: []
+  };
+
+  let state = loadState();
+
+  let selectedSendSource = null;
+  let selectedReceiveSource = null;
+  let selectedWithdrawSource = null;
+  let selectedLipaSource = null;
+
+  let receiveMethod = "paybill";
+  let pendingReceive = null;
+
+  let currentAdminSection = "overview";
+
 
   /* =======================================================
      HELPERS
-  ======================================================= */
+     ======================================================= */
 
-  const $ = id => document.getElementById(id);
+  function clone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
 
-  const money = value =>
-    "KES " + Number(value || 0).toLocaleString("en-KE", {
+  function loadState() {
+    try {
+      const saved = localStorage.getItem(KEY);
+
+      if (!saved) {
+        return clone(DEFAULT_STATE);
+      }
+
+      const parsed = JSON.parse(saved);
+
+      return {
+        ...clone(DEFAULT_STATE),
+        ...parsed,
+        settings: {
+          ...clone(DEFAULT_STATE).settings,
+          ...(parsed.settings || {})
+        },
+        ownerLedger: {
+          ...clone(DEFAULT_STATE).ownerLedger,
+          ...(parsed.ownerLedger || {})
+        },
+        sources: parsed.sources || clone(DEFAULT_STATE.sources),
+        history: parsed.history || [],
+        securityLogs: parsed.securityLogs || []
+      };
+
+    } catch (e) {
+      return clone(DEFAULT_STATE);
+    }
+  }
+
+  function save() {
+    localStorage.setItem(KEY, JSON.stringify(state));
+  }
+
+  function $(id) {
+    return document.getElementById(id);
+  }
+
+  function money(value) {
+    return `KES ${Number(value || 0).toLocaleString("en-KE", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    });
+    })}`;
+  }
 
-  const money0 = value =>
-    "KES " + Math.round(Number(value || 0)).toLocaleString("en-KE");
+  function shortMoney(value) {
+    return `KES ${Number(value || 0).toLocaleString("en-KE", {
+      maximumFractionDigits: 2
+    })}`;
+  }
+
+  function escapeHTML(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function now() {
+    return new Date().toLocaleString("en-KE");
+  }
+
+  function reference() {
+    return "BT" + Date.now().toString().slice(-10);
+  }
 
   function toast(message) {
     const el = $("toast");
+
     if (!el) return;
 
     el.textContent = message;
     el.classList.add("show");
 
-    clearTimeout(window.__toastTimer);
+    clearTimeout(window.__beastToast);
 
-    window.__toastTimer = setTimeout(() => {
+    window.__beastToast = setTimeout(() => {
       el.classList.remove("show");
     }, 3000);
-  }
-
-  function nowText() {
-    return new Date().toLocaleString("en-KE");
-  }
-
-  function reference() {
-    return "BEAST-" +
-      Date.now().toString(36).toUpperCase() +
-      "-" +
-      Math.floor(100 + Math.random() * 900);
   }
 
   function normalizeKenyanPhone(phone) {
@@ -64,445 +251,143 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function validKenyanPhone(phone) {
-    return /^07\d{8}$|^01\d{8}$/.test(
-      normalizeKenyanPhone(phone)
-    );
+    return /^(07|01)\d{8}$/.test(normalizeKenyanPhone(phone));
   }
 
-  function generateBeastId(name) {
-    const clean = String(name || "USER")
-      .replace(/[^a-zA-Z]/g, "")
-      .toUpperCase()
-      .slice(0, 5) || "USER";
-
-    return "BEAST" +
-      clean +
-      Math.floor(100 + Math.random() * 900);
+  function generateBeastId() {
+    return "BEAST" + Math.floor(100000 + Math.random() * 900000);
   }
+
+  function amountValue(id) {
+    return Number($(id)?.value || 0);
+  }
+
+  function sourceById(id) {
+    return state.sources.find(s => s.id === id);
+  }
+
+  function maskNumber(number) {
+    const n = String(number || "");
+
+    if (n.length <= 4) return n;
+
+    return n.slice(0, 4) + "••••" + n.slice(-2);
+  }
+
 
   /* =======================================================
-     DEFAULT SOURCES
+     FEE ENGINE
      ======================================================= */
 
-  function defaultSources() {
-    return [
+  /*
+     IMPORTANT:
+     These are DEMO BEAST fees.
 
-      {
-        id: "mpesa1",
-        type: "M-PESA",
-        provider: "Safaricom M-PESA",
-        number: "0712345678",
-        label: "Primary Line",
-        balance: 2500
-      },
+     Provider charges are kept separate.
+     Real current Safaricom/Airtel charges must be
+     connected through the relevant provider/API/contract
+     before production use.
+  */
 
-      {
-        id: "mpesa2",
-        type: "M-PESA",
-        provider: "Safaricom M-PESA",
-        number: "0798765432",
-        label: "Secondary Line",
-        balance: 1200
-      },
+  function calculateBeastFee(type, amount) {
+    amount = Number(amount || 0);
 
-      {
-        id: "airtel1",
-        type: "Airtel Money",
-        provider: "Airtel Money",
-        number: "0734567890",
-        label: "Primary Line",
-        balance: 1500
-      },
+    if (amount <= 0) return 0;
 
-      {
-        id: "airtel2",
-        type: "Airtel Money",
-        provider: "Airtel Money",
-        number: "0787654321",
-        label: "Secondary Line",
-        balance: 900
-      },
+    if (amount <= 1000) return 7;
 
-      {
-        id: "bank1",
-        type: "Bank",
-        provider: "KCB Bank",
-        number: "KCB •••• 4582",
-        label: "Savings",
-        balance: 8500
-      },
+    if (amount <= 10000) return 30;
 
-      {
-        id: "bank2",
-        type: "Bank",
-        provider: "Equity Bank",
-        number: "Equity •••• 9134",
-        label: "Current",
-        balance: 4200
-      },
-
-      {
-        id: "bank3",
-        type: "Bank",
-        provider: "Co-operative Bank",
-        number: "Co-operative •••• 2210",
-        label: "Savings",
-        balance: 6700
-      },
-
-      {
-        id: "card1",
-        type: "Card",
-        provider: "BEAST Visa",
-        number: "BEAST Visa •••• 4821",
-        label: "Debit",
-        balance: 3000
-      },
-
-      {
-        id: "card2",
-        type: "Card",
-        provider: "M-PESA Card",
-        number: "M-PESA Card •••• 7720",
-        label: "Prepaid",
-        balance: 1800
-      },
-
-      {
-        id: "card3",
-        type: "Card",
-        provider: "Demo Mastercard",
-        number: "Mastercard •••• 1188",
-        label: "Debit",
-        balance: 2200
-      },
-
-      {
-        id: "wallet1",
-        type: "BEAST Wallet",
-        provider: "BEAST Wallet",
-        number: "Main Wallet",
-        label: "Personal Wallet",
-        balance: 5000
-      }
-
-    ];
+    /*
+      Not inventing a production tariff above 10,000.
+      Demo configurable value:
+    */
+    return 30;
   }
 
-  /* =======================================================
-     STATE
-     ======================================================= */
+  function calculateProviderFee(type, amount, source) {
+    /*
+      Demo placeholder.
+      Real provider tariff should be connected here.
+    */
 
-  const defaultState = {
-    registered: false,
-    fullName: "",
-    phone: "",
-    nationalId: "",
-    beastId: "",
-    beastPin: "",
-    balance: 0,
-    dark: true,
+    amount = Number(amount || 0);
 
-    settings: {
-      securityAlerts: true,
-      notifications: true
-    },
+    if (amount <= 0) return 0;
 
-    sources: defaultSources(),
+    /*
+      Keep provider cost separate from BEAST revenue.
+      We deliberately don't pretend this is a current
+      provider tariff.
+    */
 
-    history: [],
-
-    admin: {
-      customerCount: 0,
-      activeCustomers: 0,
-      providerCosts: 0,
-      beastFees: 0,
-      refunds: 0,
-      revenue: 0,
-      customers: [],
-      transactions: [],
-      revenueRecords: [],
-      securityAlerts: []
-    }
-  };
-
-  function save() {
-    localStorage.setItem(KEY, JSON.stringify(state));
+    return 0;
   }
 
-  function loadState() {
-    try {
-      const saved = JSON.parse(
-        localStorage.getItem(KEY)
-      );
-
-      if (!saved) return structuredClone(defaultState);
-
-      return {
-        ...structuredClone(defaultState),
-        ...saved,
-        settings: {
-          ...defaultState.settings,
-          ...(saved.settings || {})
-        },
-        sources:
-          Array.isArray(saved.sources) && saved.sources.length
-            ? saved.sources
-            : defaultSources(),
-
-        history:
-          Array.isArray(saved.history)
-            ? saved.history
-            : [],
-
-        admin: {
-          ...defaultState.admin,
-          ...(saved.admin || {}),
-          customers:
-            Array.isArray(saved.admin?.customers)
-              ? saved.admin.customers
-              : [],
-
-          transactions:
-            Array.isArray(saved.admin?.transactions)
-              ? saved.admin.transactions
-              : [],
-
-          revenueRecords:
-            Array.isArray(saved.admin?.revenueRecords)
-              ? saved.admin.revenueRecords
-              : [],
-
-          securityAlerts:
-            Array.isArray(saved.admin?.securityAlerts)
-              ? saved.admin.securityAlerts
-              : []
-        }
-      };
-
-    } catch {
-      return structuredClone(defaultState);
-    }
-  }
-
-  let state = loadState();
-
-  /* =======================================================
-     REGISTRATION
-     ======================================================= */
-
-  function loadRegistration() {
-
-    try {
-
-      const reg = JSON.parse(
-        localStorage.getItem(REG_KEY)
-      );
-
-      if (reg && reg.registered) {
-
-        state.registered = true;
-        state.fullName = reg.fullName || state.fullName;
-        state.phone = reg.phone || state.phone;
-        state.nationalId = reg.nationalId || state.nationalId;
-        state.beastId = reg.beastId || state.beastId;
-        state.beastPin = reg.beastPin || state.beastPin;
-
-        save();
-
-        showApp();
-
-        return;
-      }
-
-    } catch {}
-
-    $("registrationScreen")?.classList.remove("hidden");
-    $("beastApp")?.classList.add("hidden");
-  }
-
-  function showRegistrationStep(step) {
-
-    [1, 2, 3].forEach(n => {
-      $("registrationStep" + n)?.classList.toggle(
-        "hidden",
-        n !== step
-      );
-
-      $("progress" + n)?.classList.toggle(
-        "active",
-        n <= step
-      );
-    });
-
-  }
-
-  function saveRegistration() {
-
-    localStorage.setItem(
-      REG_KEY,
-      JSON.stringify({
-        registered: true,
-        fullName: state.fullName,
-        phone: state.phone,
-        nationalId: state.nationalId,
-        beastId: state.beastId,
-        beastPin: state.beastPin
-      })
+  function getFeeBreakdown(type, amount, source) {
+    const providerFee = calculateProviderFee(
+      type,
+      amount,
+      source
     );
 
+    const beastFee = calculateBeastFee(
+      type,
+      amount
+    );
+
+    return {
+      amount,
+      providerFee,
+      beastFee,
+      total: amount + providerFee + beastFee
+    };
   }
 
-  $("registrationNext1")?.addEventListener("click", () => {
 
-    const name = $("registrationName").value.trim();
-    const phone = normalizeKenyanPhone(
-      $("registrationPhone").value
-    );
-    const nationalId =
-      $("registrationId").value.trim();
+  /* =======================================================
+     FEE SUMMARY UI
+     ======================================================= */
 
-    if (!name) {
-      toast("Enter your full name.");
+  function renderFeeSummary(id, breakdown, recipientLabel = "Recipient") {
+    const el = $(id);
+
+    if (!el) return;
+
+    if (!breakdown || breakdown.amount <= 0) {
+      el.innerHTML = "";
+      el.classList.remove("active");
       return;
     }
 
-    if (!validKenyanPhone(phone)) {
-      toast("Enter a valid Kenyan phone number.");
-      return;
-    }
+    el.classList.add("active");
 
-    if (!nationalId) {
-      toast("Enter your National ID.");
-      return;
-    }
+    el.innerHTML = `
+      <div class="fee-row">
+        <span>Amount</span>
+        <strong>${money(breakdown.amount)}</strong>
+      </div>
 
-    state.fullName = name;
-    state.phone = phone;
-    state.nationalId = nationalId;
+      <div class="fee-row">
+        <span>Provider cost</span>
+        <strong>${money(breakdown.providerFee)}</strong>
+      </div>
 
-    if (!state.beastId) {
-      state.beastId = generateBeastId(name);
-    }
+      <div class="fee-row revenue">
+        <span>BEAST platform fee</span>
+        <strong>${money(breakdown.beastFee)}</strong>
+      </div>
 
-    $("registrationSummaryName").textContent =
-      state.fullName;
+      <div class="fee-row">
+        <span>${escapeHTML(recipientLabel)}</span>
+        <strong>${money(breakdown.amount)}</strong>
+      </div>
 
-    $("registrationSummaryPhone").textContent =
-      state.phone;
-
-    $("registrationSummaryId").textContent =
-      state.nationalId;
-
-    $("registrationBeastId").textContent =
-      state.beastId;
-
-    showRegistrationStep(2);
-
-  });
-
-
-  $("registrationBack1")?.addEventListener(
-    "click",
-    () => showRegistrationStep(1)
-  );
-
-
-  $("registrationNext2")?.addEventListener(
-    "click",
-    () => {
-
-      const pin =
-        $("registrationPin").value.trim();
-
-      const confirm =
-        $("registrationPinConfirm").value.trim();
-
-      if (!/^\d{4,6}$/.test(pin)) {
-        toast("PIN must contain 4 to 6 digits.");
-        return;
-      }
-
-      if (pin !== confirm) {
-        toast("PIN confirmation does not match.");
-        return;
-      }
-
-      state.beastPin = pin;
-
-      $("registrationSummaryName").textContent =
-        state.fullName;
-
-      $("registrationSummaryPhone").textContent =
-        state.phone;
-
-      $("registrationSummaryId").textContent =
-        state.nationalId;
-
-      $("registrationBeastId").textContent =
-        state.beastId;
-
-      showRegistrationStep(3);
-
-    }
-  );
-
-
-  $("registrationBack2")?.addEventListener(
-    "click",
-    () => showRegistrationStep(2)
-  );
-
-
-  $("registrationFinish")?.addEventListener(
-    "click",
-    () => {
-
-      state.registered = true;
-
-      saveRegistration();
-      save();
-
-      showApp();
-
-      toast(
-        "Congratulations 🎉 Your BEAST account is ready."
-      );
-
-    }
-  );
-
-
-  /* =======================================================
-     CUSTOMER APP
-     ======================================================= */
-
-  function showApp() {
-
-    $("registrationScreen")?.classList.add("hidden");
-    $("beastApp")?.classList.remove("hidden");
-    $("adminScreen")?.classList.add("hidden");
-
-    updateDashboard();
-    renderSourcePicker();
-    renderHistory();
-
-  }
-
-
-  function updateDashboard() {
-
-    $("dashboardBalance").textContent =
-      money(state.balance);
-
-    $("dashboardBeastId").textContent =
-      state.beastId || "—";
-
-    $("dashboardName").textContent =
-      state.fullName || "—";
-
-    applyTheme();
-
+      <div class="fee-row total">
+        <span>Total debit</span>
+        <strong>${money(breakdown.total)}</strong>
+      </div>
+    `;
   }
 
 
@@ -511,352 +396,351 @@ document.addEventListener("DOMContentLoaded", () => {
      ======================================================= */
 
   function applyTheme() {
-
     document.body.classList.toggle(
       "light-mode",
       !state.dark
     );
-
-    $("themeSwitch")?.classList.toggle(
-      "on",
-      !state.dark
-    );
-
   }
-
-  $("toggleTheme")?.addEventListener(
-    "click",
-    () => {
-
-      state.dark = !state.dark;
-
-      save();
-      applyTheme();
-
-    }
-  );
 
 
   /* =======================================================
-     NAVIGATION
+     REGISTRATION
      ======================================================= */
 
-  document.querySelectorAll(
-    ".nav-btn[data-panel]"
-  ).forEach(button => {
+  function showRegistration() {
+    $("registrationScreen")?.classList.remove("hidden");
+    $("beastApp")?.classList.add("hidden");
+  }
 
-    button.addEventListener("click", () => {
+  function showApp() {
+    $("registrationScreen")?.classList.add("hidden");
+    $("beastApp")?.classList.remove("hidden");
 
-      const target = button.dataset.panel;
+    renderDashboard();
+    renderAllSourcePickers();
+    renderHistory();
+    renderSettings();
 
-      document.querySelectorAll(
-        ".panel"
-      ).forEach(panel => {
-        panel.classList.add("hidden");
-      });
+    applyTheme();
+  }
 
-      $(target)?.classList.remove("hidden");
+  function updateRegistrationDots(step) {
+    document.querySelectorAll(".progress-dot").forEach((dot, index) => {
+      dot.classList.toggle(
+        "active",
+        index < step
+      );
+    });
+  }
 
-      document.querySelectorAll(
-        ".main-nav .nav-btn"
-      ).forEach(btn => {
-        btn.classList.remove("active");
-      });
-
-      button.classList.add("active");
-
-      if (target === "historyPanel") {
-        renderHistory();
-      }
-
+  function showRegistrationStep(number) {
+    document.querySelectorAll(".registration-step").forEach(el => {
+      el.classList.remove("active");
     });
 
-  });
+    $(`registrationStep${number}`)?.classList.add("active");
+
+    updateRegistrationDots(number);
+  }
+
+  function setupRegistration() {
+
+    $("registrationNext1")?.addEventListener("click", () => {
+
+      const name = $("registrationName")?.value.trim();
+      const phone = normalizeKenyanPhone(
+        $("registrationPhone")?.value
+      );
+      const nationalId = $("registrationId")?.value.trim();
+
+      if (!name) {
+        toast("Enter your full name.");
+        return;
+      }
+
+      if (!validKenyanPhone(phone)) {
+        toast("Enter a valid Kenyan phone number.");
+        return;
+      }
+
+      if (!nationalId) {
+        toast("Enter your National ID.");
+        return;
+      }
+
+      showRegistrationStep(2);
+    });
 
 
-  /* =======================================================
-     SOURCES
-     ======================================================= */
+    $("registrationBack1")?.addEventListener(
+      "click",
+      () => showRegistrationStep(1)
+    );
 
-  let selectedSendSource =
-    state.sources[0]?.id || null;
 
-  let selectedLipaSource =
-    state.sources[0]?.id || null;
+    $("registrationNext2")?.addEventListener("click", () => {
 
-  let selectedWithdrawSource =
-    state.sources[0]?.id || null;
+      const pin = $("registrationPin")?.value.trim();
+      const confirm = $("registrationPinConfirm")?.value.trim();
 
-  let selectedBuyerSource =
-    state.sources[0]?.id || null;
+      if (!/^\d{4,6}$/.test(pin)) {
+        toast("BEAST PIN must contain 4–6 digits.");
+        return;
+      }
 
-  function sourceById(id) {
-    return state.sources.find(
-      s => s.id === id
+      if (pin !== confirm) {
+        toast("PIN confirmation does not match.");
+        return;
+      }
+
+      const name = $("registrationName")?.value.trim();
+      const phone = normalizeKenyanPhone(
+        $("registrationPhone")?.value
+      );
+      const id = $("registrationId")?.value.trim();
+
+      $("registrationSummaryName").textContent = name;
+      $("registrationSummaryPhone").textContent = phone;
+      $("registrationSummaryId").textContent = id;
+
+      const beastId = generateBeastId();
+
+      $("registrationBeastId").textContent = beastId;
+
+      showRegistrationStep(3);
+    });
+
+
+    $("registrationBack2")?.addEventListener(
+      "click",
+      () => showRegistrationStep(2)
+    );
+
+
+    $("registrationFinish")?.addEventListener(
+      "click",
+      () => {
+
+        const name = $("registrationName")?.value.trim();
+        const phone = normalizeKenyanPhone(
+          $("registrationPhone")?.value
+        );
+        const nationalId = $("registrationId")?.value.trim();
+        const pin = $("registrationPin")?.value.trim();
+        const beastId =
+          $("registrationBeastId")?.textContent.trim();
+
+        state.registered = true;
+        state.fullName = name;
+        state.phone = phone;
+        state.nationalId = nationalId;
+        state.beastPin = pin;
+        state.beastId = beastId;
+
+        state.balance = calculateTotalBalance();
+
+        save();
+
+        toast("BEAST account created successfully.");
+
+        showApp();
+      }
     );
   }
 
-  function sourceLabel(source) {
 
-    if (!source) return "Unknown";
+  /* =======================================================
+     DASHBOARD
+     ======================================================= */
+
+  function calculateTotalBalance() {
+    return state.sources.reduce(
+      (sum, source) => sum + Number(source.balance || 0),
+      0
+    );
+  }
+
+  function renderDashboard() {
+
+    state.balance = calculateTotalBalance();
+
+    if ($("dashboardBalance")) {
+      $("dashboardBalance").textContent =
+        money(state.balance);
+    }
+
+    if ($("dashboardBeastId")) {
+      $("dashboardBeastId").textContent =
+        state.beastId || "BEAST";
+    }
+
+    if ($("dashboardName")) {
+      $("dashboardName").textContent =
+        state.fullName || "BEAST CUSTOMER";
+    }
+  }
+
+
+  /* =======================================================
+     SOURCE PICKERS
+     ======================================================= */
+
+  function sourceHTML(source, selected) {
 
     return `
-      <div>
-        <div class="source-title">
-          ${source.provider}
+      <div
+        class="source-card ${selected ? "selected" : ""}"
+        data-source-id="${escapeHTML(source.id)}"
+      >
+        <div class="source-name">
+          ${escapeHTML(source.provider)}
         </div>
 
-        <div class="source-detail">
-          ${source.number} • ${source.label}
+        <div class="source-number">
+          ${escapeHTML(maskNumber(source.number))}
         </div>
-      </div>
 
-      <div class="source-balance">
-        ${money(source.balance)}
+        <div class="source-number">
+          ${escapeHTML(source.label)}
+        </div>
+
+        <div class="source-balance">
+          ${money(source.balance)}
+        </div>
       </div>
     `;
   }
 
+  function renderSourcePicker(containerId, selectedId, callback) {
 
-  function renderSourcePicker() {
-
-    const container =
-      $("sendSourcePicker");
+    const container = $(containerId);
 
     if (!container) return;
 
-    container.innerHTML = `
-      <div class="label">
-        Payment Source
-      </div>
+    container.innerHTML = state.sources
+      .map(source => sourceHTML(
+        source,
+        source.id === selectedId
+      ))
+      .join("");
 
-      <div class="source-grid">
-        ${state.sources.map(source => `
-          <button
-            class="source-card ${
-              selectedSendSource === source.id
-                ? "selected"
-                : ""
-            }"
-            data-send-source="${source.id}"
-          >
-            ${sourceLabel(source)}
-          </button>
-        `).join("")}
-      </div>
-    `;
+    container.querySelectorAll(
+      "[data-source-id]"
+    ).forEach(card => {
 
-    container
-      .querySelectorAll("[data-send-source]")
-      .forEach(button => {
+      card.addEventListener("click", () => {
 
-        button.addEventListener(
-          "click",
-          () => {
+        const id = card.dataset.sourceId;
 
-            selectedSendSource =
-              button.dataset.sendSource;
+        callback(id);
 
-            renderSourcePicker();
-
-            updateSendFee();
-
-          }
+        renderSourcePicker(
+          containerId,
+          id,
+          callback
         );
-
       });
 
+    });
   }
 
+  function renderAllSourcePickers() {
 
-  /* =======================================================
-     PROVIDER COST ENGINE
-     ======================================================= */
-
-  /*
-    IMPORTANT:
-    These are provider-cost records, not BEAST revenue.
-
-    M-PESA cross-network B2C published bands are used
-    where applicable. Actual production integration must
-    determine the exact tariff for the specific M-PESA
-    product/API transaction.
-  */
-
-  const MPESA_CROSS_NETWORK = [
-
-    [1, 100, 0],
-    [101, 500, 7],
-    [501, 1000, 13],
-    [1001, 1500, 23],
-    [1501, 2500, 33],
-    [2501, 3500, 53],
-    [3501, 5000, 57],
-    [5001, 7500, 78],
-    [7501, 10000, 90],
-    [10001, 15000, 100],
-    [15001, 20000, 105],
-    [20001, 250000, 108]
-
-  ];
-
-  function mpesaCrossNetworkFee(amount) {
-
-    const n = Number(amount || 0);
-
-    for (const band of MPESA_CROSS_NETWORK) {
-
-      if (n >= band[0] && n <= band[1]) {
-        return band[2];
+    renderSourcePicker(
+      "sendSourcePicker",
+      selectedSendSource,
+      id => {
+        selectedSendSource = id;
+        renderSendSourceDetails();
+        updateSendFee();
       }
+    );
 
-    }
-
-    return 0;
-  }
-
-
-  /*
-    Airtel Money tariffs vary by transaction type.
-    Until the exact production Airtel API tariff is
-    connected, we do NOT invent a current amount.
-  */
-
-  function providerCost(source, amount, type) {
-
-    if (!source) return 0;
-
-    const n = Number(amount || 0);
-
-    if (!n) return 0;
-
-    if (source.type === "M-PESA") {
-
-      if (
-        type === "send-cross-network" ||
-        type === "send"
-      ) {
-        return mpesaCrossNetworkFee(n);
+    renderSourcePicker(
+      "receiveSourcePicker",
+      selectedReceiveSource,
+      id => {
+        selectedReceiveSource = id;
+        renderReceiveSourceDetails();
+        updateReceiveFee();
       }
+    );
 
-      return 0;
-    }
+    renderSourcePicker(
+      "withdrawSourcePicker",
+      selectedWithdrawSource,
+      id => {
+        selectedWithdrawSource = id;
+        renderWithdrawSourceDetails();
+        updateWithdrawFee();
+      }
+    );
 
-    if (source.type === "Airtel Money") {
-
-      /*
-        Exact current Airtel production tariff should
-        come from the applicable Airtel Money product/API.
-      */
-
-      return 0;
-    }
-
-    if (source.type === "Bank") {
-
-      return 0;
-    }
-
-    if (source.type === "Card") {
-
-      return 0;
-    }
-
-    if (source.type === "BEAST Wallet") {
-
-      return 0;
-    }
-
-    return 0;
+    renderSourcePicker(
+      "lipaSourcePicker",
+      selectedLipaSource,
+      id => {
+        selectedLipaSource = id;
+        renderLipaSourceDetails();
+        updateLipaFee();
+      }
+    );
   }
 
-
-  /* =======================================================
-     BEAST PLATFORM FEE
-     ======================================================= */
-
-  /*
-    BEAST's own fee is intentionally separate from
-    provider costs.
-
-    Current prototype policy:
-      1 - 1,000     = KES 7
-      1,001 - 10k   = KES 30
-      Above 10k     = KES 0 until owner configures it.
-
-    This can be changed later from the Admin system.
-  */
-
-  function beastFee(amount) {
-
-    const n = Number(amount || 0);
-
-    if (n <= 0) return 0;
-
-    if (n <= 1000) return 7;
-
-    if (n <= 10000) return 30;
-
-    return 0;
+  function renderSendSourceDetails() {
+    renderSourceDetails(
+      "sendSourceDetails",
+      selectedSendSource
+    );
   }
 
-
-  function feeData(source, amount, type) {
-
-    const n = Number(amount || 0);
-
-    const pCost =
-      providerCost(
-        source,
-        n,
-        type
-      );
-
-    const bFee =
-      beastFee(n);
-
-    return {
-      amount: n,
-      providerCost: pCost,
-      beastFee: bFee,
-      total: n + pCost + bFee
-    };
-
+  function renderReceiveSourceDetails() {
+    renderSourceDetails(
+      "receiveSourceDetails",
+      selectedReceiveSource
+    );
   }
 
+  function renderWithdrawSourceDetails() {
+    renderSourceDetails(
+      "withdrawSourceDetails",
+      selectedWithdrawSource
+    );
+  }
 
-  function feeSummaryHTML(data) {
+  function renderLipaSourceDetails() {
+    renderSourceDetails(
+      "lipaSourceDetails",
+      selectedLipaSource
+    );
+  }
 
-    if (!data || !data.amount) {
-      return "";
+  function renderSourceDetails(containerId, sourceId) {
+
+    const el = $(containerId);
+
+    if (!el) return;
+
+    const source = sourceById(sourceId);
+
+    if (!source) {
+      el.innerHTML =
+        `<div class="muted">Select a payment source.</div>`;
+      return;
     }
 
-    return `
-      <div class="fee-summary">
-
-        <div class="fee-row">
-          <span>Amount</span>
-          <strong>${money(data.amount)}</strong>
+    el.innerHTML = `
+      <div class="verify-box">
+        <strong>${escapeHTML(source.provider)}</strong>
+        <div class="muted">
+          ${escapeHTML(source.number)}
+          • ${escapeHTML(source.label)}
         </div>
-
-        <div class="fee-row">
-          <span>Provider cost</span>
-          <strong>${money(data.providerCost)}</strong>
+        <div class="source-balance">
+          ${money(source.balance)}
         </div>
-
-        <div class="fee-row">
-          <span>BEAST fee</span>
-          <strong>${money(data.beastFee)}</strong>
-        </div>
-
-        <div class="fee-row total">
-          <span>Total</span>
-          <strong>${money(data.total)}</strong>
-        </div>
-
       </div>
     `;
-
   }
 
 
@@ -864,196 +748,497 @@ document.addEventListener("DOMContentLoaded", () => {
      SEND
      ======================================================= */
 
-  function updateSendFee() {
+  function setupSend() {
 
-    const amount =
-      Number($("sendAmount")?.value || 0);
+    $("sendVerifyRecipient")?.addEventListener(
+      "click",
+      verifySendRecipient
+    );
 
-    const source =
-      sourceById(selectedSendSource);
+    $("sendAmount")?.addEventListener(
+      "input",
+      updateSendFee
+    );
 
-    if (!amount || !source) {
+    $("sendButton")?.addEventListener(
+      "click",
+      beginSend
+    );
+  }
 
-      $("sendFeeSummary").innerHTML = "";
+  function verifySendRecipient() {
 
+    const phone =
+      $("sendRecipient")?.value.trim();
+
+    if (!phone) {
+      toast("Enter recipient phone/account.");
       return;
     }
 
-    const data =
-      feeData(
-        source,
-        amount,
-        "send"
-      );
+    const box = $("sendRecipientVerification");
 
-    $("sendFeeSummary").innerHTML =
-      feeSummaryHTML(data);
+    if (box) {
+      box.innerHTML = `
+        <div class="verify-name">
+          ✓ KRISH DEMO RECIPIENT
+        </div>
+        <div class="muted">
+          Recipient verified for this demo.
+        </div>
+      `;
+    }
 
+    updateSendFee();
   }
 
+  function updateSendFee() {
 
-  $("sendAmount")?.addEventListener(
-    "input",
-    updateSendFee
-  );
+    const amount = amountValue("sendAmount");
+    const source = sourceById(selectedSendSource);
 
+    renderFeeSummary(
+      "sendFeeSummary",
+      getFeeBreakdown("send", amount, source)
+    );
+  }
 
-  let verifiedRecipient = false;
+  function beginSend() {
 
+    const source = sourceById(selectedSendSource);
+    const amount = amountValue("sendAmount");
+    const recipient =
+      $("sendRecipient")?.value.trim();
 
-  $("verifyRecipient")?.addEventListener(
-    "click",
-    () => {
-
-      const value =
-        $("sendRecipient").value.trim();
-
-      if (!value) {
-        toast("Enter recipient number/account.");
-        return;
-      }
-
-      verifiedRecipient = true;
-
-      $("recipientName").textContent =
-        "KRISH DEMO RECIPIENT";
-
-      $("recipientVerification")
-        ?.classList.remove("hidden");
-
-      toast("Recipient verified.");
-
+    if (!source) {
+      toast("Select a payment source.");
+      return;
     }
-  );
 
+    if (!recipient) {
+      toast("Enter recipient.");
+      return;
+    }
 
-  $("sendButton")?.addEventListener(
-    "click",
-    () => {
+    if (amount <= 0) {
+      toast("Enter a valid amount.");
+      return;
+    }
 
-      const source =
-        sourceById(selectedSendSource);
+    const fees =
+      getFeeBreakdown("send", amount, source);
 
-      const amount =
-        Number($("sendAmount").value || 0);
+    if (source.balance < fees.total) {
+      toast("Insufficient source balance.");
+      return;
+    }
 
-      if (!verifiedRecipient) {
-        toast("Verify the recipient first.");
-        return;
-      }
-
-      if (!amount || amount <= 0) {
-        toast("Enter a valid amount.");
-        return;
-      }
-
-      if (!source) {
-        toast("Select a payment source.");
-        return;
-      }
-
-      const fees =
-        feeData(
-          source,
-          amount,
-          "send"
-        );
-
-      if (source.balance < fees.total) {
-        toast(
-          `Insufficient ${source.type} balance.`
-        );
-        return;
-      }
-
-      openPinModal({
-        type: "send",
-        amount,
+    openPinModal(
+      "Confirm Send",
+      fees,
+      () => completeSendTransaction(
         source,
-        fees
-      });
+        amount,
+        fees,
+        recipient
+      )
+    );
+  }
 
-    }
-  );
+  function completeSendTransaction(
+    source,
+    amount,
+    fees,
+    recipient
+  ) {
+
+    source.balance -= fees.total;
+
+    recordTransaction({
+      type: "SEND",
+      amount,
+      source: source.provider,
+      recipient,
+      providerFee: fees.providerFee,
+      beastFee: fees.beastFee,
+      total: fees.total,
+      status: "SUCCESS"
+    });
+
+    recordRevenue(fees);
+
+    save();
+
+    renderDashboard();
+    renderAllSourcePickers();
+    renderHistory();
+
+    closeAllModals();
+
+    toast("Transfer completed successfully.");
+  }
 
 
   /* =======================================================
-     PIN MODAL
+     RECEIVE / SELL
      ======================================================= */
 
-  let pendingTransaction = null;
+  function setupReceive() {
 
-  function openPinModal(transaction) {
+    document.querySelectorAll(
+      "[data-receive-method]"
+    ).forEach(button => {
 
-    pendingTransaction = transaction;
+      button.addEventListener("click", () => {
 
-    const fees =
-      transaction.fees;
+        receiveMethod =
+          button.dataset.receiveMethod;
 
-    $("pinSummary").innerHTML = `
-      <div class="fee-row">
-        <span>Amount</span>
-        <strong>${money(fees.amount)}</strong>
-      </div>
+        document.querySelectorAll(
+          "[data-receive-method]"
+        ).forEach(btn => {
+          btn.classList.toggle(
+            "active",
+            btn === button
+          );
+        });
 
-      <div class="fee-row">
-        <span>Provider cost</span>
-        <strong>${money(fees.providerCost)}</strong>
-      </div>
+        renderReceiveForm();
+      });
+    });
 
-      <div class="fee-row">
-        <span>BEAST fee</span>
-        <strong>${money(fees.beastFee)}</strong>
-      </div>
+    $("verifyReceiveDetails")?.addEventListener(
+      "click",
+      verifyReceiveDetails
+    );
 
-      <div class="fee-row total">
-        <span>Total</span>
-        <strong>${money(fees.total)}</strong>
-      </div>
-    `;
+    $("receiveAmount")?.addEventListener(
+      "input",
+      updateReceiveFee
+    );
 
-    $("transactionPin").value = "";
+    $("receiveButton")?.addEventListener(
+      "click",
+      beginReceive
+    );
 
-    $("pinModal")
-      ?.classList.remove("hidden");
+    $("buyerUnavailable")?.addEventListener(
+      "click",
+      openBuyerLogin
+    );
 
-  }
+    $("sellerApprove")?.addEventListener(
+      "click",
+      sellerApprove
+    );
 
-
-  $("transactionPinConfirm")
-    ?.addEventListener(
+    $("sellerReject")?.addEventListener(
       "click",
       () => {
-
-        const pin =
-          $("transactionPin").value;
-
-        if (pin !== state.beastPin) {
-          toast("Incorrect BEAST PIN.");
-          return;
-        }
-
-        if (!pendingTransaction) {
-          closeModal("pinModal");
-          return;
-        }
-
-        completeTransaction(
-          pendingTransaction
-        );
-
-        pendingTransaction = null;
-
-        closeModal("pinModal");
-
+        closeModal("sellerApprovalModal");
+        toast("Seller rejected the payment.");
       }
     );
 
+    $("finalAuthorize")?.addEventListener(
+      "click",
+      finalReceiveAuthorization
+    );
+  }
 
-  function completeTransaction(tx) {
+  function renderReceiveForm() {
 
-    const source = tx.source;
-    const fees = tx.fees;
+    const fields = $("receiveDynamicFields");
+
+    if (!fields) return;
+
+    if (receiveMethod === "paybill") {
+
+      fields.innerHTML = `
+        <div class="input-group">
+          <label>Business Number</label>
+          <input
+            id="receiveBusinessNumber"
+            placeholder="e.g. 123456"
+          >
+        </div>
+
+        <div class="input-group">
+          <label>Account Number</label>
+          <input
+            id="receiveAccountNumber"
+            placeholder="Account number"
+          >
+        </div>
+      `;
+
+    } else if (receiveMethod === "buygoods") {
+
+      fields.innerHTML = `
+        <div class="input-group">
+          <label>Till Number</label>
+          <input
+            id="receiveTillNumber"
+            placeholder="Till number"
+          >
+        </div>
+      `;
+
+    } else {
+
+      fields.innerHTML = `
+        <div class="input-group">
+          <label>Seller Phone Number</label>
+          <input
+            id="receiveSellerPhone"
+            placeholder="07XXXXXXXX"
+          >
+        </div>
+      `;
+    }
+  }
+
+  function verifyReceiveDetails() {
+
+    let sellerName = "";
+    let destination = "";
+
+    if (receiveMethod === "paybill") {
+
+      const business =
+        $("receiveBusinessNumber")?.value.trim();
+
+      const account =
+        $("receiveAccountNumber")?.value.trim();
+
+      if (!business || !account) {
+        toast("Enter business and account number.");
+        return;
+      }
+
+      sellerName = "KRISH DEMO BUSINESS";
+      destination =
+        `${business} / ${account}`;
+
+    } else if (receiveMethod === "buygoods") {
+
+      const till =
+        $("receiveTillNumber")?.value.trim();
+
+      if (!till) {
+        toast("Enter Till Number.");
+        return;
+      }
+
+      sellerName = "KRISH DEMO SHOP";
+      destination = till;
+
+    } else {
+
+      const phone =
+        normalizeKenyanPhone(
+          $("receiveSellerPhone")?.value
+        );
+
+      if (!validKenyanPhone(phone)) {
+        toast("Enter a valid seller phone.");
+        return;
+      }
+
+      sellerName = "KRISH DEMO SELLER";
+      destination = phone;
+    }
+
+    pendingReceive = {
+      sellerName,
+      destination,
+      method: receiveMethod
+    };
+
+    const box = $("receiveVerification");
+
+    if (box) {
+      box.innerHTML = `
+        <div class="verify-name">
+          ✓ ${escapeHTML(sellerName)}
+        </div>
+
+        <div class="muted">
+          ${escapeHTML(destination)}
+        </div>
+
+        <div class="muted">
+          Seller verified. Buyer approval is required.
+        </div>
+      `;
+    }
+
+    $("receiveBuyerArea")?.classList.remove("hidden");
+
+    updateReceiveFee();
+  }
+
+  function updateReceiveFee() {
+
+    const amount =
+      amountValue("receiveAmount");
+
+    const source =
+      sourceById(selectedReceiveSource);
+
+    renderFeeSummary(
+      "receiveFeeSummary",
+      getFeeBreakdown(
+        "receive",
+        amount,
+        source
+      )
+    );
+  }
+
+  function beginReceive() {
+
+    if (!pendingReceive) {
+      toast("Verify the seller first.");
+      return;
+    }
+
+    const source =
+      sourceById(selectedReceiveSource);
+
+    const amount =
+      amountValue("receiveAmount");
+
+    if (!source) {
+      toast("Select buyer funding source.");
+      return;
+    }
+
+    if (amount <= 0) {
+      toast("Enter a valid amount.");
+      return;
+    }
+
+    const fees =
+      getFeeBreakdown(
+        "receive",
+        amount,
+        source
+      );
+
+    if (source.balance < fees.total) {
+      toast("Insufficient buyer balance.");
+      return;
+    }
+
+    openBuyerLogin();
+  }
+
+  function openBuyerLogin() {
+
+    openModal("buyerLoginModal");
+
+    const phoneInput = $("buyerPhone");
+
+    if (phoneInput) {
+      phoneInput.value = "";
+    }
+
+    if ($("buyerBeastId")) {
+      $("buyerBeastId").value = "";
+    }
+
+    if ($("buyerBeastPin")) {
+      $("buyerBeastPin").value = "";
+    }
+  }
+
+  function buyerLoginContinue() {
+
+    const phone =
+      normalizeKenyanPhone(
+        $("buyerPhone")?.value
+      );
+
+    const beastId =
+      $("buyerBeastId")?.value.trim();
+
+    const pin =
+      $("buyerBeastPin")?.value.trim();
+
+    if (
+      phone !== state.phone ||
+      beastId !== state.beastId ||
+      pin !== state.beastPin
+    ) {
+      toast("Invalid buyer login details.");
+      return;
+    }
+
+    closeModal("buyerLoginModal");
+
+    openModal("sellerApprovalModal");
+
+    addSecurityLog(
+      "Buyer login verified",
+      "Buyer authentication succeeded."
+    );
+  }
+
+  function sellerApprove() {
+
+    closeModal("sellerApprovalModal");
+
+    const source =
+      sourceById(selectedReceiveSource);
+
+    const amount =
+      amountValue("receiveAmount");
+
+    const fees =
+      getFeeBreakdown(
+        "receive",
+        amount,
+        source
+      );
+
+    if (!source || source.balance < fees.total) {
+      toast("Payment can no longer be completed.");
+      return;
+    }
+
+    openModal("finalAuthorizationModal");
+  }
+
+  function finalReceiveAuthorization() {
+
+    const pin =
+      $("finalAuthorizationPin")?.value.trim();
+
+    if (pin !== state.beastPin) {
+      toast("Incorrect BEAST PIN.");
+      return;
+    }
+
+    completeReceiveTransaction();
+  }
+
+  function completeReceiveTransaction() {
+
+    const source =
+      sourceById(selectedReceiveSource);
+
+    const amount =
+      amountValue("receiveAmount");
+
+    if (!source || !pendingReceive) return;
+
+    const fees =
+      getFeeBreakdown(
+        "receive",
+        amount,
+        source
+      );
 
     if (source.balance < fees.total) {
       toast("Insufficient balance.");
@@ -1062,1370 +1247,812 @@ document.addEventListener("DOMContentLoaded", () => {
 
     source.balance -= fees.total;
 
-    state.balance =
-      Math.max(
-        0,
-        state.balance - fees.total
-      );
-
-    const record = {
-
-      id: reference(),
-
-      type: tx.type,
-
-      amount: fees.amount,
-
-      providerCost: fees.providerCost,
-
-      fee: fees.beastFee,
-
-      total: fees.total,
-
-      source: source.provider,
-
-      recipient:
-        $("recipientName")?.textContent ||
-        "Recipient",
-
-      status: "SUCCESS",
-
-      date: nowText()
-
-    };
-
-    state.history.unshift(record);
-
-    recordAdminTransaction(record);
-
-    save();
-
-    updateDashboard();
-
-    renderSourcePicker();
-
-    renderHistory();
-
-    toast(
-      `Transaction successful. ${money(fees.total)} deducted.`
-    );
-
-  }
-
-
-  /* =======================================================
-     RECEIVE SELL
-     ======================================================= */
-
-  let receiveMode = "paybill";
-
-  $("receivePaybillOption")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        receiveMode = "paybill";
-
-        renderReceiveDetails();
-
-      }
-    );
-
-
-  $("receiveTillOption")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        receiveMode = "till";
-
-        renderReceiveDetails();
-
-      }
-    );
-
-
-  $("receivePochiOption")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        receiveMode = "pochi";
-
-        renderReceiveDetails();
-
-      }
-    );
-
-
-  function renderReceiveDetails() {
-
-    let html = "";
-
-    if (receiveMode === "paybill") {
-
-      html = `
-        <div class="field">
-          <label class="label">
-            Business Number
-          </label>
-          <input id="receiveBusiness"
-                 type="text"
-                 placeholder="Business number">
-        </div>
-
-        <div class="field">
-          <label class="label">
-            Account Number
-          </label>
-          <input id="receiveAccount"
-                 type="text"
-                 placeholder="Account number">
-        </div>
-      `;
-
-    }
-
-    if (receiveMode === "till") {
-
-      html = `
-        <div class="field">
-          <label class="label">
-            Till Number
-          </label>
-          <input id="receiveTill"
-                 type="text"
-                 placeholder="Till number">
-        </div>
-      `;
-
-    }
-
-    if (receiveMode === "pochi") {
-
-      html = `
-        <div class="field">
-          <label class="label">
-            Seller Phone Number
-          </label>
-          <input id="receiveSellerPhone"
-                 type="tel"
-                 placeholder="0712345678">
-        </div>
-      `;
-
-    }
-
-    $("receiveDetails").innerHTML =
-      html;
-
-  }
-
-
-  function receiveSellerName() {
-
-    if (receiveMode === "paybill") {
-      return "KRISH DEMO BUSINESS";
-    }
-
-    if (receiveMode === "till") {
-      return "KRISH DEMO SHOP";
-    }
-
-    return "KRISH DEMO SELLER";
-  }
-
-
-  $("verifyReceiveDetails")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        const amount =
-          Number(
-            $("receiveAmount").value || 0
-          );
-
-        if (!amount || amount <= 0) {
-          toast("Enter the payment amount.");
-          return;
-        }
-
-        const seller =
-          receiveSellerName();
-
-        $("receiveDetails").insertAdjacentHTML(
-          "beforeend",
-          `
-            <div class="verification-box">
-
-              <div class="label">
-                Verified Seller
-              </div>
-
-              <div class="verification-name">
-                ${seller}
-              </div>
-
-            </div>
-          `
-        );
-
-        $("buyerSourceSection")
-          ?.classList.remove("hidden");
-
-        renderBuyerSourcePicker();
-
-        updateReceiveFee();
-
-        toast(
-          "Seller verified. Buyer authorization required."
-        );
-
-      }
-    );
-
-
-  function renderBuyerSourcePicker() {
-
-    const container =
-      $("buyerSourcePicker");
-
-    if (!container) return;
-
-    container.innerHTML = `
-      <div class="source-grid">
-        ${state.sources.map(source => `
-          <button
-            class="source-card ${
-              selectedBuyerSource === source.id
-                ? "selected"
-                : ""
-            }"
-            data-buyer-source="${source.id}"
-          >
-            ${sourceLabel(source)}
-          </button>
-        `).join("")}
-      </div>
-    `;
-
-    container
-      .querySelectorAll("[data-buyer-source]")
-      .forEach(button => {
-
-        button.addEventListener(
-          "click",
-          () => {
-
-            selectedBuyerSource =
-              button.dataset.buyerSource;
-
-            renderBuyerSourcePicker();
-
-            updateReceiveFee();
-
-          }
-        );
-
-      });
-
-  }
-
-
-  function updateReceiveFee() {
-
-    const amount =
-      Number(
-        $("receiveAmount")?.value || 0
-      );
-
-    const source =
-      sourceById(selectedBuyerSource);
-
-    if (!amount || !source) {
-      $("receiveFeeSummary").innerHTML = "";
-      return;
-    }
-
-    const fees =
-      feeData(
-        source,
-        amount,
-        "send"
-      );
-
-    $("receiveFeeSummary").innerHTML =
-      feeSummaryHTML(fees);
-
-  }
-
-
-  $("receiveAmount")
-    ?.addEventListener(
-      "input",
-      updateReceiveFee
-    );
-
-
-  $("buyerUnavailable")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        toast(
-          "Use secure buyer identity verification."
-        );
-
-        openBuyerLogin();
-
-      }
-    );
-
-
-  function openBuyerLogin() {
-
-    $("buyerLoginPhone").value = "";
-    $("buyerLoginBeastId").value = "";
-    $("buyerLoginPin").value = "";
-
-    $("buyerLoginModal")
-      ?.classList.remove("hidden");
-
-  }
-
-
-  $("buyerLoginContinue")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        const phone =
-          normalizeKenyanPhone(
-            $("buyerLoginPhone").value
-          );
-
-        const id =
-          $("buyerLoginBeastId").value.trim();
-
-        const pin =
-          $("buyerLoginPin").value;
-
-        if (
-          phone !== state.phone ||
-          id.toUpperCase() !==
-            String(state.beastId).toUpperCase() ||
-          pin !== state.beastPin
-        ) {
-
-          toast(
-            "Buyer login details are incorrect."
-          );
-
-          return;
-
-        }
-
-        closeModal("buyerLoginModal");
-
-        openSellerApproval();
-
-      }
-    );
-
-
-  function openSellerApproval() {
-
-    const amount =
-      Number(
-        $("receiveAmount").value || 0
-      );
-
-    $("sellerApprovalAmount")
-      .textContent = money(amount);
-
-    $("sellerApprovalSeller")
-      .textContent = receiveSellerName();
-
-    $("sellerApprovalModal")
-      ?.classList.remove("hidden");
-
-  }
-
-
-  $("sellerReject")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        closeModal(
-          "sellerApprovalModal"
-        );
-
-        toast(
-          "Seller rejected the payment."
-        );
-
-      }
-    );
-
-
-  $("sellerApprove")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        closeModal(
-          "sellerApprovalModal"
-        );
-
-        openFinalAuthorization();
-
-      }
-    );
-
-
-  function openFinalAuthorization() {
-
-    const amount =
-      Number(
-        $("receiveAmount").value || 0
-      );
-
-    const source =
-      sourceById(selectedBuyerSource);
-
-    const fees =
-      feeData(
-        source,
-        amount,
-        "send"
-      );
-
-    pendingReceive = {
-      amount,
-      source,
-      fees,
-      seller: receiveSellerName()
-    };
-
-    $("finalAuthorizationSummary")
-      .innerHTML =
-      feeSummaryHTML(fees);
-
-    $("finalAuthorizationPin").value = "";
-
-    $("finalAuthorizationModal")
-      ?.classList.remove("hidden");
-
-  }
-
-
-  let pendingReceive = null;
-
-
-  $("finalAuthorizationButton")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        const pin =
-          $("finalAuthorizationPin").value;
-
-        if (pin !== state.beastPin) {
-          toast("Incorrect BEAST PIN.");
-          return;
-        }
-
-        if (!pendingReceive) return;
-
-        completeReceiveTransaction(
-          pendingReceive
-        );
-
-        pendingReceive = null;
-
-        closeModal(
-          "finalAuthorizationModal"
-        );
-
-      }
-    );
-
-
-  function completeReceiveTransaction(tx) {
-
-    const source = tx.source;
-    const fees = tx.fees;
-
-    if (source.balance < fees.total) {
-      toast("Buyer source has insufficient funds.");
-      return;
-    }
-
-    source.balance -= fees.total;
-
-    state.balance =
-      Math.max(
-        0,
-        state.balance - fees.total
-      );
-
-    const record = {
-
-      id: reference(),
-
+    recordTransaction({
       type: "RECEIVE / SELL",
-
-      amount: tx.amount,
-
-      providerCost: fees.providerCost,
-
-      fee: fees.beastFee,
-
-      total: fees.total,
-
+      amount,
       source: source.provider,
+      recipient: pendingReceive.sellerName,
+      providerFee: fees.providerFee,
+      beastFee: fees.beastFee,
+      total: fees.total,
+      status: "SUCCESS"
+    });
 
-      recipient: tx.seller,
+    recordRevenue(fees);
 
-      status: "SUCCESS",
-
-      date: nowText()
-
-    };
-
-    state.history.unshift(record);
-
-    recordAdminTransaction(record);
+    pendingReceive = null;
 
     save();
 
-    updateDashboard();
-
-    renderSourcePicker();
-
+    renderDashboard();
+    renderAllSourcePickers();
     renderHistory();
 
-    toast(
-      "Payment completed successfully."
-    );
+    closeAllModals();
 
+    toast("Payment completed successfully.");
   }
 
 
   /* =======================================================
-     RECEIVE WITHDRAW
+     WITHDRAW
      ======================================================= */
 
-  $("receiveWithdrawTab")
-    ?.addEventListener(
+  function setupWithdraw() {
+
+    $("verifyWithdrawalDetails")?.addEventListener(
       "click",
-      () => {
-
-        $("receiveSell")
-          ?.classList.add("hidden");
-
-        $("receiveWithdraw")
-          ?.classList.remove("hidden");
-
-        $("receiveSellTab")
-          ?.classList.remove("active");
-
-        $("receiveWithdrawTab")
-          ?.classList.add("active");
-
-        renderWithdrawSourcePicker();
-
-      }
+      verifyWithdrawalDetails
     );
 
-
-  $("receiveSellTab")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        $("receiveWithdraw")
-          ?.classList.add("hidden");
-
-        $("receiveSell")
-          ?.classList.remove("hidden");
-
-        $("receiveWithdrawTab")
-          ?.classList.remove("active");
-
-        $("receiveSellTab")
-          ?.classList.add("active");
-
-      }
-    );
-
-
-  function renderWithdrawSourcePicker() {
-
-    const container =
-      $("withdrawSourcePicker");
-
-    if (!container) return;
-
-    container.innerHTML = `
-      <div class="source-grid">
-        ${state.sources.map(source => `
-          <button
-            class="source-card ${
-              selectedWithdrawSource === source.id
-                ? "selected"
-                : ""
-            }"
-            data-withdraw-source="${source.id}"
-          >
-            ${sourceLabel(source)}
-          </button>
-        `).join("")}
-      </div>
-    `;
-
-    container
-      .querySelectorAll(
-        "[data-withdraw-source]"
-      )
-      .forEach(button => {
-
-        button.addEventListener(
-          "click",
-          () => {
-
-            selectedWithdrawSource =
-              button.dataset.withdrawSource;
-
-            renderWithdrawSourcePicker();
-
-            renderWithdrawDetails();
-
-            updateWithdrawFee();
-
-          }
-        );
-
-      });
-
-    renderWithdrawDetails();
-
-  }
-
-
-  function renderWithdrawDetails() {
-
-    const source =
-      sourceById(selectedWithdrawSource);
-
-    if (!source) return;
-
-    $("withdrawSourceDetails")
-      .innerHTML = `
-        <div class="verification-box">
-          <div class="label">
-            Selected source
-          </div>
-
-          <div class="verification-name">
-            ${source.provider}
-          </div>
-
-          <div class="muted small">
-            ${source.number} •
-            Balance ${money(source.balance)}
-          </div>
-        </div>
-      `;
-
-  }
-
-
-  $("verifyWithdrawal")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        const agent =
-          $("withdrawAgent").value.trim();
-
-        if (!validKenyanPhone(agent)) {
-          toast(
-            "Enter a valid Kenyan agent number."
-          );
-          return;
-        }
-
-        toast("Agent details verified.");
-
-      }
-    );
-
-
-  function updateWithdrawFee() {
-
-    const amount =
-      Number(
-        $("withdrawAmount")?.value || 0
-      );
-
-    const source =
-      sourceById(selectedWithdrawSource);
-
-    if (!amount || !source) {
-      $("withdrawFeeSummary").innerHTML = "";
-      return;
-    }
-
-    const fees =
-      feeData(
-        source,
-        amount,
-        "withdraw"
-      );
-
-    $("withdrawFeeSummary").innerHTML =
-      feeSummaryHTML(fees);
-
-  }
-
-
-  $("withdrawAmount")
-    ?.addEventListener(
+    $("withdrawAmount")?.addEventListener(
       "input",
       updateWithdrawFee
     );
 
-
-  $("withdrawButton")
-    ?.addEventListener(
+    $("withdrawButton")?.addEventListener(
       "click",
+      beginWithdraw
+    );
+  }
+
+  function verifyWithdrawalDetails() {
+
+    const agent =
+      $("withdrawAgentNumber")?.value.trim();
+
+    const store =
+      $("withdrawStoreNumber")?.value.trim();
+
+    if (!agent) {
+      toast("Enter agent number.");
+      return;
+    }
+
+    if (store) {
+      toast(
+        `Withdrawal terminal ${agent} / ${store} verified.`
+      );
+    } else {
+      toast(
+        `Agent ${agent} verified.`
+      );
+    }
+  }
+
+  function updateWithdrawFee() {
+
+    const amount =
+      amountValue("withdrawAmount");
+
+    const source =
+      sourceById(selectedWithdrawSource);
+
+    renderFeeSummary(
+      "withdrawFeeSummary",
+      getFeeBreakdown(
+        "withdraw",
+        amount,
+        source
+      ),
+      "Cash payout"
+    );
+  }
+
+  function beginWithdraw() {
+
+    const source =
+      sourceById(selectedWithdrawSource);
+
+    const amount =
+      amountValue("withdrawAmount");
+
+    const agent =
+      $("withdrawAgentNumber")?.value.trim();
+
+    if (!source) {
+      toast("Select withdrawal source.");
+      return;
+    }
+
+    if (!agent) {
+      toast("Enter agent number.");
+      return;
+    }
+
+    if (amount <= 0) {
+      toast("Enter valid amount.");
+      return;
+    }
+
+    const fees =
+      getFeeBreakdown(
+        "withdraw",
+        amount,
+        source
+      );
+
+    if (source.balance < fees.total) {
+      toast("Insufficient source balance.");
+      return;
+    }
+
+    openPinModal(
+      "Authorize Withdrawal",
+      fees,
       () => {
 
-        const amount =
-          Number(
-            $("withdrawAmount").value || 0
-          );
+        source.balance -= fees.total;
 
-        const source =
-          sourceById(selectedWithdrawSource);
-
-        if (!source || !amount) {
-          toast("Enter a valid withdrawal amount.");
-          return;
-        }
-
-        const fees =
-          feeData(
-            source,
-            amount,
-            "withdraw"
-          );
-
-        if (source.balance < fees.total) {
-          toast("Insufficient source balance.");
-          return;
-        }
-
-        openPinModal({
-          type: "withdraw",
+        recordTransaction({
+          type: "WITHDRAW",
           amount,
-          source,
-          fees
+          source: source.provider,
+          recipient: `Agent ${agent}`,
+          providerFee: fees.providerFee,
+          beastFee: fees.beastFee,
+          total: fees.total,
+          status: "SUCCESS"
         });
 
+        recordRevenue(fees);
+
+        save();
+
+        renderDashboard();
+        renderAllSourcePickers();
+        renderHistory();
+
+        closeAllModals();
+
+        toast(
+          `${money(amount)} withdrawal completed.`
+        );
       }
     );
+  }
 
 
   /* =======================================================
      LIPA NA
      ======================================================= */
 
-  let lipaMode = "pochi";
+  function setupLipa() {
 
+    document.querySelectorAll(
+      "[data-lipa-method]"
+    ).forEach(button => {
 
-  $("lipaPochi")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        lipaMode = "pochi";
-
-        renderLipaDetails();
-
-      }
-    );
-
-
-  $("lipaTill")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        lipaMode = "till";
-
-        renderLipaDetails();
-
-      }
-    );
-
-
-  $("lipaPaybill")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        lipaMode = "paybill";
-
-        renderLipaDetails();
-
-      }
-    );
-
-
-  function renderLipaDetails() {
-
-    let html = "";
-
-    if (lipaMode === "pochi") {
-
-      html = `
-        <div class="field">
-          <label class="label">
-            Phone Number
-          </label>
-
-          <input id="lipaTarget"
-                 type="tel"
-                 placeholder="0712345678">
-        </div>
-      `;
-
-    }
-
-    if (lipaMode === "till") {
-
-      html = `
-        <div class="field">
-          <label class="label">
-            Till Number
-          </label>
-
-          <input id="lipaTarget"
-                 type="text"
-                 placeholder="Till number">
-        </div>
-      `;
-
-    }
-
-    if (lipaMode === "paybill") {
-
-      html = `
-        <div class="field">
-          <label class="label">
-            Business Number
-          </label>
-
-          <input id="lipaTarget"
-                 type="text"
-                 placeholder="Business number">
-        </div>
-
-        <div class="field">
-          <label class="label">
-            Account Number
-          </label>
-
-          <input id="lipaAccount"
-                 type="text"
-                 placeholder="Account number">
-        </div>
-      `;
-
-    }
-
-    $("lipaDetails").innerHTML =
-      html;
-
-  }
-
-
-  function renderLipaSourcePicker() {
-
-    const container =
-      $("lipaSourcePicker");
-
-    if (!container) return;
-
-    container.innerHTML = `
-      <div class="label">
-        Pay From
-      </div>
-
-      <div class="source-grid">
-        ${state.sources.map(source => `
-          <button
-            class="source-card ${
-              selectedLipaSource === source.id
-                ? "selected"
-                : ""
-            }"
-            data-lipa-source="${source.id}"
-          >
-            ${sourceLabel(source)}
-          </button>
-        `).join("")}
-      </div>
-    `;
-
-    container
-      .querySelectorAll("[data-lipa-source]")
-      .forEach(button => {
-
-        button.addEventListener(
-          "click",
-          () => {
-
-            selectedLipaSource =
-              button.dataset.lipaSource;
-
-            renderLipaSourcePicker();
-
-            updateLipaFee();
-
-          }
-        );
-
-      });
-
-  }
-
-
-  function updateLipaFee() {
-
-    const amount =
-      Number(
-        $("lipaAmount")?.value || 0
-      );
-
-    const source =
-      sourceById(selectedLipaSource);
-
-    if (!amount || !source) {
-      $("lipaFeeSummary").innerHTML = "";
-      return;
-    }
-
-    const fees =
-      feeData(
-        source,
-        amount,
-        "lipa"
-      );
-
-    $("lipaFeeSummary").innerHTML =
-      feeSummaryHTML(fees);
-
-  }
-
-
-  $("lipaAmount")
-    ?.addEventListener(
-      "input",
-      updateLipaFee
-    );
-
-
-  $("verifyLipa")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        const target =
-          $("lipaTarget")?.value.trim();
-
-        if (!target) {
-          toast("Enter payment details.");
-          return;
-        }
-
-        toast("Payment details verified.");
-
-      }
-    );
-
-
-  $("lipaButton")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        const amount =
-          Number(
-            $("lipaAmount").value || 0
-          );
-
-        const source =
-          sourceById(selectedLipaSource);
-
-        if (!amount || !source) {
-          toast("Enter amount and select source.");
-          return;
-        }
-
-        const fees =
-          feeData(
-            source,
-            amount,
-            "lipa"
-          );
-
-        if (source.balance < fees.total) {
-          toast("Insufficient source balance.");
-          return;
-        }
-
-        openPinModal({
-          type: "LIPA NA",
-          amount,
-          source,
-          fees
-        });
-
-      }
-    );
-
-
-  /* =======================================================
-     HISTORY
-     ======================================================= */
-
-  function renderHistory() {
-
-    const container =
-      $("historyList");
-
-    if (!container) return;
-
-    if (!state.history.length) {
-
-      container.innerHTML = `
-        <div class="muted">
-          No transactions yet.
-        </div>
-      `;
-
-      return;
-    }
-
-    container.innerHTML =
-      state.history.map(tx => `
-
-        <div class="history-item">
-
-          <div class="history-top">
-
-            <div>
-              <div class="history-title">
-                ${tx.type}
-              </div>
-
-              <div class="history-meta">
-                ${tx.source || "Source"}
-              </div>
-            </div>
-
-            <div class="history-amount">
-              ${money(tx.amount)}
-            </div>
-
-          </div>
-
-          <div class="history-meta">
-
-            Fee:
-            ${money(tx.fee || 0)}
-
-            <br>
-
-            Provider cost:
-            ${money(tx.providerCost || 0)}
-
-            <br>
-
-            Total:
-            ${money(tx.total || tx.amount)}
-
-            <br>
-
-            ${tx.recipient || ""}
-
-            <br>
-
-            ${tx.id}
-
-            <br>
-
-            ${tx.date}
-
-          </div>
-
-          <div style="margin-top:9px;">
-            <span class="status success">
-              ${tx.status || "SUCCESS"}
-            </span>
-          </div>
-
-        </div>
-
-      `).join("");
-
-  }
-
-
-  /* =======================================================
-     ADMIN DATA
-     ======================================================= */
-
-  function adminSave() {
-    localStorage.setItem(
-      ADMIN_KEY,
-      JSON.stringify(state.admin)
-    );
-  }
-
-
-  function recordAdminTransaction(record) {
-
-    state.admin.transactions.unshift(record);
-
-    state.admin.beastFees +=
-      Number(record.fee || 0);
-
-    state.admin.providerCosts +=
-      Number(record.providerCost || 0);
-
-    state.admin.revenue +=
-      Number(record.fee || 0);
-
-    state.admin.revenueRecords.unshift({
-
-      id: record.id,
-
-      amount: record.fee || 0,
-
-      providerCost:
-        record.providerCost || 0,
-
-      net:
-        Number(record.fee || 0) -
-        Number(record.providerCost || 0),
-
-      date: record.date,
-
-      type: record.type
-
-    });
-
-    adminSave();
-
-  }
-
-
-  function syncAdminCustomer() {
-
-    if (!state.registered) return;
-
-    const existing =
-      state.admin.customers.find(
-        c => c.beastId === state.beastId
-      );
-
-    if (!existing) {
-
-      state.admin.customers.push({
-
-        name: state.fullName,
-
-        phone: state.phone,
-
-        beastId: state.beastId,
-
-        status: "ACTIVE",
-
-        balance: state.balance,
-
-        registeredAt: nowText()
-
-      });
-
-    } else {
-
-      existing.name =
-        state.fullName;
-
-      existing.phone =
-        state.phone;
-
-      existing.balance =
-        state.balance;
-
-      existing.status =
-        "ACTIVE";
-
-    }
-
-    state.admin.customerCount =
-      state.admin.customers.length;
-
-    state.admin.activeCustomers =
-      state.admin.customers.filter(
-        c => c.status === "ACTIVE"
-      ).length;
-
-    adminSave();
-
-  }
-
-
-  /* =======================================================
-     ADMIN LOGIN
-     ======================================================= */
-
-  /*
-    DEMO ONLY.
-
-    Production must use a backend authentication system,
-    MFA and secure password/PIN storage.
-
-    Demo:
-      Owner ID: BEASTADMIN
-      PIN: 999999
-  */
-
-  $("openAdminLogin")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        $("adminLoginModal")
-          ?.classList.remove("hidden");
-
-      }
-    );
-
-
-  $("adminLoginButton")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        const username =
-          $("adminUsername")
-            .value.trim()
-            .toUpperCase();
-
-        const pin =
-          $("adminPin").value.trim();
-
-        if (
-          username !== "BEASTADMIN" ||
-          pin !== "999999"
-        ) {
-
-          toast(
-            "Invalid Owner login."
-          );
-
-          return;
-
-        }
-
-        closeModal("adminLoginModal");
-
-        openAdminDashboard();
-
-      }
-    );
-
-
-  function openAdminDashboard() {
-
-    syncAdminCustomer();
-
-    $("beastApp")
-      ?.classList.add("hidden");
-
-    $("registrationScreen")
-      ?.classList.add("hidden");
-
-    $("adminScreen")
-      ?.classList.remove("hidden");
-
-    renderAdminDashboard();
-
-  }
-
-
-  $("adminLogoutButton")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        $("adminScreen")
-          ?.classList.add("hidden");
-
-        showApp();
-
-        toast(
-          "Owner dashboard closed."
-        );
-
-      }
-    );
-
-
-  /* =======================================================
-     ADMIN NAVIGATION
-     ======================================================= */
-
-  document.querySelectorAll(
-    "[data-admin-panel]"
-  ).forEach(button => {
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        const target =
-          button.dataset.adminPanel;
+      button.addEventListener("click", () => {
 
         document.querySelectorAll(
-          ".admin-panel"
-        ).forEach(panel => {
-          panel.classList.add("hidden");
-        });
-
-        $(target)?.classList.remove("hidden");
-
-        document.querySelectorAll(
-          ".admin-side-btn"
+          "[data-lipa-method]"
         ).forEach(btn => {
           btn.classList.remove("active");
         });
 
         button.classList.add("active");
 
-        renderAdminDashboard();
+        renderLipaFields(
+          button.dataset.lipaMethod
+        );
+      });
+    });
 
-      }
+    $("lipaAmount")?.addEventListener(
+      "input",
+      updateLipaFee
     );
 
+    $("lipaVerify")?.addEventListener(
+      "click",
+      verifyLipa
+    );
+
+    $("lipaButton")?.addEventListener(
+      "click",
+      beginLipa
+    );
+  }
+
+  function renderLipaFields(method) {
+
+    const el = $("lipaDynamicFields");
+
+    if (!el) return;
+
+    if (method === "pochi") {
+
+      el.innerHTML = `
+        <div class="input-group">
+          <label>Pochi Phone Number</label>
+          <input
+            id="lipaTarget"
+            placeholder="07XXXXXXXX"
+          >
+        </div>
+      `;
+
+    } else if (method === "buygoods") {
+
+      el.innerHTML = `
+        <div class="input-group">
+          <label>Till Number</label>
+          <input
+            id="lipaTarget"
+            placeholder="Till number"
+          >
+        </div>
+      `;
+
+    } else {
+
+      el.innerHTML = `
+        <div class="input-group">
+          <label>Business Number</label>
+          <input
+            id="lipaTarget"
+            placeholder="Business number"
+          >
+
+          <label style="margin-top:12px">
+            Account Number
+          </label>
+
+          <input
+            id="lipaAccount"
+            placeholder="Account number"
+          >
+        </div>
+      `;
+    }
+  }
+
+  function verifyLipa() {
+
+    const target =
+      $("lipaTarget")?.value.trim();
+
+    if (!target) {
+      toast("Enter payment destination.");
+      return;
+    }
+
+    const box = $("lipaVerification");
+
+    if (box) {
+      box.innerHTML = `
+        <div class="verify-name">
+          ✓ KRISH DEMO MERCHANT
+        </div>
+
+        <div class="muted">
+          Destination verified.
+        </div>
+      `;
+    }
+
+    updateLipaFee();
+  }
+
+  function updateLipaFee() {
+
+    const amount =
+      amountValue("lipaAmount");
+
+    const source =
+      sourceById(selectedLipaSource);
+
+    renderFeeSummary(
+      "lipaFeeSummary",
+      getFeeBreakdown(
+        "lipa",
+        amount,
+        source
+      )
+    );
+  }
+
+  function beginLipa() {
+
+    const source =
+      sourceById(selectedLipaSource);
+
+    const amount =
+      amountValue("lipaAmount");
+
+    const target =
+      $("lipaTarget")?.value.trim();
+
+    if (!source) {
+      toast("Select payment source.");
+      return;
+    }
+
+    if (!target) {
+      toast("Verify payment destination.");
+      return;
+    }
+
+    if (amount <= 0) {
+      toast("Enter amount.");
+      return;
+    }
+
+    const fees =
+      getFeeBreakdown(
+        "lipa",
+        amount,
+        source
+      );
+
+    if (source.balance < fees.total) {
+      toast("Insufficient balance.");
+      return;
+    }
+
+    openPinModal(
+      "Authorize Lipa Na Payment",
+      fees,
+      () => {
+
+        source.balance -= fees.total;
+
+        recordTransaction({
+          type: "LIPA NA",
+          amount,
+          source: source.provider,
+          recipient: target,
+          providerFee: fees.providerFee,
+          beastFee: fees.beastFee,
+          total: fees.total,
+          status: "SUCCESS"
+        });
+
+        recordRevenue(fees);
+
+        save();
+
+        renderDashboard();
+        renderAllSourcePickers();
+        renderHistory();
+
+        closeAllModals();
+
+        toast("Lipa Na payment completed.");
+      }
+    );
+  }
+
+
+  /* =======================================================
+     PIN MODAL
+     ======================================================= */
+
+  let pinAction = null;
+
+  function openPinModal(title, fees, callback) {
+
+    pinAction = callback;
+
+    if ($("pinModalTitle")) {
+      $("pinModalTitle").textContent = title;
+    }
+
+    if ($("pinModalAmount")) {
+      $("pinModalAmount").textContent =
+        money(fees.total);
+    }
+
+    if ($("transactionPin")) {
+      $("transactionPin").value = "";
+    }
+
+    openModal("pinModal");
+  }
+
+  function setupPinModal() {
+
+    $("confirmPinButton")?.addEventListener(
+      "click",
+      () => {
+
+        const pin =
+          $("transactionPin")?.value.trim();
+
+        if (pin !== state.beastPin) {
+          toast("Incorrect BEAST PIN.");
+          return;
+        }
+
+        const action = pinAction;
+
+        pinAction = null;
+
+        closeModal("pinModal");
+
+        if (action) {
+          action();
+        }
+      }
+    );
+  }
+
+
+  /* =======================================================
+     HISTORY
+     ======================================================= */
+
+  function recordTransaction(data) {
+
+    const tx = {
+      id: reference(),
+      date: now(),
+      ...data
+    };
+
+    state.history.unshift(tx);
+
+    if (state.history.length > 500) {
+      state.history =
+        state.history.slice(0, 500);
+    }
+  }
+
+  function recordRevenue(fees) {
+
+    state.ownerLedger.beastFees +=
+      Number(fees.beastFee || 0);
+
+    state.ownerLedger.providerCosts +=
+      Number(fees.providerFee || 0);
+
+    state.ownerLedger.transactions.unshift({
+      date: now(),
+      beastFee: fees.beastFee,
+      providerFee: fees.providerFee,
+      amount: fees.amount,
+      total: fees.total
+    });
+  }
+
+  function renderHistory() {
+
+    const list = $("historyList");
+
+    if (!list) return;
+
+    if (!state.history.length) {
+
+      list.innerHTML = `
+        <div class="card" style="padding:20px">
+          <div class="muted">
+            No transactions yet.
+          </div>
+        </div>
+      `;
+
+      return;
+    }
+
+    list.innerHTML = state.history.map(tx => {
+
+      const sign =
+        tx.type === "RECEIVE"
+          ? "+"
+          : "-";
+
+      return `
+        <div class="history-item">
+
+          <div class="history-top">
+
+            <div>
+              <div class="history-title">
+                ${escapeHTML(tx.type)}
+              </div>
+
+              <div class="history-meta">
+                ${escapeHTML(tx.date)}
+              </div>
+            </div>
+
+            <div class="history-amount">
+              ${sign}${money(tx.amount)}
+            </div>
+
+          </div>
+
+          <div class="history-meta">
+            Source:
+            ${escapeHTML(tx.source || "-")}
+          </div>
+
+          <div class="history-meta">
+            To:
+            ${escapeHTML(tx.recipient || "-")}
+          </div>
+
+          <div class="history-meta">
+            Fee:
+            ${money(tx.beastFee || 0)}
+            • Ref:
+            ${escapeHTML(tx.id)}
+          </div>
+
+          <span class="status-badge status-success">
+            ${escapeHTML(tx.status || "SUCCESS")}
+          </span>
+
+        </div>
+      `;
+
+    }).join("");
+  }
+
+
+  /* =======================================================
+     SETTINGS
+     ======================================================= */
+
+  function renderSettings() {
+
+    if ($("settingsName")) {
+      $("settingsName").textContent =
+        state.fullName || "-";
+    }
+
+    if ($("settingsPhone")) {
+      $("settingsPhone").textContent =
+        state.phone || "-";
+    }
+
+    if ($("settingsBeastId")) {
+      $("settingsBeastId").textContent =
+        state.beastId || "-";
+    }
+
+    updateSwitch(
+      "securityAlertsSwitch",
+      state.settings.securityAlerts
+    );
+
+    updateSwitch(
+      "notificationsSwitch",
+      state.settings.notifications
+    );
+  }
+
+  function updateSwitch(id, value) {
+
+    const el = $(id);
+
+    if (!el) return;
+
+    el.classList.toggle("on", !!value);
+  }
+
+
+  /* =======================================================
+     SECURITY LOGS
+     ======================================================= */
+
+  function addSecurityLog(title, body) {
+
+    state.securityLogs.unshift({
+      title,
+      body,
+      time: now()
+    });
+
+    if (state.securityLogs.length > 200) {
+      state.securityLogs =
+        state.securityLogs.slice(0, 200);
+    }
+
+    save();
+  }
+
+  document.addEventListener(
+    "visibilitychange",
+    () => {
+
+      if (
+        document.visibilityState === "hidden" &&
+        state.settings.securityAlerts
+      ) {
+
+        addSecurityLog(
+          "Session visibility changed",
+          "BEAST detected that the browser page became hidden."
+        );
+      }
+    }
+  );
+
+
+  /* =======================================================
+     MODALS
+     ======================================================= */
+
+  function openModal(id) {
+    $(id)?.classList.remove("hidden");
+  }
+
+  function closeModal(id) {
+    $(id)?.classList.add("hidden");
+  }
+
+  function closeAllModals() {
+
+    document.querySelectorAll(".modal")
+      .forEach(modal => {
+        modal.classList.add("hidden");
+      });
+  }
+
+  document.querySelectorAll(
+    "[data-close-modal]"
+  ).forEach(button => {
+
+    button.addEventListener("click", () => {
+
+      closeModal(
+        button.dataset.closeModal
+      );
+
+    });
   });
+
+
+  /* =======================================================
+     MAIN NAV
+     ======================================================= */
+
+  function setupMainNavigation() {
+
+    document.querySelectorAll(
+      "[data-panel]"
+    ).forEach(button => {
+
+      button.addEventListener("click", () => {
+
+        const panel =
+          button.dataset.panel;
+
+        document.querySelectorAll(
+          ".panel"
+        ).forEach(el => {
+          el.classList.remove("active");
+        });
+
+        $(`${panel}Panel`)?.classList.add(
+          "active"
+        );
+
+        document.querySelectorAll(
+          "[data-panel]"
+        ).forEach(btn => {
+          btn.classList.toggle(
+            "active",
+            btn === button
+          );
+        });
+      });
+    });
+  }
+
+
+  /* =======================================================
+     OWNER LOGIN
+     ======================================================= */
+
+  function setupOwnerLogin() {
+
+    $("openOwnerDashboard")?.addEventListener(
+      "click",
+      () => openModal("ownerLoginModal")
+    );
+
+    $("ownerLoginButton")?.addEventListener(
+      "click",
+      ownerLogin
+    );
+  }
+
+  function ownerLogin() {
+
+    const username =
+      $("adminUsername")?.value.trim();
+
+    const pin =
+      $("adminPin")?.value.trim();
+
+    /*
+      DEMO ONLY credentials.
+      Production must use secure backend
+      authentication and MFA.
+    */
+
+    if (
+      username !== "BEASTADMIN" ||
+      pin !== "999999"
+    ) {
+      toast("Invalid Owner/Admin credentials.");
+      return;
+    }
+
+    closeModal("ownerLoginModal");
+
+    $("beastApp")?.classList.add("hidden");
+    $("adminScreen")?.classList.remove("hidden");
+
+    renderAdminDashboard();
+
+    addSecurityLog(
+      "Owner dashboard login",
+      "Demo administrator session opened."
+    );
+  }
+
+
+  /* =======================================================
+     ADMIN NAVIGATION
+     ======================================================= */
+
+  function setupAdminNavigation() {
+
+    document.querySelectorAll(
+      "[data-admin-section]"
+    ).forEach(button => {
+
+      button.addEventListener("click", () => {
+
+        currentAdminSection =
+          button.dataset.adminSection;
+
+        document.querySelectorAll(
+          ".admin-section"
+        ).forEach(section => {
+          section.classList.remove("active");
+        });
+
+        $(`admin${capitalize(
+          currentAdminSection
+        )}`)?.classList.add("active");
+
+        document.querySelectorAll(
+          "[data-admin-section]"
+        ).forEach(btn => {
+          btn.classList.toggle(
+            "active",
+            btn === button
+          );
+        });
+
+        renderAdminDashboard();
+      });
+    });
+
+
+    $("adminLogout")?.addEventListener(
+      "click",
+      logoutAdmin
+    );
+  }
+
+  function capitalize(value) {
+    return value.charAt(0).toUpperCase() +
+      value.slice(1);
+  }
+
+  function logoutAdmin() {
+
+    $("adminScreen")?.classList.add("hidden");
+    $("beastApp")?.classList.remove("hidden");
+
+    toast("Owner dashboard session closed.");
+  }
 
 
   /* =======================================================
@@ -2434,87 +2061,72 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderAdminDashboard() {
 
-    syncAdminCustomer();
-
-    const admin =
-      state.admin;
-
-    const totalFees =
-      admin.beastFees || 0;
-
-    const providerCosts =
-      admin.providerCosts || 0;
-
-    const refunds =
-      admin.refunds || 0;
-
-    const net =
-      totalFees -
-      providerCosts -
-      refunds;
-
-
-    if ($("adminCustomerCount"))
-      $("adminCustomerCount").textContent =
-        admin.customerCount;
-
-    if ($("adminActiveCustomers"))
-      $("adminActiveCustomers").textContent =
-        admin.activeCustomers;
-
-    if ($("adminTransactionCount"))
-      $("adminTransactionCount").textContent =
-        admin.transactions.length;
-
-    if ($("adminFeeTotal"))
-      $("adminFeeTotal").textContent =
-        money0(totalFees);
-
-    if ($("adminRevenueBalance"))
-      $("adminRevenueBalance").textContent =
-        money(totalFees);
-
-    if ($("adminGrossFees"))
-      $("adminGrossFees").textContent =
-        money0(totalFees);
-
-    if ($("adminProviderCosts"))
-      $("adminProviderCosts").textContent =
-        money0(providerCosts);
-
-    if ($("adminRefunds"))
-      $("adminRefunds").textContent =
-        money0(refunds);
-
-    if ($("adminNetRevenue"))
-      $("adminNetRevenue").textContent =
-        money0(net);
-
-    if ($("feeFlowProvider"))
-      $("feeFlowProvider").textContent =
-        money0(providerCosts);
-
-    if ($("feeFlowBeast"))
-      $("feeFlowBeast").textContent =
-        money0(totalFees);
-
-    if ($("feeFlowRevenue"))
-      $("feeFlowRevenue").textContent =
-        money0(net);
-
-    if ($("revenuePageTotal"))
-      $("revenuePageTotal").textContent =
-        money0(totalFees);
-
-    if ($("revenuePageNet"))
-      $("revenuePageNet").textContent =
-        money0(net);
-
+    renderAdminStats();
+    renderAdminFeeFlow();
     renderAdminCustomers();
     renderAdminTransactions();
     renderAdminRevenue();
     renderAdminSecurity();
+    renderAdminAI();
+  }
 
+  function registeredCustomerCount() {
+    return state.registered ? 1 : 0;
+  }
+
+  function renderAdminStats() {
+
+    if ($("adminCustomerCount")) {
+      $("adminCustomerCount").textContent =
+        registeredCustomerCount();
+    }
+
+    if ($("adminActiveCustomers")) {
+      $("adminActiveCustomers").textContent =
+        registeredCustomerCount();
+    }
+
+    if ($("adminTransactionCount")) {
+      $("adminTransactionCount").textContent =
+        state.history.length;
+    }
+
+    if ($("adminFeeTotal")) {
+      $("adminFeeTotal").textContent =
+        money(state.ownerLedger.beastFees);
+    }
+  }
+
+
+  /* =======================================================
+     ADMIN FEE FLOW
+     ======================================================= */
+
+  function renderAdminFeeFlow() {
+
+    const provider =
+      state.ownerLedger.providerCosts || 0;
+
+    const beast =
+      state.ownerLedger.beastFees || 0;
+
+    const total =
+      provider + beast;
+
+    if ($("feeFlowProvider")) {
+      $("feeFlowProvider").textContent =
+        money(provider);
+    }
+
+    if ($("feeFlowBeast")) {
+      $("feeFlowBeast").textContent =
+        money(beast);
+    }
+
+    if ($("feeFlowRevenue")) {
+      $("feeFlowRevenue").textContent =
+        money(beast);
+    }
   }
 
 
@@ -2529,67 +2141,58 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!table) return;
 
-    const search =
-      (
-        $("adminCustomerSearch")
-          ?.value || ""
-      ).toLowerCase();
+    if (!state.registered) {
 
-    const customers =
-      state.admin.customers.filter(
-        customer =>
-          customer.name
-            .toLowerCase()
-            .includes(search) ||
-
-          customer.phone
-            .toLowerCase()
-            .includes(search) ||
-
-          customer.beastId
-            .toLowerCase()
-            .includes(search)
-      );
-
-    table.innerHTML =
-      customers.map(c => `
-
+      table.innerHTML = `
         <tr>
-
-          <td>
-            ${c.name}
+          <td colspan="5">
+            No registered customers.
           </td>
-
-          <td>
-            ${c.phone}
-          </td>
-
-          <td>
-            ${c.beastId}
-          </td>
-
-          <td>
-            <span class="status success">
-              ${c.status}
-            </span>
-          </td>
-
-          <td>
-            ${money(c.balance)}
-          </td>
-
         </tr>
+      `;
 
-      `).join("");
+      return;
+    }
 
+    const search =
+      $("adminCustomerSearch")
+        ?.value
+        .trim()
+        .toLowerCase() || "";
+
+    const matches =
+      !search ||
+      state.fullName.toLowerCase().includes(search) ||
+      state.phone.includes(search) ||
+      state.beastId.toLowerCase().includes(search);
+
+    if (!matches) {
+
+      table.innerHTML = `
+        <tr>
+          <td colspan="5">
+            No matching customer found.
+          </td>
+        </tr>
+      `;
+
+      return;
+    }
+
+    table.innerHTML = `
+      <tr>
+        <td>${escapeHTML(state.fullName)}</td>
+        <td>${escapeHTML(maskNumber(state.phone))}</td>
+        <td>${escapeHTML(state.beastId)}</td>
+        <td>${money(state.balance)}</td>
+        <td>
+          <span class="status-badge status-success">
+            ACTIVE
+          </span>
+        </td>
+      </tr>
+    `;
   }
-
-
-  $("adminCustomerSearch")
-    ?.addEventListener(
-      "input",
-      renderAdminCustomers
-    );
 
 
   /* =======================================================
@@ -2603,12 +2206,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!table) return;
 
-    if (!state.admin.transactions.length) {
+    if (!state.history.length) {
 
       table.innerHTML = `
         <tr>
-          <td colspan="7"
-              class="muted">
+          <td colspan="8">
             No transactions recorded.
           </td>
         </tr>
@@ -2618,46 +2220,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     table.innerHTML =
-      state.admin.transactions
+      state.history
+        .slice(0, 100)
         .map(tx => `
-
           <tr>
-
+            <td>${escapeHTML(tx.id)}</td>
+            <td>${escapeHTML(tx.date)}</td>
+            <td>${escapeHTML(tx.type)}</td>
+            <td>${money(tx.amount)}</td>
+            <td>${money(tx.providerFee || 0)}</td>
+            <td>${money(tx.beastFee || 0)}</td>
+            <td>${money(tx.total || tx.amount)}</td>
             <td>
-              ${tx.id}
-            </td>
-
-            <td>
-              ${tx.type}
-            </td>
-
-            <td>
-              ${money(tx.amount)}
-            </td>
-
-            <td>
-              ${money(tx.fee || 0)}
-            </td>
-
-            <td>
-              ${tx.source || "—"}
-            </td>
-
-            <td>
-              <span class="status success">
-                ${tx.status}
+              <span class="status-badge status-success">
+                ${escapeHTML(tx.status || "SUCCESS")}
               </span>
             </td>
-
-            <td>
-              ${tx.date}
-            </td>
-
           </tr>
-
         `)
         .join("");
-
   }
 
 
@@ -2667,72 +2248,99 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderAdminRevenue() {
 
-    const container =
+    const gross =
+      Number(state.ownerLedger.beastFees || 0);
+
+    const provider =
+      Number(state.ownerLedger.providerCosts || 0);
+
+    const refunds =
+      Number(state.ownerLedger.refunds || 0);
+
+    const net =
+      gross - refunds;
+
+    if ($("adminGrossFees")) {
+      $("adminGrossFees").textContent =
+        money(gross);
+    }
+
+    if ($("adminProviderCosts")) {
+      $("adminProviderCosts").textContent =
+        money(provider);
+    }
+
+    if ($("adminRefunds")) {
+      $("adminRefunds").textContent =
+        money(refunds);
+    }
+
+    if ($("adminNetRevenue")) {
+      $("adminNetRevenue").textContent =
+        money(net);
+    }
+
+    if ($("adminRevenueBalance")) {
+      $("adminRevenueBalance").textContent =
+        money(net);
+    }
+
+    const list =
       $("adminRevenueList");
 
-    if (!container) return;
+    if (!list) return;
 
-    if (!state.admin.revenueRecords.length) {
+    const entries =
+      state.ownerLedger.transactions || [];
 
-      container.innerHTML = `
+    if (!entries.length) {
+
+      list.innerHTML = `
         <div class="muted">
-          No revenue records yet.
+          No BEAST revenue recorded yet.
         </div>
       `;
 
       return;
     }
 
-    container.innerHTML =
-      state.admin.revenueRecords
-        .map(record => `
-
+    list.innerHTML =
+      entries
+        .slice(0, 50)
+        .map(item => `
           <div class="history-item">
 
             <div class="history-top">
 
               <div>
                 <div class="history-title">
-                  BEAST Fee
+                  BEAST Platform Fee
                 </div>
 
                 <div class="history-meta">
-                  ${record.type}
+                  ${escapeHTML(item.date)}
                 </div>
               </div>
 
-              <div class="history-amount">
-                ${money(record.amount)}
+              <div class="history-amount success">
+                +${money(item.beastFee)}
               </div>
 
             </div>
 
             <div class="history-meta">
+              Transaction:
+              ${money(item.amount)}
+            </div>
 
+            <div class="history-meta">
               Provider cost:
-              ${money(record.providerCost)}
-
-              <br>
-
-              Net recorded:
-              ${money(record.net)}
-
-              <br>
-
-              Reference:
-              ${record.id}
-
-              <br>
-
-              ${record.date}
-
+              ${money(item.providerFee)}
             </div>
 
           </div>
-
         `)
         .join("");
-
   }
 
 
@@ -2742,391 +2350,424 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderAdminSecurity() {
 
-    const container =
+    const el =
       $("adminSecurityAlerts");
 
-    if (!container) return;
+    if (!el) return;
 
-    if (!state.admin.securityAlerts.length) {
+    if (!state.securityLogs.length) {
 
-      container.innerHTML = `
-        <div class="alert-item">
-
-          <div class="alert-title">
-            Security monitoring active
-          </div>
-
-          <div class="alert-description">
-            No recorded security events.
-          </div>
-
+      el.innerHTML = `
+        <div class="muted">
+          No security alerts recorded.
         </div>
       `;
 
       return;
     }
 
-    container.innerHTML =
-      state.admin.securityAlerts
-        .map(alert => `
+    el.innerHTML =
+      state.securityLogs
+        .slice(0, 50)
+        .map(log => `
+          <div class="security-alert">
 
-          <div class="alert-item ${alert.level}">
+            <div class="security-alert-head">
 
-            <div class="alert-title">
-              ${alert.title}
+              <div class="security-alert-title">
+                ${escapeHTML(log.title)}
+              </div>
+
+              <div class="security-alert-time">
+                ${escapeHTML(log.time)}
+              </div>
+
             </div>
 
-            <div class="alert-description">
-              ${alert.description}
-              <br>
-              ${alert.date}
+            <div class="security-alert-body">
+              ${escapeHTML(log.body)}
             </div>
 
           </div>
-
         `)
         .join("");
-
   }
 
 
   /* =======================================================
-     ADMIN AI
+     BEAST AI
      ======================================================= */
 
-  function adminAIAnswer(question) {
+  function aiResponse(question) {
 
     const q =
       String(question || "")
-        .toLowerCase()
-        .trim();
+        .toLowerCase();
 
-    const admin =
-      state.admin;
+    const customers =
+      registeredCustomerCount();
 
-    const totalFees =
-      admin.beastFees || 0;
+    const transactions =
+      state.history.length;
 
-    const providerCosts =
-      admin.providerCosts || 0;
+    const fees =
+      state.ownerLedger.beastFees || 0;
 
-    const net =
-      totalFees -
-      providerCosts -
-      (admin.refunds || 0);
-
+    const provider =
+      state.ownerLedger.providerCosts || 0;
 
     if (
       q.includes("customer") ||
       q.includes("people") ||
       q.includes("registered")
     ) {
-
       return `
-        BEAST currently has
-        <strong>${admin.customerCount}</strong>
-        recorded registered customer(s).
+        BEAST currently records
+        ${customers} registered customer${customers === 1 ? "" : "s"}.
+        This demo only stores customers locally.
       `;
-
     }
-
 
     if (
-      q.includes("active")
+      q.includes("revenue") ||
+      q.includes("fee") ||
+      q.includes("earn")
     ) {
-
       return `
-        There are
-        <strong>${admin.activeCustomers}</strong>
-        recorded active customer(s).
+        Recorded BEAST platform fees are
+        ${money(fees)}.
+        Provider costs recorded separately are
+        ${money(provider)}.
       `;
-
     }
-
 
     if (
       q.includes("transaction") ||
-      q.includes("transactions")
+      q.includes("transfer")
     ) {
-
       return `
-        The system has recorded
-        <strong>${admin.transactions.length}</strong>
-        transaction(s).
+        BEAST has recorded
+        ${transactions} transaction${transactions === 1 ? "" : "s"}
+        in the local demo ledger.
       `;
-
     }
-
 
     if (
-      q.includes("fee") ||
-      q.includes("fees")
+      q.includes("balance") ||
+      q.includes("money")
     ) {
-
       return `
-        Recorded BEAST platform fees are
-        <strong>${money(totalFees)}</strong>.
+        The registered customer's combined demo
+        source balance is ${money(state.balance)}.
       `;
-
     }
 
+    if (
+      q.includes("security") ||
+      q.includes("alert")
+    ) {
+      return `
+        There are
+        ${state.securityLogs.length}
+        security event${state.securityLogs.length === 1 ? "" : "s"}
+        recorded in the demo security log.
+      `;
+    }
 
     if (
       q.includes("provider") ||
       q.includes("cost")
     ) {
-
       return `
         Recorded provider costs are
-        <strong>${money(providerCosts)}</strong>.
-        These are tracked separately from BEAST revenue.
+        ${money(provider)}.
+        Real provider charges should be supplied by
+        the relevant provider/API contract rather than
+        assumed by this demo.
       `;
-
     }
-
-
-    if (
-      q.includes("revenue") ||
-      q.includes("profit")
-    ) {
-
-      return `
-        Recorded gross BEAST fees:
-        <strong>${money(totalFees)}</strong><br>
-        Provider costs:
-        <strong>${money(providerCosts)}</strong><br>
-        Recorded net:
-        <strong>${money(net)}</strong>.
-      `;
-
-    }
-
-
-    if (
-      q.includes("today") ||
-      q.includes("report")
-    ) {
-
-      return `
-        <strong>BEAST Operations Report</strong><br><br>
-
-        Customers:
-        ${admin.customerCount}<br>
-
-        Transactions:
-        ${admin.transactions.length}<br>
-
-        BEAST fees:
-        ${money(totalFees)}<br>
-
-        Provider costs:
-        ${money(providerCosts)}<br>
-
-        Net recorded:
-        ${money(net)}
-      `;
-
-    }
-
-
-    if (
-      q.includes("security") ||
-      q.includes("suspicious")
-    ) {
-
-      return `
-        There are
-        <strong>${admin.securityAlerts.length}</strong>
-        recorded security alert(s).
-        Review the Security section for details.
-      `;
-
-    }
-
 
     return `
-      I can analyze customers, transactions,
-      BEAST fees, provider costs, revenue and
-      security.
-
-      Try asking:
-      <br><br>
-      “How many customers registered?”
-      <br>
-      “How much are the fees?”
-      <br>
-      “Show today's report.”
+      I can help you inspect customers,
+      transactions, BEAST fees, provider costs,
+      revenue, balances and security activity.
     `;
-
   }
 
+  function addAIMessage(containerId, textValue, user = false) {
 
-  function sendAdminAI(inputId, outputId) {
+    const chat =
+      $(containerId);
 
-    const input =
-      $(inputId);
+    if (!chat) return;
 
-    const output =
-      $(outputId);
+    const message =
+      document.createElement("div");
 
-    if (!input || !output) return;
+    message.className =
+      `ai-message ${user ? "user" : "bot"}`;
+
+    message.textContent = textValue;
+
+    chat.appendChild(message);
+
+    chat.scrollTop =
+      chat.scrollHeight;
+  }
+
+  function sendAIMessage(inputId, chatId) {
+
+    const input = $(inputId);
+
+    if (!input) return;
 
     const question =
       input.value.trim();
 
     if (!question) return;
 
-    output.innerHTML =
-      adminAIAnswer(question);
+    addAIMessage(
+      chatId,
+      question,
+      true
+    );
 
     input.value = "";
 
+    setTimeout(() => {
+
+      addAIMessage(
+        chatId,
+        aiResponse(question),
+        false
+      );
+
+    }, 250);
   }
 
+  function renderAdminAI() {
 
-  $("adminAISend")
-    ?.addEventListener(
-      "click",
-      () => {
+    if ($("adminAIMessage")) {
 
-        sendAdminAI(
-          "adminAIInput",
-          "adminAIMessage"
+      $("adminAIMessage").textContent =
+        aiResponse(
+          $("adminAIInput")?.value ||
+          "Give me an overview."
         );
+    }
+  }
 
-      }
+  function setupAI() {
+
+    $("adminAISend")?.addEventListener(
+      "click",
+      () => sendAIMessage(
+        "adminAIInput",
+        "adminAIChat"
+      )
     );
 
+    $("adminAISendFull")?.addEventListener(
+      "click",
+      () => sendAIMessage(
+        "adminAIInputFull",
+        "adminAIChat"
+      )
+    );
 
-  $("adminAIInput")
-    ?.addEventListener(
+    $("adminAIInput")?.addEventListener(
       "keydown",
-      event => {
-
-        if (event.key === "Enter") {
-
-          sendAdminAI(
+      e => {
+        if (e.key === "Enter") {
+          sendAIMessage(
             "adminAIInput",
-            "adminAIMessage"
+            "adminAIChat"
           );
-
         }
-
       }
     );
 
-
-  $("adminAISendFull")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        sendAdminAI(
-          "adminAIInputFull",
-          "adminAIChat"
-        );
-
-      }
-    );
-
-
-  $("adminAIInputFull")
-    ?.addEventListener(
+    $("adminAIInputFull")?.addEventListener(
       "keydown",
-      event => {
-
-        if (event.key === "Enter") {
-
-          sendAdminAI(
+      e => {
+        if (e.key === "Enter") {
+          sendAIMessage(
             "adminAIInputFull",
             "adminAIChat"
           );
-
         }
-
       }
+    );
+  }
+
+
+  /* =======================================================
+     ADMIN SEARCH
+     ======================================================= */
+
+  $("adminCustomerSearch")
+    ?.addEventListener(
+      "input",
+      renderAdminCustomers
     );
 
 
   /* =======================================================
-     SETTINGS
+     SETTINGS BUTTONS
      ======================================================= */
 
-  $("openSettings")
-    ?.addEventListener(
+  function setupSettings() {
+
+    $("settingsButton")?.addEventListener(
       "click",
-      () => {
-
-        $("settingsModal")
-          ?.classList.remove("hidden");
-
-      }
+      () => openModal("settingsModal")
     );
 
+    $("securityAlertsToggle")
+      ?.addEventListener(
+        "click",
+        () => {
 
-  $("toggleSecurityAlerts")
-    ?.addEventListener(
-      "click",
-      () => {
+          state.settings.securityAlerts =
+            !state.settings.securityAlerts;
 
-        state.settings.securityAlerts =
-          !state.settings.securityAlerts;
-
-        $("securitySwitch")
-          ?.classList.toggle(
-            "on",
+          updateSwitch(
+            "securityAlertsSwitch",
             state.settings.securityAlerts
           );
 
-        save();
+          save();
+        }
+      );
 
-      }
-    );
+    $("notificationsToggle")
+      ?.addEventListener(
+        "click",
+        () => {
 
+          state.settings.notifications =
+            !state.settings.notifications;
 
-  $("toggleNotifications")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        state.settings.notifications =
-          !state.settings.notifications;
-
-        $("notificationSwitch")
-          ?.classList.toggle(
-            "on",
+          updateSwitch(
+            "notificationsSwitch",
             state.settings.notifications
           );
 
-        save();
+          save();
+        }
+      );
 
-      }
-    );
 
+    $("lightModeToggle")
+      ?.addEventListener(
+        "click",
+        () => {
+
+          state.dark = !state.dark;
+
+          applyTheme();
+          save();
+
+          toast(
+            state.dark
+              ? "Dark mode enabled."
+              : "Light mode enabled."
+          );
+        }
+      );
+
+
+    $("changePinButton")
+      ?.addEventListener(
+        "click",
+        () => openModal("changePinModal")
+      );
+
+
+    $("saveNewPin")
+      ?.addEventListener(
+        "click",
+        changePin
+      );
+
+
+    $("logoutButton")
+      ?.addEventListener(
+        "click",
+        logoutCustomer
+      );
+  }
+
+  function changePin() {
+
+    const current =
+      $("currentPin")?.value.trim();
+
+    const newPin =
+      $("newPin")?.value.trim();
+
+    const confirm =
+      $("newPinConfirm")?.value.trim();
+
+    if (current !== state.beastPin) {
+      toast("Current PIN is incorrect.");
+      return;
+    }
+
+    if (!/^\d{4,6}$/.test(newPin)) {
+      toast("New PIN must contain 4–6 digits.");
+      return;
+    }
+
+    if (newPin !== confirm) {
+      toast("New PINs do not match.");
+      return;
+    }
+
+    state.beastPin = newPin;
+
+    save();
+
+    closeModal("changePinModal");
+
+    toast("BEAST PIN changed successfully.");
+  }
+
+  function logoutCustomer() {
+
+    closeAllModals();
+
+    $("beastApp")?.classList.add("hidden");
+
+    showRegistrationStep(1);
+
+    $("registrationScreen")
+      ?.classList.remove("hidden");
+
+    toast("Logged out.");
+  }
+
+
+  /* =======================================================
+     SETTINGS SUB-PAGES
+     ======================================================= */
 
   document.querySelectorAll(
-    "[data-setting]"
+    "[data-settings-page]"
   ).forEach(button => {
 
-    button.addEventListener(
-      "click",
-      () => {
+    button.addEventListener("click", () => {
 
-        const setting =
-          button.dataset.setting;
+      const page =
+        button.dataset.settingsPage;
 
-        renderSettingsSubPage(setting);
+      renderSettingsPage(page);
 
-        $("settingsSubModal")
-          ?.classList.remove("hidden");
-
-      }
-    );
-
+      openModal("settingsSubModal");
+    });
   });
 
-
-  function renderSettingsSubPage(setting) {
+  function renderSettingsPage(page) {
 
     const title =
       $("settingsSubTitle");
@@ -3134,341 +2775,189 @@ document.addEventListener("DOMContentLoaded", () => {
     const content =
       $("settingsSubContent");
 
-    if (!title || !content) return;
+    if (!content) return;
 
+    const sourceTypes = {
+      mpesa: state.sources.filter(
+        s => s.type === "M-PESA"
+      ),
+      airtel: state.sources.filter(
+        s => s.type === "Airtel Money"
+      ),
+      bank: state.sources.filter(
+        s => s.type === "Bank"
+      ),
+      card: state.sources.filter(
+        s => s.type === "Card"
+      ),
+      wallet: state.sources.filter(
+        s => s.type === "BEAST Wallet"
+      )
+    };
 
-    if (setting === "personal") {
+    if (page === "personal") {
 
-      title.textContent =
+      if (title) title.textContent =
         "Personal Details";
 
       content.innerHTML = `
-        <div class="verification-box">
-
-          <div class="label">
-            Full Name
+        <div class="verify-box">
+          <strong>Full Name</strong>
+          <div class="muted">
+            ${escapeHTML(state.fullName)}
           </div>
+        </div>
 
-          <div class="verification-name">
-            ${state.fullName}
+        <div class="verify-box">
+          <strong>Phone</strong>
+          <div class="muted">
+            ${escapeHTML(state.phone)}
           </div>
+        </div>
 
-          <div class="label"
-               style="margin-top:13px;">
-            Phone
+        <div class="verify-box">
+          <strong>BEAST ID</strong>
+          <div class="muted">
+            ${escapeHTML(state.beastId)}
           </div>
-
-          <div class="verification-name">
-            ${state.phone}
-          </div>
-
-          <div class="label"
-               style="margin-top:13px;">
-            BEAST ID
-          </div>
-
-          <div class="verification-name">
-            ${state.beastId}
-          </div>
-
         </div>
       `;
 
       return;
     }
 
+    if (page === "line") {
 
-    if (setting === "lines") {
-
-      title.textContent =
+      if (title) title.textContent =
         "Line Management";
 
-      content.innerHTML = `
-        <div class="source-grid">
-
-          ${state.sources
-            .filter(s =>
-              s.type === "M-PESA" ||
-              s.type === "Airtel Money"
-            )
-            .map(s => `
-              <div class="source-card">
-
-                ${sourceLabel(s)}
-
-              </div>
-            `)
-            .join("")}
-
-        </div>
-
-        <button class="btn btn-secondary"
-                style="margin-top:12px;"
-                onclick="toast('Line management is ready for backend integration.')">
-          + ADD / MANAGE LINE
-        </button>
-      `;
-
-      return;
-    }
-
-
-    if (setting === "pin") {
-
-      title.textContent =
-        "Change BEAST PIN";
-
-      content.innerHTML = `
-
-        <div class="field">
-
-          <label class="label">
-            Current PIN
-          </label>
-
-          <input id="oldPin"
-                 type="password"
-                 inputmode="numeric"
-                 maxlength="6">
-
-        </div>
-
-        <div class="field">
-
-          <label class="label">
-            New PIN
-          </label>
-
-          <input id="newPin"
-                 type="password"
-                 inputmode="numeric"
-                 maxlength="6">
-
-        </div>
-
-        <button class="btn btn-primary"
-                id="changePinButton">
-          CHANGE PIN
-        </button>
-      `;
-
-      setTimeout(() => {
-
-        $("changePinButton")
-          ?.addEventListener(
-            "click",
-            () => {
-
-              const oldPin =
-                $("oldPin").value;
-
-              const newPin =
-                $("newPin").value;
-
-              if (oldPin !== state.beastPin) {
-                toast("Current PIN is incorrect.");
-                return;
-              }
-
-              if (!/^\d{4,6}$/.test(newPin)) {
-                toast("New PIN must be 4 to 6 digits.");
-                return;
-              }
-
-              state.beastPin = newPin;
-
-              save();
-              saveRegistration();
-
-              toast("BEAST PIN changed.");
-
-              closeModal(
-                "settingsSubModal"
-              );
-
-            }
-          );
-
-      }, 0);
-
-      return;
-    }
-
-
-    if (
-      setting === "mpesa" ||
-      setting === "airtel" ||
-      setting === "banks" ||
-      setting === "cards" ||
-      setting === "wallet"
-    ) {
-
-      const map = {
-        mpesa: "M-PESA",
-        airtel: "Airtel Money",
-        banks: "Bank",
-        cards: "Card",
-        wallet: "BEAST Wallet"
-      };
-
-      const type =
-        map[setting];
-
-      title.textContent =
-        type;
-
-      const sources =
+      const lines =
         state.sources.filter(
-          s => s.type === type
+          s =>
+            s.type === "M-PESA" ||
+            s.type === "Airtel Money"
         );
 
       content.innerHTML =
-        `<div class="source-grid">
-          ${sources.map(s => `
-            <div class="source-card">
-              ${sourceLabel(s)}
+        lines.map(s => `
+          <div class="settings-item">
+            <div>
+              <div class="settings-title">
+                ${escapeHTML(s.provider)}
+              </div>
+              <div class="settings-subtitle">
+                ${escapeHTML(s.number)}
+              </div>
             </div>
-          `).join("")}
-        </div>`;
+            <strong>
+              ${money(s.balance)}
+            </strong>
+          </div>
+        `).join("");
 
       return;
     }
 
-  }
+    const list =
+      sourceTypes[page] || [];
 
-
-  $("logoutButton")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        closeModal(
-          "settingsModal"
-        );
-
-        $("beastApp")
-          ?.classList.add("hidden");
-
-        $("registrationScreen")
-          ?.classList.remove("hidden");
-
-        toast(
-          "Logged out of BEAST."
-        );
-
-      }
-    );
-
-
-  /* =======================================================
-     MODALS
-     ======================================================= */
-
-  function closeModal(id) {
-
-    $(id)?.classList.add("hidden");
-
-  }
-
-
-  document.querySelectorAll(
-    "[data-close]"
-  ).forEach(button => {
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        closeModal(
-          button.dataset.close
-        );
-
-      }
-    );
-
-  });
-
-
-  document.querySelectorAll(
-    ".modal"
-  ).forEach(modal => {
-
-    modal.addEventListener(
-      "click",
-      event => {
-
-        if (event.target === modal) {
-          modal.classList.add("hidden");
-        }
-
-      }
-    );
-
-  });
-
-
-  /* =======================================================
-     SECURITY VISIBILITY MONITOR
-     ======================================================= */
-
-  document.addEventListener(
-    "visibilitychange",
-    () => {
-
-      if (
-        document.hidden &&
-        state.settings.securityAlerts
-      ) {
-
-        state.admin.securityAlerts.unshift({
-
-          title:
-            "Session visibility changed",
-
-          description:
-            "The BEAST browser session became hidden.",
-
-          level:
-            "warning",
-
-          date:
-            nowText()
-
-        });
-
-        state.admin.securityAlerts =
-          state.admin.securityAlerts.slice(0, 50);
-
-        adminSave();
-
-      }
-
+    if (title) {
+      title.textContent =
+        page === "mpesa"
+          ? "M-PESA"
+          : page === "airtel"
+          ? "Airtel Money"
+          : page === "bank"
+          ? "Bank Accounts"
+          : page === "card"
+          ? "Cards"
+          : "BEAST Wallet";
     }
-  );
+
+    content.innerHTML =
+      list.map(s => `
+        <div class="settings-item">
+
+          <div class="settings-item-left">
+
+            <div class="settings-icon">
+              ${page === "bank"
+                ? "🏦"
+                : page === "card"
+                ? "💳"
+                : page === "wallet"
+                ? "👛"
+                : "📱"}
+            </div>
+
+            <div>
+              <div class="settings-title">
+                ${escapeHTML(s.provider)}
+              </div>
+
+              <div class="settings-subtitle">
+                ${escapeHTML(s.number)}
+                • ${escapeHTML(s.label)}
+              </div>
+            </div>
+
+          </div>
+
+          <strong>
+            ${money(s.balance)}
+          </strong>
+
+        </div>
+      `).join("");
+  }
 
 
   /* =======================================================
      INITIALIZATION
      ======================================================= */
 
-  if (!state.balance) {
+  setupRegistration();
+  setupSend();
+  setupReceive();
+  setupWithdraw();
+  setupLipa();
+  setupPinModal();
+  setupMainNavigation();
+  setupSettings();
+  setupOwnerLogin();
+  setupAdminNavigation();
+  setupAI();
 
-    state.balance =
-      state.sources.reduce(
-        (sum, source) =>
-          sum + Number(source.balance || 0),
-        0
-      );
+  renderReceiveForm();
 
+  applyTheme();
+
+  if (state.registered) {
+    showApp();
+  } else {
+    showRegistration();
   }
 
-  renderLipaDetails();
-  renderReceiveDetails();
+  /* Initial dashboard selections */
+  if (state.sources.length) {
 
-  loadRegistration();
+    selectedSendSource =
+      state.sources[0].id;
 
-  syncAdminCustomer();
+    selectedReceiveSource =
+      state.sources[0].id;
 
-  save();
+    selectedWithdrawSource =
+      state.sources[0].id;
+
+    selectedLipaSource =
+      state.sources[0].id;
+
+    renderAllSourcePickers();
+  }
+
+  renderDashboard();
+  renderHistory();
+  renderSettings();
 
 });
