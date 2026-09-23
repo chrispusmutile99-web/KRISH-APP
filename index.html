@@ -10,241 +10,473 @@
 
 <body>
 
-<div id="registrationScreen" class="registration-screen">
-  <div class="registration-card">
+  <!-- =========================
+       REGISTRATION
+  ========================== -->
+  <section id="registrationScreen" class="screen">
 
-    <div class="brand">
-      <div class="brand-mark">B</div>
-      <div>
-        <h1>MONEY TRANSFER BEAST</h1>
-        <p>Secure financial access</p>
+    <div class="brand-logo">🦁</div>
+    <h1>MONEY TRANSFER BEAST</h1>
+    <p class="subtitle">Secure Kenyan Payment Platform</p>
+
+    <div class="registration-card">
+
+      <div class="progress">
+        <span class="progress-dot active" id="dot1">1</span>
+        <span class="progress-line"></span>
+        <span class="progress-dot" id="dot2">2</span>
+        <span class="progress-line"></span>
+        <span class="progress-dot" id="dot3">3</span>
       </div>
+
+      <!-- STEP 1 -->
+      <div id="registrationStep1" class="registration-step active">
+        <h2>Create Your BEAST Account</h2>
+        <p class="muted">
+          Your national identity anchors your BEAST identity.
+        </p>
+
+        <label>Full Name</label>
+        <input id="registrationName" type="text"
+               placeholder="Enter your full name">
+
+        <label>Phone Number</label>
+        <input id="registrationPhone" type="tel"
+               placeholder="0712345678">
+
+        <label>National ID</label>
+        <input id="registrationId" type="text"
+               placeholder="Enter National ID">
+
+        <button id="registrationNext1" class="primary-btn">
+          CONTINUE
+        </button>
+      </div>
+
+      <!-- STEP 2 -->
+      <div id="registrationStep2" class="registration-step">
+
+        <h2>Create BEAST PIN</h2>
+        <p class="muted">
+          Your PIN authorizes important BEAST transactions.
+        </p>
+
+        <label>BEAST PIN</label>
+        <input id="registrationPin" type="password"
+               inputmode="numeric"
+               maxlength="6"
+               placeholder="Create PIN">
+
+        <label>Confirm BEAST PIN</label>
+        <input id="registrationPinConfirm" type="password"
+               inputmode="numeric"
+               maxlength="6"
+               placeholder="Confirm PIN">
+
+        <div class="button-row">
+          <button id="registrationBack1" class="secondary-btn">
+            BACK
+          </button>
+
+          <button id="registrationNext2" class="primary-btn">
+            CONTINUE
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div id="registrationStep3" class="registration-step">
+
+        <h2>Confirm Identity</h2>
+
+        <div class="summary-box">
+          <div>
+            <span>Full Name</span>
+            <strong id="registrationSummaryName">—</strong>
+          </div>
+
+          <div>
+            <span>Phone</span>
+            <strong id="registrationSummaryPhone">—</strong>
+          </div>
+
+          <div>
+            <span>National ID</span>
+            <strong id="registrationSummaryId">—</strong>
+          </div>
+        </div>
+
+        <div class="beast-id-box">
+          <span>Your BEAST ID</span>
+          <strong id="registrationBeastId">BEAST123</strong>
+        </div>
+
+        <div class="security-note">
+          🔐 Keep your BEAST PIN private.
+        </div>
+
+        <div class="button-row">
+          <button id="registrationBack2" class="secondary-btn">
+            BACK
+          </button>
+
+          <button id="registrationFinish" class="primary-btn">
+            FINISH REGISTRATION
+          </button>
+        </div>
+      </div>
+
     </div>
+  </section>
 
-    <div class="registration-progress">
-      <div class="progress-dot active" id="dot1">1</div>
-      <div class="progress-line"></div>
-      <div class="progress-dot" id="dot2">2</div>
-      <div class="progress-line"></div>
-      <div class="progress-dot" id="dot3">3</div>
-    </div>
 
-    <section id="registrationStep1" class="registration-step">
-      <span class="step-label">STEP 1</span>
-      <h2>Create your BEAST account</h2>
-      <p>Register your identity first.</p>
+  <!-- =========================
+       MAIN APP
+  ========================== -->
+  <main id="beastApp" class="app hidden">
 
-      <label>Full Name</label>
-      <input id="registrationName" type="text" placeholder="Enter your full name">
+    <!-- TOP BAR -->
+    <header class="topbar">
 
-      <label>Phone Number</label>
-      <input id="registrationPhone" type="tel" placeholder="0712345678">
-
-      <label>National ID Number</label>
-      <input id="registrationId" type="text" placeholder="Enter National ID">
-
-      <button id="registrationNext1" class="primary-btn">CONTINUE</button>
-    </section>
-
-    <section id="registrationStep2" class="registration-step hidden">
-      <span class="step-label">STEP 2</span>
-      <h2>Create BEAST security</h2>
-      <p>Your BEAST PIN authorizes transactions.</p>
-
-      <label>Create BEAST PIN</label>
-      <input id="registrationPin" type="password" inputmode="numeric" maxlength="6" placeholder="4–6 digit PIN">
-
-      <label>Confirm BEAST PIN</label>
-      <input id="registrationPinConfirm" type="password" inputmode="numeric" maxlength="6" placeholder="Confirm PIN">
-
-      <div class="button-row">
-        <button id="registrationBack1" class="secondary-btn">BACK</button>
-        <button id="registrationNext2" class="primary-btn">CONTINUE</button>
-      </div>
-    </section>
-
-    <section id="registrationStep3" class="registration-step hidden">
-      <span class="step-label">STEP 3</span>
-      <h2>Confirm your BEAST account</h2>
-
-      <div class="summary-box">
-        <div><span>Full Name</span><strong id="registrationSummaryName">—</strong></div>
-        <div><span>Phone</span><strong id="registrationSummaryPhone">—</strong></div>
-        <div><span>National ID</span><strong id="registrationSummaryId">—</strong></div>
-        <div><span>BEAST ID</span><strong id="registrationBeastId">—</strong></div>
+      <div class="brand">
+        <div class="small-logo">🦁</div>
+        <div>
+          <strong>BEAST</strong>
+          <small>MONEY TRANSFER</small>
+        </div>
       </div>
 
-      <p class="security-note">
-        Your BEAST PIN is required for financial authorization.
-      </p>
+      <button id="settingsBtn" class="icon-btn" aria-label="Settings">
+        ⚙️
+      </button>
 
-      <div class="button-row">
-        <button id="registrationBack2" class="secondary-btn">BACK</button>
-        <button id="registrationFinish" class="primary-btn">FINISH REGISTRATION</button>
-      </div>
-    </section>
-
-    <div class="demo-note">DEMO PROTOTYPE • No real identity verification</div>
-  </div>
-</div>
+    </header>
 
 
-<div id="beastApp" class="app hidden">
+    <!-- =========================
+         DASHBOARD
+    ========================== -->
+    <section class="dashboard">
 
-  <header class="topbar">
-    <div class="brand small">
-      <div class="brand-mark">B</div>
-      <div>
-        <h1>MONEY TRANSFER BEAST</h1>
-        <span id="dashboardName">BEAST USER</span>
-      </div>
-    </div>
-
-    <button id="settingsBtn" class="icon-btn" title="Settings">⚙️</button>
-  </header>
-
-
-  <main>
-
-    <section class="balance-card">
-      <div>
-        <span>BEAST BALANCE</span>
-        <strong id="balanceDisplay">KES 0.00</strong>
+      <div class="welcome">
+        <span>Welcome back</span>
+        <h2 id="dashboardName">KRISH</h2>
       </div>
 
-      <div class="beast-id-box">
-        <span>BEAST ID</span>
-        <strong id="beastIdDisplay">—</strong>
+      <div class="balance-card">
+
+        <div class="balance-top">
+          <span>BEAST BALANCE</span>
+          <span class="demo-badge">DEMO</span>
+        </div>
+
+        <div class="balance-amount">
+          KES <span id="dashboardBalance">0.00</span>
+        </div>
+
+        <div class="beast-id-small">
+          BEAST ID:
+          <strong id="dashboardBeastId">BEAST123</strong>
+        </div>
+
       </div>
+
     </section>
 
 
+    <!-- =========================
+         MAIN NAVIGATION
+    ========================== -->
     <nav class="main-nav">
-      <button class="nav-btn active" data-panel="sendPanel">SEND</button>
-      <button class="nav-btn" data-panel="receivePanel">RECEIVE</button>
-      <button class="nav-btn" data-panel="lipaPanel">LIPA NA</button>
-      <button class="nav-btn" data-panel="historyPanel">HISTORY</button>
+
+      <button class="nav-btn active" data-panel="sendPanel">
+        <span>💸</span>
+        SEND
+      </button>
+
+      <button class="nav-btn" data-panel="receivePanel">
+        <span>💰</span>
+        RECEIVE
+      </button>
+
+      <button class="nav-btn" data-panel="lipaPanel">
+        <span>🛒</span>
+        LIPA NA
+      </button>
+
+      <button class="nav-btn" data-panel="historyPanel">
+        <span>📜</span>
+        HISTORY
+      </button>
+
     </nav>
 
 
-    <!-- SEND -->
+    <!-- =========================
+         SEND
+    ========================== -->
     <section id="sendPanel" class="panel active">
 
-      <div class="panel-title">
-        <h2>Send Money</h2>
-        <p>Choose your payment source and recipient.</p>
-      </div>
-
-      <label>Payment Source</label>
-      <div id="sendSource" class="source-picker"></div>
-
-      <label>Recipient Phone / Account</label>
-      <input id="sendRecipient" type="text" placeholder="0712345678">
-
-      <button id="verifyRecipientBtn" class="secondary-btn full">
-        VERIFY RECIPIENT
-      </button>
-
-      <div id="recipientResult" class="verification-result hidden"></div>
-
-      <label>Amount</label>
-      <div class="amount-input">
-        <span>KES</span>
-        <input id="sendAmount" type="number" min="1" placeholder="0">
-      </div>
-
-      <button id="sendBtn" class="primary-btn full">SEND MONEY</button>
-
-    </section>
-
-
-    <!-- RECEIVE -->
-    <section id="receivePanel" class="panel">
-
-      <div class="panel-title">
-        <h2>Receive</h2>
-        <p>Sell / receive payment or withdraw funds.</p>
-      </div>
-
-      <div class="receive-security-banner">
-        <strong>🔐 Secure buyer payment</strong>
-        <span>
-          Buyer login → source selection → seller approval →
-          buyer re-login → final authorization
-        </span>
-      </div>
-
-      <div class="receive-tabs">
-        <button id="receiveSellTab" class="receive-tab active">
-          SELL / RECEIVE PAYMENT
-        </button>
-        <button id="receiveWithdrawTab" class="receive-tab">
-          WITHDRAW
-        </button>
-      </div>
-
-
-      <!-- SELL -->
-      <div id="receiveSellSection">
-
-        <div class="option-grid">
-
-          <button class="receive-option" data-receive-type="paybill">
-            <span class="option-icon">🧾</span>
-            <strong>Pay Bill</strong>
-            <small>Business + account number</small>
-          </button>
-
-          <button class="receive-option" data-receive-type="buygoods">
-            <span class="option-icon">🛒</span>
-            <strong>Buy Goods</strong>
-            <small>Till number</small>
-          </button>
-
-          <button class="receive-option" data-receive-type="pochi">
-            <span class="option-icon">📱</span>
-            <strong>Pochi</strong>
-            <small>Phone number</small>
-          </button>
-
+      <div class="section-title">
+        <div>
+          <h2>Send Money</h2>
+          <p>Send securely using your linked source.</p>
         </div>
-
-        <div id="receiveSellForm"></div>
-
+        <span>💸</span>
       </div>
 
+      <div class="card">
 
-      <!-- WITHDRAW -->
-      <div id="receiveWithdrawSection" class="hidden">
+        <label>Payment Source</label>
+        <div id="sendSourcePicker" class="source-picker"></div>
 
-        <h3>Withdraw from linked source</h3>
-        <p class="muted">
-          Select the exact account, line, card or wallet to use.
-        </p>
+        <div id="sendSourceDetails" class="source-details hidden"></div>
 
-        <div id="receiveWithdrawSource" class="source-picker"></div>
+        <label>Recipient Phone / Account</label>
+        <input id="sendRecipient"
+               type="text"
+               placeholder="0712345678">
 
-        <div id="receiveWithdrawDetails"></div>
-
-        <label>Agent Number</label>
-        <input id="receiveAgentNumber" type="tel" placeholder="0712345678">
-
-        <label>Store Number</label>
-        <input id="receiveStoreNumber" type="text" placeholder="Store number">
-
-        <button id="verifyReceiveWithdrawBtn" class="secondary-btn full">
-          VERIFY WITHDRAWAL DETAILS
+        <button id="verifyRecipientBtn" class="secondary-btn full">
+          VERIFY RECIPIENT
         </button>
 
-        <div id="receiveWithdrawResult" class="verification-result hidden"></div>
+        <div id="recipientVerification"
+             class="verification-box hidden">
+        </div>
 
         <label>Amount</label>
         <div class="amount-input">
           <span>KES</span>
-          <input id="receiveWithdrawAmount" type="number" min="1" placeholder="0">
+          <input id="sendAmount"
+                 type="number"
+                 min="1"
+                 placeholder="0.00">
         </div>
 
-        <button id="receiveWithdrawBtn" class="primary-btn full">
+        <button id="sendMoneyBtn" class="primary-btn full">
+          SEND MONEY
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- =========================
+         RECEIVE
+    ========================== -->
+    <section id="receivePanel" class="panel">
+
+      <div class="section-title">
+        <div>
+          <h2>Receive Payment</h2>
+          <p>Accept payments securely.</p>
+        </div>
+        <span>💰</span>
+      </div>
+
+
+      <div class="security-banner">
+        <strong>🛡️ BEAST SECURE PAYMENT</strong>
+        <p>
+          Buyer login → Source selection → Seller approval →
+          Final authorization
+        </p>
+      </div>
+
+
+      <!-- SELL / RECEIVE -->
+      <div class="card">
+
+        <div class="card-heading">
+          <h3>SELL / RECEIVE PAYMENT</h3>
+          <span>🛍️</span>
+        </div>
+
+        <div class="sell-options">
+
+          <button class="sell-option active"
+                  data-sell-type="paybill">
+            <span>📄</span>
+            <strong>Pay Bill</strong>
+            <small>Business payment</small>
+          </button>
+
+          <button class="sell-option"
+                  data-sell-type="buygoods">
+            <span>🏪</span>
+            <strong>Buy Goods</strong>
+            <small>Till payment</small>
+          </button>
+
+          <button class="sell-option"
+                  data-sell-type="pochi">
+            <span>📱</span>
+            <strong>Pochi</strong>
+            <small>Seller phone</small>
+          </button>
+
+        </div>
+
+
+        <!-- PAY BILL -->
+        <div id="receivePaybillFields"
+             class="receive-fields">
+
+          <label>Business Number</label>
+          <input id="receiveBusinessNumber"
+                 type="text"
+                 placeholder="Enter business number">
+
+          <label>Account Number</label>
+          <input id="receiveAccountNumber"
+                 type="text"
+                 placeholder="Enter account number">
+
+        </div>
+
+
+        <!-- BUY GOODS -->
+        <div id="receiveBuygoodsFields"
+             class="receive-fields hidden">
+
+          <label>Till Number</label>
+          <input id="receiveTillNumber"
+                 type="text"
+                 placeholder="Enter Till Number">
+
+        </div>
+
+
+        <!-- POCHI -->
+        <div id="receivePochiFields"
+             class="receive-fields hidden">
+
+          <label>Seller Phone Number</label>
+          <input id="receiveSellerPhone"
+                 type="tel"
+                 placeholder="0712345678">
+
+        </div>
+
+
+        <button id="verifyReceiveBtn"
+                class="secondary-btn full">
+          VERIFY SELLER
+        </button>
+
+
+        <div id="receiveSellerVerification"
+             class="verification-box hidden">
+        </div>
+
+
+        <!-- BUYER FUNDING -->
+        <div id="buyerFundingSection"
+             class="hidden">
+
+          <div class="divider"></div>
+
+          <h3>Buyer Payment Source</h3>
+
+          <p class="muted">
+            Choose where the payment will come from.
+          </p>
+
+          <div id="buyerSourcePicker"
+               class="source-picker">
+          </div>
+
+          <div id="buyerSourceDetails"
+               class="source-details hidden">
+          </div>
+
+
+          <button id="buyerNoPhoneCardBtn"
+                  class="secure-access-btn">
+            📱 PHONE / CARD UNAVAILABLE?
+            <small>
+              Use BEAST identity and authorization credentials
+            </small>
+          </button>
+
+
+          <label>Payment Amount</label>
+
+          <div class="amount-input">
+            <span>KES</span>
+            <input id="receiveAmount"
+                   type="number"
+                   min="1"
+                   placeholder="0.00">
+          </div>
+
+
+          <button id="buyerLoginBtn"
+                  class="primary-btn full">
+            CONTINUE TO BUYER LOGIN
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- =========================
+           WITHDRAW
+      ========================== -->
+      <div class="card">
+
+        <div class="card-heading">
+          <h3>WITHDRAW</h3>
+          <span>🏧</span>
+        </div>
+
+        <p class="muted">
+          Withdraw through an authorized agent.
+        </p>
+
+        <label>Withdrawal Source</label>
+        <div id="withdrawSourcePicker"
+             class="source-picker">
+        </div>
+
+        <div id="withdrawSourceDetails"
+             class="source-details hidden">
+        </div>
+
+        <label>Agent Phone Number</label>
+        <input id="withdrawAgentNumber"
+               type="tel"
+               placeholder="0712345678">
+
+        <label>Store Number</label>
+        <input id="withdrawStoreNumber"
+               type="text"
+               placeholder="Optional store number">
+
+        <button id="verifyWithdrawalBtn"
+                class="secondary-btn full">
+          VERIFY WITHDRAWAL DETAILS
+        </button>
+
+        <div id="withdrawVerification"
+             class="verification-box hidden">
+        </div>
+
+        <label>Amount</label>
+
+        <div class="amount-input">
+          <span>KES</span>
+          <input id="withdrawAmount"
+                 type="number"
+                 min="1"
+                 placeholder="0.00">
+        </div>
+
+        <button id="withdrawBtn"
+                class="primary-btn full">
           WITHDRAW
         </button>
 
@@ -253,85 +485,193 @@
     </section>
 
 
-    <!-- LIPA NA -->
+    <!-- =========================
+         LIPA NA
+    ========================== -->
     <section id="lipaPanel" class="panel">
 
-      <div class="panel-title">
-        <h2>Lipa Na</h2>
-        <p>Pay a business using your linked source.</p>
+      <div class="section-title">
+        <div>
+          <h2>Lipa Na BEAST</h2>
+          <p>Pay businesses and sellers.</p>
+        </div>
+        <span>🛒</span>
       </div>
 
-      <div class="option-grid">
+      <div class="card">
 
-        <button class="receive-option lipa-option active" data-lipa-type="pochi">
-          <span class="option-icon">📱</span>
-          <strong>Pochi</strong>
+        <div class="sell-options">
+
+          <button class="lipa-option active"
+                  data-lipa-type="pochi">
+            📱 Pochi
+          </button>
+
+          <button class="lipa-option"
+                  data-lipa-type="buygoods">
+            🏪 Buy Goods
+          </button>
+
+          <button class="lipa-option"
+                  data-lipa-type="paybill">
+            📄 Pay Bill
+          </button>
+
+        </div>
+
+
+        <div id="lipaFields"></div>
+
+
+        <label>Payment Source</label>
+        <div id="lipaSourcePicker"
+             class="source-picker">
+        </div>
+
+        <div id="lipaSourceDetails"
+             class="source-details hidden">
+        </div>
+
+
+        <label>Amount</label>
+
+        <div class="amount-input">
+          <span>KES</span>
+          <input id="lipaAmount"
+                 type="number"
+                 min="1"
+                 placeholder="0.00">
+        </div>
+
+
+        <button id="verifyLipaBtn"
+                class="secondary-btn full">
+          VERIFY PAYMENT
         </button>
 
-        <button class="receive-option lipa-option" data-lipa-type="buygoods">
-          <span class="option-icon">🛒</span>
-          <strong>Buy Goods</strong>
-        </button>
+        <div id="lipaVerification"
+             class="verification-box hidden">
+        </div>
 
-        <button class="receive-option lipa-option" data-lipa-type="paybill">
-          <span class="option-icon">🧾</span>
-          <strong>Pay Bill</strong>
+        <button id="lipaPayBtn"
+                class="primary-btn full">
+          PAY NOW
         </button>
 
       </div>
-
-      <div id="lipaForm"></div>
 
     </section>
 
 
-    <!-- HISTORY -->
+    <!-- =========================
+         HISTORY
+    ========================== -->
     <section id="historyPanel" class="panel">
 
-      <div class="panel-title">
-        <h2>Transaction History</h2>
-        <p>Your demo transaction records.</p>
+      <div class="section-title">
+        <div>
+          <h2>Transaction History</h2>
+          <p>Your BEAST activity.</p>
+        </div>
+        <span>📜</span>
       </div>
 
-      <div id="historyList" class="history-list"></div>
+      <div id="historyList"
+           class="history-list">
+      </div>
 
     </section>
+
+
+    <!-- =========================
+         BOTTOM NAV
+    ========================== -->
+    <nav class="bottom-nav">
+
+      <button class="bottom-nav-btn active"
+              data-panel="sendPanel">
+        <span>💸</span>
+        <small>Send</small>
+      </button>
+
+      <button class="bottom-nav-btn"
+              data-panel="receivePanel">
+        <span>💰</span>
+        <small>Receive</small>
+      </button>
+
+      <button class="bottom-nav-btn"
+              data-panel="lipaPanel">
+        <span>🛒</span>
+        <small>Lipa</small>
+      </button>
+
+      <button class="bottom-nav-btn"
+              data-panel="historyPanel">
+        <span>📜</span>
+        <small>History</small>
+      </button>
+
+      <button id="bottomSettingsBtn"
+              class="bottom-nav-btn">
+        <span>⚙️</span>
+        <small>Settings</small>
+      </button>
+
+    </nav>
 
   </main>
 
 
-  <!-- BUYER LOGIN -->
-  <div id="buyerLoginModal" class="modal hidden">
+  <!-- =========================
+       BUYER LOGIN MODAL
+  ========================== -->
+  <div id="buyerLoginModal"
+       class="modal hidden">
+
     <div class="modal-card">
 
-      <button class="close-modal" data-close="buyerLoginModal">×</button>
+      <button class="modal-close"
+              data-close="buyerLoginModal">
+        ×
+      </button>
 
       <div class="modal-icon">🔐</div>
 
       <h2>Buyer Login</h2>
-      <p>
-        You can continue even if the buyer does not currently have
-        the phone or physical card.
+
+      <p class="muted">
+        You can continue even if the buyer does not currently
+        have the phone or physical card.
       </p>
 
       <label>Registered Phone Number</label>
-      <input id="buyerLoginPhone" type="tel" placeholder="0712345678">
+      <input id="buyerLoginPhone"
+             type="tel"
+             placeholder="0712345678">
 
       <label>BEAST ID</label>
-      <input id="buyerLoginBeastId" type="text" placeholder="BEAST-XXXXXX">
+      <input id="buyerLoginBeastId"
+             type="text"
+             placeholder="BEAST123">
 
       <label>BEAST PIN</label>
-      <input id="buyerLoginPin" type="password" inputmode="numeric" maxlength="6">
+      <input id="buyerLoginPin"
+             type="password"
+             inputmode="numeric"
+             maxlength="6"
+             placeholder="••••">
 
-      <div class="offline-access">
-        <strong>📱 Phone/Card unavailable?</strong>
-        <p>
+      <div class="secure-access-info">
+        📱 <strong>Phone/Card unavailable?</strong>
+        <span>
           Use your registered BEAST identity and authorization
           credentials instead.
-        </p>
+        </span>
       </div>
 
-      <button id="buyerLoginContinue" class="primary-btn full">
+      <button id="buyerLoginContinue"
+              class="primary-btn full">
         CONTINUE
       </button>
 
@@ -339,166 +679,312 @@
   </div>
 
 
-  <!-- SELLER APPROVAL -->
-  <div id="sellerApprovalModal" class="modal hidden">
+  <!-- =========================
+       SELLER APPROVAL MODAL
+  ========================== -->
+  <div id="sellerApprovalModal"
+       class="modal hidden">
+
     <div class="modal-card">
 
-      <div class="modal-icon">🤝</div>
+      <div class="modal-icon">🔔</div>
 
       <h2>Seller Approval</h2>
-      <p>Payment request sent to the seller.</p>
 
-      <div id="sellerApprovalDetails" class="approval-box"></div>
+      <p>
+        A payment request has been sent to the seller.
+      </p>
+
+      <div id="sellerApprovalDetails"
+           class="approval-details">
+      </div>
 
       <div class="button-row">
-        <button id="sellerRejectBtn" class="secondary-btn">
+
+        <button id="sellerRejectBtn"
+                class="danger-btn">
           REJECT
         </button>
 
-        <button id="sellerApproveBtn" class="primary-btn">
+        <button id="sellerApproveBtn"
+                class="primary-btn">
           APPROVE
         </button>
+
       </div>
 
     </div>
   </div>
 
 
-  <!-- BUYER RE-LOGIN -->
-  <div id="buyerReLoginModal" class="modal hidden">
+  <!-- =========================
+       FINAL AUTHORIZATION
+  ========================== -->
+  <div id="finalAuthModal"
+       class="modal hidden">
+
     <div class="modal-card">
 
-      <div class="modal-icon">🔄</div>
-
-      <h2>Buyer Re-Login Required</h2>
-      <p>
-        Seller approval was received. For additional security,
-        the buyer must authenticate again.
-      </p>
-
-      <label>Registered Phone Number</label>
-      <input id="buyerReLoginPhone" type="tel">
-
-      <label>BEAST ID</label>
-      <input id="buyerReLoginBeastId" type="text">
-
-      <label>BEAST PIN</label>
-      <input id="buyerReLoginPin" type="password" inputmode="numeric" maxlength="6">
-
-      <button id="buyerReLoginContinue" class="primary-btn full">
-        AUTHENTICATE AGAIN
+      <button class="modal-close"
+              data-close="finalAuthModal">
+        ×
       </button>
 
-    </div>
-  </div>
-
-
-  <!-- FINAL AUTH -->
-  <div id="authModal" class="modal hidden">
-    <div class="modal-card">
-
-      <button class="close-modal" data-close="authModal">×</button>
-
-      <div class="modal-icon">🔑</div>
+      <div class="modal-icon">🛡️</div>
 
       <h2>Final Authorization</h2>
 
-      <p id="authDescription">
-        Enter your BEAST PIN to authorize this transaction.
+      <p class="muted">
+        Seller approved the payment.
+        Enter your BEAST PIN to authorize the transaction.
       </p>
 
-      <input id="authPin" type="password" inputmode="numeric"
-             maxlength="6" placeholder="BEAST PIN">
+      <div id="finalAuthDetails"
+           class="approval-details">
+      </div>
 
-      <button id="authorizeBtn" class="primary-btn full">
-        AUTHORIZE
+      <label>BEAST PIN</label>
+
+      <input id="finalAuthPin"
+             type="password"
+             inputmode="numeric"
+             maxlength="6"
+             placeholder="Enter BEAST PIN">
+
+      <button id="finalAuthContinue"
+              class="primary-btn full">
+        AUTHORIZE PAYMENT
       </button>
 
     </div>
   </div>
 
 
-  <!-- SETTINGS -->
-  <div id="settingsModal" class="modal hidden">
+  <!-- =========================
+       SETTINGS MODAL
+  ========================== -->
+  <div id="settingsModal"
+       class="modal hidden">
 
-    <div class="modal-card large">
+    <div class="modal-card settings-card">
 
-      <button class="close-modal" data-close="settingsModal">×</button>
+      <button class="modal-close"
+              data-close="settingsModal">
+        ×
+      </button>
 
-      <h2>⚙️ Settings</h2>
-
-      <div class="settings-section">
-
-        <h3>Appearance</h3>
-
-        <div class="setting-row">
-          <div>
-            <strong>Light Mode</strong>
-            <small>Use a bright interface.</small>
-          </div>
-          <label class="switch">
-            <input id="lightModeToggle" type="checkbox">
-            <span class="slider"></span>
-          </label>
+      <div class="settings-header">
+        <div class="modal-icon">⚙️</div>
+        <div>
+          <h2>BEAST Settings</h2>
+          <p class="muted">Manage your BEAST account.</p>
         </div>
-
       </div>
 
 
+      <!-- ACCOUNT -->
       <div class="settings-section">
 
-        <h3>Security</h3>
+        <h3>ACCOUNT</h3>
 
-        <div class="setting-row">
+        <button class="settings-item"
+                data-settings-page="personal">
+          <span>👤</span>
           <div>
-            <strong>Security Alerts</strong>
-            <small>Show transaction security warnings.</small>
+            <strong>Personal Details</strong>
+            <small>Name, phone and identity</small>
           </div>
-
-          <label class="switch">
-            <input id="securityAlertsToggle" type="checkbox">
-            <span class="slider"></span>
-          </label>
-        </div>
+          <b>›</b>
+        </button>
 
 
-        <div class="setting-row">
+        <button class="settings-item"
+                data-settings-page="lines">
+          <span>📱</span>
           <div>
-            <strong>Notifications</strong>
-            <small>Show BEAST transaction notifications.</small>
+            <strong>Line Management</strong>
+            <small>Manage M-PESA & Airtel lines</small>
           </div>
-
-          <label class="switch">
-            <input id="notificationsToggle" type="checkbox">
-            <span class="slider"></span>
-          </label>
-        </div>
-
-      </div>
+          <b>›</b>
+        </button>
 
 
-      <div class="settings-section">
-
-        <h3>Account</h3>
-
-        <button id="logoutBtn" class="danger-btn full">
-          LOG OUT
+        <button class="settings-item"
+                data-settings-page="pin">
+          <span>🔐</span>
+          <div>
+            <strong>Change BEAST PIN</strong>
+            <small>Update your authorization PIN</small>
+          </div>
+          <b>›</b>
         </button>
 
       </div>
 
-    </div>
 
+      <!-- CONNECTED SERVICES -->
+      <div class="settings-section">
+
+        <h3>CONNECTED SERVICES</h3>
+
+        <button class="settings-item"
+                data-settings-page="mpesa">
+          <span>🟢</span>
+          <div>
+            <strong>M-PESA</strong>
+            <small>Manage connected lines</small>
+          </div>
+          <b>›</b>
+        </button>
+
+
+        <button class="settings-item"
+                data-settings-page="airtel">
+          <span>🔴</span>
+          <div>
+            <strong>Airtel Money</strong>
+            <small>Manage connected lines</small>
+          </div>
+          <b>›</b>
+        </button>
+
+
+        <button class="settings-item"
+                data-settings-page="banks">
+          <span>🏦</span>
+          <div>
+            <strong>Bank Accounts</strong>
+            <small>View connected banks</small>
+          </div>
+          <b>›</b>
+        </button>
+
+
+        <button class="settings-item"
+                data-settings-page="cards">
+          <span>💳</span>
+          <div>
+            <strong>Cards</strong>
+            <small>View connected cards</small>
+          </div>
+          <b>›</b>
+        </button>
+
+
+        <button class="settings-item"
+                data-settings-page="wallet">
+          <span>🦁</span>
+          <div>
+            <strong>BEAST Wallet</strong>
+            <small>Manage your BEAST wallet</small>
+          </div>
+          <b>›</b>
+        </button>
+
+      </div>
+
+
+      <!-- APPEARANCE -->
+      <div class="settings-section">
+
+        <h3>APPEARANCE</h3>
+
+        <div class="setting-toggle-row">
+
+          <div>
+            <strong>🌙 Light Mode</strong>
+            <small>Switch between light and dark mode</small>
+          </div>
+
+          <label class="switch">
+            <input id="lightModeToggle"
+                   type="checkbox">
+            <span class="slider"></span>
+          </label>
+
+        </div>
+
+      </div>
+
+
+      <!-- SECURITY -->
+      <div class="settings-section">
+
+        <h3>SECURITY</h3>
+
+        <div class="setting-toggle-row">
+
+          <div>
+            <strong>🛡️ Security Alerts</strong>
+            <small>Receive security notifications</small>
+          </div>
+
+          <label class="switch">
+            <input id="securityAlertsToggle"
+                   type="checkbox"
+                   checked>
+            <span class="slider"></span>
+          </label>
+
+        </div>
+
+
+        <div class="setting-toggle-row">
+
+          <div>
+            <strong>🔔 Notifications</strong>
+            <small>Transaction notifications</small>
+          </div>
+
+          <label class="switch">
+            <input id="notificationsToggle"
+                   type="checkbox"
+                   checked>
+            <span class="slider"></span>
+          </label>
+
+        </div>
+
+      </div>
+
+
+      <button id="logoutBtn"
+              class="logout-btn">
+        🚪 LOG OUT
+      </button>
+
+    </div>
   </div>
 
 
-  <!-- TOAST -->
-  <div id="toast" class="toast"></div>
+  <!-- =========================
+       SETTINGS SUB-PAGE MODAL
+  ========================== -->
+  <div id="settingsSubModal"
+       class="modal hidden">
 
-</div>
+    <div class="modal-card">
+
+      <button class="modal-close"
+              data-close="settingsSubModal">
+        ×
+      </button>
+
+      <div id="settingsSubContent"></div>
+
+    </div>
+  </div>
 
 
-<script src="app.js"></script>
+  <!-- =========================
+       TOAST
+  ========================== -->
+  <div id="toast"
+       class="toast">
+  </div>
+
+
+  <script src="app.js"></script>
 
 </body>
 </html>
