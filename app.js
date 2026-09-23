@@ -1,207 +1,191 @@
-"use strict";
+/* =========================================================
+   MONEY TRANSFER BEAST v6
+   Demo / Prototype
+   ========================================================= */
 
-const KEY = "mtb_beast_v5";
-const REG_KEY = "mtb_beast_registration_v3";
+const KEY = "mtb_beast_v6";
+const REG_KEY = "mtb_beast_registration_v4";
+
+let state = null;
+
+let selectedSendSource = "mpesa1";
+let selectedReceiveSource = "mpesa1";
+let selectedLipaSource = "mpesa1";
+
+let currentSellType = "paybill";
+let currentLipaType = "pochi";
+
+let receiveSeller = null;
+let receiveVerified = false;
+let sendRecipientVerified = false;
+let lipaVerified = false;
+let withdrawalVerified = false;
+
+let toastTimer = null;
+
+
+/* =========================================================
+   DEFAULT DATA
+   ========================================================= */
 
 const DEFAULT_SOURCES = [
   {
     id: "mpesa1",
-    category: "M-PESA",
+    type: "M-PESA",
     provider: "Safaricom M-PESA",
-    name: "0712345678",
-    type: "Primary Line",
+    number: "0712345678",
+    label: "Primary Line",
     balance: 2500
   },
   {
     id: "mpesa2",
-    category: "M-PESA",
+    type: "M-PESA",
     provider: "Safaricom M-PESA",
-    name: "0798765432",
-    type: "Secondary Line",
+    number: "0798765432",
+    label: "Secondary Line",
     balance: 1200
   },
   {
     id: "airtel1",
-    category: "Airtel Money",
+    type: "Airtel Money",
     provider: "Airtel Money",
-    name: "0734567890",
-    type: "Primary Line",
+    number: "0734567890",
+    label: "Primary Line",
     balance: 1500
   },
   {
     id: "airtel2",
-    category: "Airtel Money",
+    type: "Airtel Money",
     provider: "Airtel Money",
-    name: "0787654321",
-    type: "Secondary Line",
+    number: "0787654321",
+    label: "Secondary Line",
     balance: 900
   },
   {
     id: "bank1",
-    category: "Bank",
+    type: "Bank",
     provider: "KCB Bank",
-    name: "KCB •••• 4582",
+    number: "KCB •••• 4582",
     accountType: "Savings",
     balance: 8500
   },
   {
     id: "bank2",
-    category: "Bank",
+    type: "Bank",
     provider: "Equity Bank",
-    name: "Equity •••• 9134",
+    number: "Equity •••• 9134",
     accountType: "Current",
     balance: 4200
   },
   {
     id: "bank3",
-    category: "Bank",
+    type: "Bank",
     provider: "Co-operative Bank",
-    name: "Co-operative •••• 2210",
+    number: "Co-operative •••• 2210",
     accountType: "Savings",
     balance: 6700
   },
   {
     id: "card1",
-    category: "Card",
+    type: "Card",
     provider: "BEAST Visa",
-    name: "BEAST Visa •••• 4821",
+    number: "BEAST Visa •••• 4821",
     cardType: "Debit",
     network: "Visa",
     balance: 3000
   },
   {
     id: "card2",
-    category: "Card",
+    type: "Card",
     provider: "M-PESA Card",
-    name: "M-PESA Card •••• 7720",
+    number: "M-PESA Card •••• 7720",
     cardType: "Prepaid",
     network: "Visa",
     balance: 1800
   },
   {
     id: "card3",
-    category: "Card",
+    type: "Card",
     provider: "Demo Mastercard",
-    name: "Mastercard •••• 1188",
+    number: "Mastercard •••• 1188",
     cardType: "Debit",
     network: "Mastercard",
     balance: 2200
   },
   {
     id: "wallet1",
-    category: "BEAST Wallet",
+    type: "BEAST Wallet",
     provider: "BEAST Wallet",
-    name: "Main Wallet",
-    walletType: "BEAST Wallet",
+    number: "Main Wallet",
+    walletType: "Personal Wallet",
     balance: 5000
   }
 ];
 
-let state = {
-  registered: false,
-  fullName: "",
-  phone: "",
-  nationalId: "",
-  beastId: "",
-  beastPin: "",
-  balance: 5000,
 
-  dark: true,
-
-  settings: {
-    securityAlerts: true,
-    notifications: true
-  },
-
-  sources: DEFAULT_SOURCES,
-  history: []
-};
-
-let currentReceiveType = "paybill";
-let currentLipaType = "pochi";
-
-let selectedSendSource = null;
-let selectedReceiveSource = null;
-
-let receiveSellVerified = false;
-let receiveWithdrawVerified = false;
-
-let pendingTransaction = null;
-
-
-/* =========================
-   STORAGE
-========================= */
-
-function save() {
-  localStorage.setItem(KEY, JSON.stringify(state));
-
-  localStorage.setItem(
-    REG_KEY,
-    JSON.stringify({
-      registered: state.registered,
-      fullName: state.fullName,
-      phone: state.phone,
-      nationalId: state.nationalId,
-      beastId: state.beastId
-    })
-  );
-}
-
-function load() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(KEY));
-
-    if (saved) {
-      state = {
-        ...state,
-        ...saved,
-        settings: {
-          ...state.settings,
-          ...(saved.settings || {})
-        }
-      };
-    }
-  } catch (e) {
-    console.warn("Could not load saved data.");
-  }
-
-  if (!Array.isArray(state.sources) || !state.sources.length) {
-    state.sources = DEFAULT_SOURCES;
-  }
-
-  if (!Array.isArray(state.history)) {
-    state.history = [];
-  }
-}
-
-
-/* =========================
+/* =========================================================
    HELPERS
-========================= */
+   ========================================================= */
 
-function money(amount) {
-  return "KES " + Number(amount || 0).toLocaleString("en-KE", {
+function $(id) {
+  return document.getElementById(id);
+}
+
+function money(value) {
+  return Number(value || 0).toLocaleString("en-KE", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
 }
 
+function save() {
+  localStorage.setItem(KEY, JSON.stringify(state));
+}
+
 function toast(message) {
-  const el = document.getElementById("toast");
+  const el = $("toast");
 
   if (!el) return;
 
   el.textContent = message;
   el.classList.add("show");
 
-  setTimeout(() => {
+  clearTimeout(toastTimer);
+
+  toastTimer = setTimeout(() => {
     el.classList.remove("show");
-  }, 3000);
+  }, 2800);
 }
 
+function nowText() {
+  return new Date().toLocaleString("en-KE", {
+    dateStyle: "medium",
+    timeStyle: "short"
+  });
+}
+
+function reference(prefix = "BEAST") {
+  return `${prefix}-${Date.now().toString().slice(-8)}`;
+}
+
+function escapeHTML(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+
+/* =========================================================
+   PHONE
+   ========================================================= */
+
 function normalizeKenyanPhone(value) {
-  let phone = String(value || "").replace(/\s+/g, "");
+  let phone = String(value || "")
+    .replace(/\s+/g, "")
+    .replace(/-/g, "");
 
   if (phone.startsWith("+254")) {
     phone = "0" + phone.slice(4);
@@ -215,359 +199,406 @@ function normalizeKenyanPhone(value) {
 }
 
 function validKenyanPhone(value) {
-  const phone = normalizeKenyanPhone(value);
-  return /^07\d{8}$/.test(phone) || /^01\d{8}$/.test(phone);
+  return /^07\d{8}$|^01\d{8}$/.test(
+    normalizeKenyanPhone(value)
+  );
 }
 
-function generateBeastId() {
-  return "BEAST-" + Math.floor(100000 + Math.random() * 900000);
+
+/* =========================================================
+   BEAST ID
+   ========================================================= */
+
+function generateBeastId(name) {
+  const first = String(name || "USER")
+    .trim()
+    .split(/\s+/)[0]
+    .replace(/[^a-zA-Z]/g, "")
+    .toUpperCase()
+    .slice(0, 5);
+
+  const digits = Math.floor(
+    100 + Math.random() * 900
+  );
+
+  return `BEAST${first}${digits}`;
 }
 
-function updateBalance() {
-  const el = document.getElementById("balanceDisplay");
 
-  if (el) {
-    el.textContent = money(state.balance);
+/* =========================================================
+   LOAD STATE
+   ========================================================= */
+
+function loadState() {
+
+  const stored = localStorage.getItem(KEY);
+
+  if (stored) {
+    try {
+      state = JSON.parse(stored);
+    } catch {
+      state = null;
+    }
   }
+
+  if (!state) {
+
+    state = {
+      registered: false,
+      fullName: "",
+      phone: "",
+      nationalId: "",
+      beastId: "",
+      beastPin: "",
+      balance: 0,
+      dark: true,
+
+      settings: {
+        securityAlerts: true,
+        notifications: true
+      },
+
+      sources: DEFAULT_SOURCES.map(x => ({ ...x })),
+
+      history: []
+    };
+  }
+
+  state.sources ||= DEFAULT_SOURCES.map(x => ({ ...x }));
+  state.history ||= [];
+
+  state.settings ||= {
+    securityAlerts: true,
+    notifications: true
+  };
 }
 
-function getSource(id) {
-  return state.sources.find(s => s.id === id);
-}
 
-function closeModal(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.add("hidden");
-}
-
-function openModal(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.remove("hidden");
-}
-
-
-/* =========================
+/* =========================================================
    THEME
-========================= */
+   ========================================================= */
 
 function applyTheme() {
-  document.body.classList.toggle("light-mode", state.dark === false);
 
-  const toggle = document.getElementById("lightModeToggle");
+  document.body.classList.toggle(
+    "light-mode",
+    !state.dark
+  );
+
+  const toggle = $("lightModeToggle");
 
   if (toggle) {
-    toggle.checked = state.dark === false;
+    toggle.checked = !state.dark;
   }
 }
 
 
-/* =========================
+/* =========================================================
    REGISTRATION
-========================= */
+   ========================================================= */
 
-function showRegistrationStep(step) {
+function setupRegistration() {
 
-  [1, 2, 3].forEach(number => {
+  const regScreen = $("registrationScreen");
+  const app = $("beastApp");
 
-    const section = document.getElementById(
-      "registrationStep" + number
+  if (!regScreen || !app) return;
+
+  if (state.registered) {
+    regScreen.classList.add("hidden");
+    app.classList.remove("hidden");
+
+    updateDashboard();
+    renderAllSources();
+    return;
+  }
+
+  regScreen.classList.remove("hidden");
+  app.classList.add("hidden");
+
+  const step1 = $("registrationStep1");
+  const step2 = $("registrationStep2");
+  const step3 = $("registrationStep3");
+
+  const dot1 = $("dot1");
+  const dot2 = $("dot2");
+  const dot3 = $("dot3");
+
+  function showStep(number) {
+
+    [step1, step2, step3].forEach(
+      step => step.classList.remove("active")
     );
 
-    const dot = document.getElementById(
-      "dot" + number
+    [dot1, dot2, dot3].forEach(
+      dot => dot.classList.remove("active")
     );
 
-    if (section) {
-      section.classList.toggle("hidden", number !== step);
+    if (number === 1) {
+      step1.classList.add("active");
+      dot1.classList.add("active");
     }
 
-    if (dot) {
-      dot.classList.toggle("active", number <= step);
+    if (number === 2) {
+      step2.classList.add("active");
+      dot1.classList.add("active");
+      dot2.classList.add("active");
     }
-  });
+
+    if (number === 3) {
+      step3.classList.add("active");
+      dot1.classList.add("active");
+      dot2.classList.add("active");
+      dot3.classList.add("active");
+    }
+  }
+
+  $("registrationNext1").onclick = () => {
+
+    const name = $("registrationName").value.trim();
+    const phone = normalizeKenyanPhone(
+      $("registrationPhone").value
+    );
+    const nationalId = $("registrationId").value.trim();
+
+    if (!name) {
+      toast("Enter your full name.");
+      return;
+    }
+
+    if (!validKenyanPhone(phone)) {
+      toast("Enter a valid Kenyan phone number.");
+      return;
+    }
+
+    if (!nationalId) {
+      toast("Enter your National ID.");
+      return;
+    }
+
+    $("registrationPhone").value = phone;
+
+    showStep(2);
+  };
+
+
+  $("registrationBack1").onclick = () => {
+    showStep(1);
+  };
+
+
+  $("registrationNext2").onclick = () => {
+
+    const pin = $("registrationPin").value;
+    const confirm = $("registrationPinConfirm").value;
+
+    if (!/^\d{4,6}$/.test(pin)) {
+      toast("BEAST PIN must contain 4–6 digits.");
+      return;
+    }
+
+    if (pin !== confirm) {
+      toast("PIN confirmation does not match.");
+      return;
+    }
+
+    const name = $("registrationName").value.trim();
+    const phone = normalizeKenyanPhone(
+      $("registrationPhone").value
+    );
+    const nationalId = $("registrationId").value.trim();
+
+    const beastId = generateBeastId(name);
+
+    $("registrationSummaryName").textContent = name;
+    $("registrationSummaryPhone").textContent = phone;
+    $("registrationSummaryId").textContent = nationalId;
+    $("registrationBeastId").textContent = beastId;
+
+    showStep(3);
+  };
+
+
+  $("registrationBack2").onclick = () => {
+    showStep(2);
+  };
+
+
+  $("registrationFinish").onclick = () => {
+
+    const name = $("registrationName").value.trim();
+    const phone = normalizeKenyanPhone(
+      $("registrationPhone").value
+    );
+    const nationalId = $("registrationId").value.trim();
+    const pin = $("registrationPin").value;
+
+    const beastId =
+      $("registrationBeastId").textContent.trim();
+
+    state.registered = true;
+    state.fullName = name;
+    state.phone = phone;
+    state.nationalId = nationalId;
+    state.beastId = beastId;
+    state.beastPin = pin;
+
+    if (!state.sources?.length) {
+      state.sources = DEFAULT_SOURCES.map(x => ({ ...x }));
+    }
+
+    state.balance = state.sources.reduce(
+      (sum, source) => sum + Number(source.balance || 0),
+      0
+    );
+
+    localStorage.setItem(
+      REG_KEY,
+      JSON.stringify({
+        fullName: name,
+        phone,
+        nationalId,
+        beastId
+      })
+    );
+
+    save();
+
+    regScreen.classList.add("hidden");
+    app.classList.remove("hidden");
+
+    updateDashboard();
+    renderAllSources();
+
+    toast("🎉 BEAST account created successfully.");
+  };
 }
 
 
-function validateRegistrationStep1() {
+/* =========================================================
+   DASHBOARD
+   ========================================================= */
 
-  const name = document.getElementById("registrationName").value.trim();
-  const phone = normalizeKenyanPhone(
-    document.getElementById("registrationPhone").value
-  );
-  const nationalId =
-    document.getElementById("registrationId").value.trim();
+function updateDashboard() {
 
-  if (name.length < 3) {
-    toast("Enter your full name.");
-    return false;
-  }
-
-  if (!validKenyanPhone(phone)) {
-    toast("Enter a valid Kenyan phone number.");
-    return false;
-  }
-
-  if (nationalId.length < 5) {
-    toast("Enter your National ID number.");
-    return false;
-  }
-
-  state.fullName = name;
-  state.phone = phone;
-  state.nationalId = nationalId;
-
-  document.getElementById("registrationSummaryName").textContent = name;
-  document.getElementById("registrationSummaryPhone").textContent = phone;
-  document.getElementById("registrationSummaryId").textContent =
-    "••••" + nationalId.slice(-4);
-
-  showRegistrationStep(2);
-
-  return true;
-}
-
-
-function validateRegistrationStep2() {
-
-  const pin =
-    document.getElementById("registrationPin").value.trim();
-
-  const confirm =
-    document.getElementById("registrationPinConfirm").value.trim();
-
-  if (!/^\d{4,6}$/.test(pin)) {
-    toast("BEAST PIN must contain 4–6 digits.");
-    return false;
-  }
-
-  if (pin !== confirm) {
-    toast("BEAST PINs do not match.");
-    return false;
-  }
-
-  state.beastPin = pin;
-
-  if (!state.beastId) {
-    state.beastId = generateBeastId();
-  }
-
-  document.getElementById("registrationBeastId").textContent =
-    state.beastId;
-
-  save();
-
-  showRegistrationStep(3);
-
-  return true;
-}
-
-
-function finishRegistration() {
-
-  state.registered = true;
-
-  save();
-
-  showDashboard();
-
-  toast("BEAST account created successfully.");
-}
-
-
-function beginRegistration() {
-
-  if (state.registered && state.beastId) {
-    showDashboard();
-  } else {
-    document.getElementById("registrationScreen")
-      .classList.remove("hidden");
-
-    document.getElementById("beastApp")
-      .classList.add("hidden");
-
-    showRegistrationStep(1);
-  }
-}
-
-
-function showDashboard() {
-
-  document.getElementById("registrationScreen")
-    .classList.add("hidden");
-
-  document.getElementById("beastApp")
-    .classList.remove("hidden");
-
-  document.getElementById("dashboardName").textContent =
+  $("dashboardName").textContent =
     state.fullName || "BEAST USER";
 
-  document.getElementById("beastIdDisplay").textContent =
-    state.beastId || "—";
+  $("dashboardBeastId").textContent =
+    state.beastId || "BEAST123";
 
-  updateBalance();
+  $("dashboardBalance").textContent =
+    money(state.balance);
 }
 
 
-/* =========================
-   NAVIGATION
-========================= */
+/* =========================================================
+   SOURCE ICON
+   ========================================================= */
 
-function openPanel(panelId) {
+function sourceIcon(type) {
 
-  document.querySelectorAll(".panel").forEach(panel => {
-    panel.classList.remove("active");
-  });
+  if (type === "M-PESA") return "🟢";
+  if (type === "Airtel Money") return "🔴";
+  if (type === "Bank") return "🏦";
+  if (type === "Card") return "💳";
+  if (type === "BEAST Wallet") return "🦁";
 
-  document.querySelectorAll(".nav-btn").forEach(button => {
-    button.classList.remove("active");
-  });
-
-  const panel = document.getElementById(panelId);
-
-  if (panel) {
-    panel.classList.add("active");
-  }
-
-  const nav = document.querySelector(
-    `.nav-btn[data-panel="${panelId}"]`
-  );
-
-  if (nav) {
-    nav.classList.add("active");
-  }
+  return "💰";
 }
 
 
-/* =========================
-   SOURCE RENDERING
-========================= */
+/* =========================================================
+   SOURCE DETAILS
+   ========================================================= */
 
-function sourceDescription(source) {
-
-  if (source.category === "Bank") {
-    return `${source.provider} • ${source.accountType} • ${source.name}`;
-  }
-
-  if (source.category === "Card") {
-    return `${source.provider} • ${source.cardType} • ${source.network} • ${source.name}`;
-  }
-
-  if (source.category === "M-PESA" ||
-      source.category === "Airtel Money") {
-    return `${source.provider} • ${source.type} • ${source.name}`;
-  }
-
-  if (source.category === "BEAST Wallet") {
-    return `${source.provider} • ${source.walletType}`;
-  }
-
-  return source.name;
-}
-
-
-function renderSourceDetails(source, containerId) {
-
-  const container = document.getElementById(containerId);
+function renderSourceDetails(source, container) {
 
   if (!container || !source) return;
 
-  let rows = "";
+  let html = `
+    <h4>${escapeHTML(sourceIcon(source.type))} 
+        ${escapeHTML(source.provider)}</h4>
+  `;
 
-  rows += `
-    <div class="source-detail-row">
-      <span>Provider</span>
-      <strong>${source.provider}</strong>
+  html += `
+    <div class="detail-row">
+      <span>Type</span>
+      <strong>${escapeHTML(source.type)}</strong>
     </div>
   `;
 
-  if (source.category === "Bank") {
+  html += `
+    <div class="detail-row">
+      <span>Account / Number</span>
+      <strong>${escapeHTML(source.number)}</strong>
+    </div>
+  `;
 
-    rows += `
-      <div class="source-detail-row">
-        <span>Bank</span>
-        <strong>${source.provider}</strong>
-      </div>
-
-      <div class="source-detail-row">
-        <span>Account</span>
-        <strong>${source.name}</strong>
-      </div>
-
-      <div class="source-detail-row">
-        <span>Account Type</span>
-        <strong>${source.accountType}</strong>
-      </div>
-    `;
-
-  } else if (
-    source.category === "Card"
-  ) {
-
-    rows += `
-      <div class="source-detail-row">
-        <span>Card</span>
-        <strong>${source.name}</strong>
-      </div>
-
-      <div class="source-detail-row">
-        <span>Card Type</span>
-        <strong>${source.cardType}</strong>
-      </div>
-
-      <div class="source-detail-row">
-        <span>Network</span>
-        <strong>${source.network}</strong>
-      </div>
-    `;
-
-  } else if (
-    source.category === "M-PESA" ||
-    source.category === "Airtel Money"
-  ) {
-
-    rows += `
-      <div class="source-detail-row">
+  if (source.label) {
+    html += `
+      <div class="detail-row">
         <span>Line</span>
-        <strong>${source.name}</strong>
-      </div>
-
-      <div class="source-detail-row">
-        <span>Line Type</span>
-        <strong>${source.type}</strong>
-      </div>
-    `;
-
-  } else if (
-    source.category === "BEAST Wallet"
-  ) {
-
-    rows += `
-      <div class="source-detail-row">
-        <span>Wallet Type</span>
-        <strong>${source.walletType}</strong>
+        <strong>${escapeHTML(source.label)}</strong>
       </div>
     `;
   }
 
-  rows += `
-    <div class="source-detail-row">
+  if (source.accountType) {
+    html += `
+      <div class="detail-row">
+        <span>Account Type</span>
+        <strong>${escapeHTML(source.accountType)}</strong>
+      </div>
+    `;
+  }
+
+  if (source.cardType) {
+    html += `
+      <div class="detail-row">
+        <span>Card Type</span>
+        <strong>${escapeHTML(source.cardType)}</strong>
+      </div>
+    `;
+  }
+
+  if (source.network) {
+    html += `
+      <div class="detail-row">
+        <span>Network</span>
+        <strong>${escapeHTML(source.network)}</strong>
+      </div>
+    `;
+  }
+
+  if (source.walletType) {
+    html += `
+      <div class="detail-row">
+        <span>Wallet Type</span>
+        <strong>${escapeHTML(source.walletType)}</strong>
+      </div>
+    `;
+  }
+
+  html += `
+    <div class="detail-row">
       <span>Available Balance</span>
-      <strong class="source-balance">${money(source.balance)}</strong>
+      <strong>KES ${money(source.balance)}</strong>
     </div>
   `;
 
-  container.innerHTML = `
-    <div class="source-details">
-      <h4>Selected Funding Source</h4>
-      ${rows}
-    </div>
-  `;
+  container.innerHTML = html;
+  container.classList.remove("hidden");
 }
 
 
+/* =========================================================
+   SOURCE PICKER
+   ========================================================= */
+
 function renderSourcePicker(containerId, selectedId, callback) {
 
-  const container = document.getElementById(containerId);
+  const container = $(containerId);
 
   if (!container) return;
 
@@ -575,1108 +606,1100 @@ function renderSourcePicker(containerId, selectedId, callback) {
 
   state.sources.forEach(source => {
 
-    const button = document.createElement("button");
+    const card = document.createElement("div");
 
-    button.type = "button";
-
-    button.className =
+    card.className =
       "source-card" +
-      (source.id === selectedId ? " active" : "");
+      (source.id === selectedId ? " selected" : "");
 
-    button.innerHTML = `
-      <strong>${source.category}</strong>
-      <small>${sourceDescription(source)}</small>
-      <small class="source-balance">${money(source.balance)}</small>
+    card.innerHTML = `
+      <div class="source-icon">
+        ${sourceIcon(source.type)}
+      </div>
+
+      <div class="source-name">
+        ${escapeHTML(source.provider)}
+      </div>
+
+      <div class="source-number">
+        ${escapeHTML(source.number)}
+      </div>
+
+      <div class="source-balance">
+        KES ${money(source.balance)}
+      </div>
     `;
 
-    button.addEventListener("click", () => {
+    card.onclick = () => {
 
-      callback(source.id);
+      callback(source);
 
       renderSourcePicker(
         containerId,
         source.id,
         callback
       );
-    });
+    };
 
-    container.appendChild(button);
+    container.appendChild(card);
   });
 }
 
 
+/* =========================================================
+   SEND SOURCE
+   ========================================================= */
+
 function renderSendSourcePicker() {
 
   renderSourcePicker(
-    "sendSource",
+    "sendSourcePicker",
     selectedSendSource,
-    id => {
-      selectedSendSource = id;
-    }
-  );
-}
+    source => {
 
-
-function renderReceiveWithdrawSource() {
-
-  renderSourcePicker(
-    "receiveWithdrawSource",
-    selectedReceiveSource,
-    id => {
-
-      selectedReceiveSource = id;
+      selectedSendSource = source.id;
 
       renderSourceDetails(
-        getSource(id),
-        "receiveWithdrawDetails"
+        source,
+        $("sendSourceDetails")
       );
     }
   );
-}
-
-
-/* =========================
-   SEND
-========================= */
-
-function verifyRecipient() {
-
-  const value =
-    document.getElementById("sendRecipient").value.trim();
-
-  const result =
-    document.getElementById("recipientResult");
-
-  if (!value) {
-    toast("Enter recipient number or account.");
-    return;
-  }
-
-  result.classList.remove("hidden");
-
-  result.innerHTML = `
-    <strong>✓ Recipient verified</strong>
-    <span>
-      KRISH DEMO RECIPIENT • ${value}
-    </span>
-  `;
-}
-
-
-function sendMoney() {
-
-  const recipient =
-    document.getElementById("sendRecipient").value.trim();
-
-  const amount =
-    Number(document.getElementById("sendAmount").value);
-
-  const result =
-    document.getElementById("recipientResult");
-
-  if (!selectedSendSource) {
-    toast("Select a payment source.");
-    return;
-  }
-
-  if (!recipient) {
-    toast("Enter recipient.");
-    return;
-  }
-
-  if (!result || result.classList.contains("hidden")) {
-    toast("Verify the recipient first.");
-    return;
-  }
-
-  if (!amount || amount <= 0) {
-    toast("Enter a valid amount.");
-    return;
-  }
 
   const source = getSource(selectedSendSource);
 
-  if (!source) {
-    toast("Selected source not found.");
-    return;
-  }
-
-  if (amount > source.balance) {
-    toast("Insufficient balance in selected source.");
-    return;
-  }
-
-  pendingTransaction = {
-    type: "send",
-    amount,
-    sourceId: source.id,
-    sourceName: source.name,
-    recipient,
-    description: `Send from ${source.category}`
-  };
-
-  document.getElementById("authDescription").textContent =
-    `Authorize ${money(amount)} from ${sourceDescription(source)}.`;
-
-  document.getElementById("authPin").value = "";
-
-  openModal("authModal");
+  renderSourceDetails(
+    source,
+    $("sendSourceDetails")
+  );
 }
 
 
-/* =========================
-   RECEIVE SELL
-========================= */
-
-function renderReceiveSellForm() {
-
-  const container =
-    document.getElementById("receiveSellForm");
-
-  if (!container) return;
-
-  receiveSellVerified = false;
-
-  let html = "";
-
-  if (currentReceiveType === "paybill") {
-
-    html = `
-      <label>Business Number</label>
-      <input id="receiveBusinessNumber"
-             placeholder="Business number">
-
-      <label>Account Number</label>
-      <input id="receiveAccountNumber"
-             placeholder="Account number">
-    `;
-
-  } else if (currentReceiveType === "buygoods") {
-
-    html = `
-      <label>Till Number</label>
-      <input id="receiveTillNumber"
-             placeholder="Till number">
-    `;
-
-  } else {
-
-    html = `
-      <label>Phone Number</label>
-      <input id="receivePochiPhone"
-             type="tel"
-             placeholder="0712345678">
-    `;
-  }
-
-  html += `
-    <button id="verifyReceiveBtn"
-            class="secondary-btn full">
-      VERIFY SELLER / PAYMENT DETAILS
-    </button>
-
-    <div id="receiveSellResult"
-         class="verification-result hidden"></div>
-
-    <div id="receiveBuyerSourceArea"
-         class="hidden">
-
-      <h3>Buyer Funding Source</h3>
-
-      <p class="muted">
-        Select the account, wallet, M-PESA line or card
-        that will fund this purchase.
-      </p>
-
-      <div id="buyerSourcePicker"
-           class="source-picker"></div>
-
-      <div id="buyerSourceDetails"></div>
-
-      <button id="buyerNoPhoneCardBtn"
-              class="secondary-btn full">
-        📱 I DON'T HAVE MY PHONE / CARD
-      </button>
-
-      <label>Amount</label>
-
-      <div class="amount-input">
-        <span>KES</span>
-        <input id="receivePaymentAmount"
-               type="number"
-               min="1"
-               placeholder="0">
-      </div>
-
-      <button id="buyerLoginBtn"
-              class="primary-btn full">
-        LOGIN & CONTINUE PAYMENT
-      </button>
-
-    </div>
-  `;
-
-  container.innerHTML = html;
-
-  document
-    .getElementById("verifyReceiveBtn")
-    .addEventListener("click", verifyReceiveDetails);
-
-  document
-    .getElementById("buyerLoginBtn")
-    .addEventListener("click", openBuyerLogin);
-
-  document
-    .getElementById("buyerNoPhoneCardBtn")
-    .addEventListener("click", openBuyerLogin);
-}
-
-
-function verifyReceiveDetails() {
-
-  let value = "";
-
-  if (currentReceiveType === "paybill") {
-
-    const business =
-      document.getElementById("receiveBusinessNumber").value.trim();
-
-    const account =
-      document.getElementById("receiveAccountNumber").value.trim();
-
-    if (!business || !account) {
-      toast("Enter business and account number.");
-      return;
-    }
-
-    value = `Business ${business} • Account ${account}`;
-
-  } else if (currentReceiveType === "buygoods") {
-
-    value =
-      document.getElementById("receiveTillNumber").value.trim();
-
-    if (!value) {
-      toast("Enter till number.");
-      return;
-    }
-
-  } else {
-
-    value =
-      normalizeKenyanPhone(
-        document.getElementById("receivePochiPhone").value
-      );
-
-    if (!validKenyanPhone(value)) {
-      toast("Enter a valid Kenyan phone number.");
-      return;
-    }
-  }
-
-  const names = {
-    paybill: "KRISH DEMO BUSINESS",
-    buygoods: "KRISH DEMO SHOP",
-    pochi: "KRISH DEMO SELLER"
-  };
-
-  const result =
-    document.getElementById("receiveSellResult");
-
-  result.classList.remove("hidden");
-
-  result.innerHTML = `
-    <strong>✓ Seller verified</strong>
-    <span>
-      ${names[currentReceiveType]} • ${value}
-    </span>
-  `;
-
-  receiveSellVerified = true;
-
-  const area =
-    document.getElementById("receiveBuyerSourceArea");
-
-  area.classList.remove("hidden");
-
-  renderBuyerSourcePicker();
-}
-
+/* =========================================================
+   BUYER SOURCE
+   ========================================================= */
 
 function renderBuyerSourcePicker() {
 
   renderSourcePicker(
     "buyerSourcePicker",
     selectedReceiveSource,
-    id => {
+    source => {
 
-      selectedReceiveSource = id;
+      selectedReceiveSource = source.id;
 
       renderSourceDetails(
-        getSource(id),
-        "buyerSourceDetails"
+        source,
+        $("buyerSourceDetails")
       );
     }
+  );
+
+  const source = getSource(selectedReceiveSource);
+
+  renderSourceDetails(
+    source,
+    $("buyerSourceDetails")
   );
 }
 
 
-/* =========================
+/* =========================================================
+   WITHDRAW SOURCE
+   ========================================================= */
+
+function renderWithdrawSourcePicker() {
+
+  renderSourcePicker(
+    "withdrawSourcePicker",
+    selectedReceiveSource,
+    source => {
+
+      selectedReceiveSource = source.id;
+
+      renderSourceDetails(
+        source,
+        $("withdrawSourceDetails")
+      );
+    }
+  );
+
+  const source = getSource(selectedReceiveSource);
+
+  renderSourceDetails(
+    source,
+    $("withdrawSourceDetails")
+  );
+}
+
+
+/* =========================================================
+   LIPA SOURCE
+   ========================================================= */
+
+function renderLipaSourcePicker() {
+
+  renderSourcePicker(
+    "lipaSourcePicker",
+    selectedLipaSource,
+    source => {
+
+      selectedLipaSource = source.id;
+
+      renderSourceDetails(
+        source,
+        $("lipaSourceDetails")
+      );
+    }
+  );
+
+  const source = getSource(selectedLipaSource);
+
+  renderSourceDetails(
+    source,
+    $("lipaSourceDetails")
+  );
+}
+
+
+/* =========================================================
+   GET SOURCE
+   ========================================================= */
+
+function getSource(id) {
+  return state.sources.find(
+    source => source.id === id
+  );
+}
+
+
+/* =========================================================
+   RENDER ALL SOURCES
+   ========================================================= */
+
+function renderAllSources() {
+
+  renderSendSourcePicker();
+  renderBuyerSourcePicker();
+  renderWithdrawSourcePicker();
+  renderLipaSourcePicker();
+}
+
+
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
+
+function setupNavigation() {
+
+  document.querySelectorAll(
+    ".nav-btn, .bottom-nav-btn"
+  ).forEach(button => {
+
+    button.addEventListener("click", () => {
+
+      const panelId =
+        button.dataset.panel;
+
+      if (!panelId) {
+        openSettings();
+        return;
+      }
+
+      showPanel(panelId);
+    });
+  });
+}
+
+function showPanel(panelId) {
+
+  document.querySelectorAll(".panel")
+    .forEach(panel => {
+      panel.classList.remove("active");
+    });
+
+  const panel = $(panelId);
+
+  if (panel) {
+    panel.classList.add("active");
+  }
+
+  document.querySelectorAll(
+    ".nav-btn, .bottom-nav-btn"
+  ).forEach(button => {
+
+    button.classList.toggle(
+      "active",
+      button.dataset.panel === panelId
+    );
+  });
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
+
+
+/* =========================================================
+   SEND
+   ========================================================= */
+
+function setupSend() {
+
+  $("verifyRecipientBtn").onclick = () => {
+
+    const recipient =
+      normalizeKenyanPhone(
+        $("sendRecipient").value
+      );
+
+    if (
+      !validKenyanPhone(recipient) &&
+      recipient.length < 6
+    ) {
+      toast("Enter a valid recipient number/account.");
+      return;
+    }
+
+    sendRecipientVerified = true;
+
+    $("recipientVerification").innerHTML = `
+      <strong>✓ RECIPIENT VERIFIED</strong>
+      <span>
+        KRISH DEMO RECIPIENT
+      </span>
+    `;
+
+    $("recipientVerification")
+      .classList.remove("hidden");
+
+    toast("Recipient verified.");
+  };
+
+
+  $("sendMoneyBtn").onclick = () => {
+
+    if (!sendRecipientVerified) {
+      toast("Verify the recipient first.");
+      return;
+    }
+
+    const amount =
+      Number($("sendAmount").value);
+
+    if (!amount || amount <= 0) {
+      toast("Enter a valid amount.");
+      return;
+    }
+
+    const source =
+      getSource(selectedSendSource);
+
+    if (!source) {
+      toast("Select a payment source.");
+      return;
+    }
+
+    if (source.balance < amount) {
+      toast("Insufficient source balance.");
+      return;
+    }
+
+    openFinalSendAuthorization(
+      amount,
+      source
+    );
+  };
+}
+
+
+/* =========================================================
+   SEND AUTH
+   ========================================================= */
+
+function openFinalSendAuthorization(amount, source) {
+
+  const pin = prompt(
+    "BEAST SECURITY\n\nEnter your BEAST PIN to authorize this demo transfer:"
+  );
+
+  if (pin === null) return;
+
+  if (pin !== state.beastPin) {
+    toast("Invalid BEAST PIN.");
+    return;
+  }
+
+  completeSendTransaction(
+    amount,
+    source
+  );
+}
+
+
+function completeSendTransaction(amount, source) {
+
+  source.balance -= amount;
+  state.balance -= amount;
+
+  state.history.unshift({
+    title: "Money Sent",
+    amount: -amount,
+    source: source.provider,
+    recipient: "KRISH DEMO RECIPIENT",
+    status: "Completed",
+    reference: reference("SEND"),
+    date: nowText()
+  });
+
+  save();
+
+  $("sendAmount").value = "";
+  $("sendRecipient").value = "";
+
+  sendRecipientVerified = false;
+
+  $("recipientVerification")
+    .classList.add("hidden");
+
+  updateDashboard();
+  renderAllSources();
+  renderHistory();
+
+  toast(
+    `✓ KES ${money(amount)} sent successfully.`
+  );
+}
+
+
+/* =========================================================
+   RECEIVE SELL OPTIONS
+   ========================================================= */
+
+function setupReceiveOptions() {
+
+  document.querySelectorAll(
+    ".sell-option"
+  ).forEach(button => {
+
+    button.onclick = () => {
+
+      document.querySelectorAll(
+        ".sell-option"
+      ).forEach(item =>
+        item.classList.remove("active")
+      );
+
+      button.classList.add("active");
+
+      currentSellType =
+        button.dataset.sellType;
+
+      $("receivePaybillFields")
+        .classList.toggle(
+          "hidden",
+          currentSellType !== "paybill"
+        );
+
+      $("receiveBuygoodsFields")
+        .classList.toggle(
+          "hidden",
+          currentSellType !== "buygoods"
+        );
+
+      $("receivePochiFields")
+        .classList.toggle(
+          "hidden",
+          currentSellType !== "pochi"
+        );
+
+      resetReceiveVerification();
+    };
+  });
+}
+
+
+/* =========================================================
+   VERIFY SELLER
+   ========================================================= */
+
+function setupReceive() {
+
+  $("verifyReceiveBtn").onclick = () => {
+
+    let valid = false;
+
+    if (currentSellType === "paybill") {
+
+      valid =
+        $("receiveBusinessNumber").value.trim() &&
+        $("receiveAccountNumber").value.trim();
+
+      receiveSeller =
+        "KRISH DEMO BUSINESS";
+    }
+
+    if (currentSellType === "buygoods") {
+
+      valid =
+        $("receiveTillNumber").value.trim();
+
+      receiveSeller =
+        "KRISH DEMO SHOP";
+    }
+
+    if (currentSellType === "pochi") {
+
+      const phone =
+        normalizeKenyanPhone(
+          $("receiveSellerPhone").value
+        );
+
+      valid = validKenyanPhone(phone);
+
+      receiveSeller =
+        "KRISH DEMO SELLER";
+    }
+
+    if (!valid) {
+      toast("Enter the seller details first.");
+      return;
+    }
+
+    receiveVerified = true;
+
+    $("receiveSellerVerification").innerHTML = `
+      <strong>✓ SELLER VERIFIED</strong>
+      <span>
+        ${escapeHTML(receiveSeller)}
+      </span>
+    `;
+
+    $("receiveSellerVerification")
+      .classList.remove("hidden");
+
+    $("buyerFundingSection")
+      .classList.remove("hidden");
+
+    renderBuyerSourcePicker();
+
+    toast("Seller verified.");
+  };
+
+
+  $("buyerNoPhoneCardBtn").onclick = () => {
+    openBuyerLogin();
+  };
+
+
+  $("buyerLoginBtn").onclick = () => {
+    openBuyerLogin();
+  };
+}
+
+
+/* =========================================================
+   RECEIVE RESET
+   ========================================================= */
+
+function resetReceiveVerification() {
+
+  receiveVerified = false;
+  receiveSeller = null;
+
+  $("receiveSellerVerification")
+    .classList.add("hidden");
+
+  $("buyerFundingSection")
+    .classList.add("hidden");
+}
+
+
+/* =========================================================
    BUYER LOGIN
-========================= */
+   ========================================================= */
 
 function openBuyerLogin() {
 
-  if (!receiveSellVerified) {
+  if (!receiveVerified) {
     toast("Verify the seller first.");
     return;
   }
 
-  const amount =
-    Number(
-      document.getElementById("receivePaymentAmount").value
-    );
+  $("buyerLoginPhone").value = "";
+  $("buyerLoginBeastId").value = "";
+  $("buyerLoginPin").value = "";
 
-  if (!amount || amount <= 0) {
-    toast("Enter payment amount first.");
-    return;
-  }
+  $("buyerLoginModal")
+    .classList.remove("hidden");
+}
 
-  if (!selectedReceiveSource) {
-    toast("Select the buyer's funding source.");
-    return;
-  }
 
-  const source = getSource(selectedReceiveSource);
+function setupBuyerLogin() {
 
-  if (!source) {
-    toast("Funding source not found.");
-    return;
-  }
+  $("buyerLoginContinue").onclick = () => {
 
-  if (amount > source.balance) {
-    toast("Insufficient balance in selected source.");
-    return;
-  }
+    const phone =
+      normalizeKenyanPhone(
+        $("buyerLoginPhone").value
+      );
 
-  pendingTransaction = {
-    type: "receive",
-    amount,
-    sourceId: source.id,
-    sourceName: source.name,
-    seller: "KRISH DEMO SELLER",
-    receiveType: currentReceiveType
+    const beastId =
+      $("buyerLoginBeastId")
+        .value
+        .trim()
+        .toUpperCase();
+
+    const pin =
+      $("buyerLoginPin").value;
+
+    if (phone !== state.phone) {
+      toast("Invalid registered phone number.");
+      return;
+    }
+
+    if (beastId !== state.beastId.toUpperCase()) {
+      toast("Invalid BEAST ID.");
+      return;
+    }
+
+    if (pin !== state.beastPin) {
+      toast("Invalid BEAST PIN.");
+      return;
+    }
+
+    closeModal("buyerLoginModal");
+
+    requestSellerApproval();
   };
-
-  document.getElementById("buyerLoginPhone").value = "";
-  document.getElementById("buyerLoginBeastId").value = "";
-  document.getElementById("buyerLoginPin").value = "";
-
-  openModal("buyerLoginModal");
 }
 
 
-function validateBuyerCredentials(phone, beastId, pin) {
-
-  return (
-    normalizeKenyanPhone(phone) ===
-      normalizeKenyanPhone(state.phone) &&
-    beastId.trim().toUpperCase() ===
-      state.beastId.toUpperCase() &&
-    pin === state.beastPin
-  );
-}
-
-
-function buyerLoginContinue() {
-
-  const phone =
-    document.getElementById("buyerLoginPhone").value;
-
-  const beastId =
-    document.getElementById("buyerLoginBeastId").value;
-
-  const pin =
-    document.getElementById("buyerLoginPin").value;
-
-  if (!validateBuyerCredentials(phone, beastId, pin)) {
-    toast("Buyer login details are incorrect.");
-    return;
-  }
-
-  closeModal("buyerLoginModal");
-
-  requestSellerApproval();
-}
-
-
-/* =========================
+/* =========================================================
    SELLER APPROVAL
-========================= */
+   ========================================================= */
 
 function requestSellerApproval() {
 
-  const details =
-    document.getElementById("sellerApprovalDetails");
+  const amount =
+    Number($("receiveAmount").value);
 
-  details.innerHTML = `
-    <div>
-      <span>Buyer</span>
-      <strong>Verified BEAST User</strong>
-    </div>
+  if (!amount || amount <= 0) {
+    toast("Enter the payment amount first.");
+    return;
+  }
 
-    <div>
+  const source =
+    getSource(selectedReceiveSource);
+
+  if (!source) {
+    toast("Select a buyer payment source.");
+    return;
+  }
+
+  if (source.balance < amount) {
+    toast("Insufficient buyer source balance.");
+    return;
+  }
+
+  $("sellerApprovalDetails").innerHTML = `
+    <div class="detail-row">
       <span>Seller</span>
-      <strong>${pendingTransaction.seller}</strong>
+      <strong>${escapeHTML(receiveSeller)}</strong>
     </div>
 
-    <div>
-      <span>Source</span>
-      <strong>${pendingTransaction.sourceName}</strong>
-    </div>
-
-    <div>
+    <div class="detail-row">
       <span>Amount</span>
-      <strong>${money(pendingTransaction.amount)}</strong>
+      <strong>KES ${money(amount)}</strong>
+    </div>
+
+    <div class="detail-row">
+      <span>Source</span>
+      <strong>${escapeHTML(source.provider)}</strong>
     </div>
   `;
 
-  openModal("sellerApprovalModal");
+  $("sellerApprovalModal")
+    .classList.remove("hidden");
 }
 
 
-function sellerReject() {
+/* =========================================================
+   SELLER APPROVAL BUTTONS
+   ========================================================= */
 
-  closeModal("sellerApprovalModal");
+function setupSellerApproval() {
 
-  pendingTransaction = null;
+  $("sellerRejectBtn").onclick = () => {
 
-  toast("Seller rejected the payment request.");
+    closeModal("sellerApprovalModal");
+
+    toast("Seller rejected the payment.");
+  };
+
+
+  $("sellerApproveBtn").onclick = () => {
+
+    closeModal("sellerApprovalModal");
+
+    openFinalReceiveAuthorization();
+  };
 }
 
 
-function sellerApprove() {
+/* =========================================================
+   FINAL RECEIVE AUTH
+   ========================================================= */
 
-  closeModal("sellerApprovalModal");
+function openFinalReceiveAuthorization() {
 
-  toast("Seller approved. Buyer re-login required.");
+  const amount =
+    Number($("receiveAmount").value);
 
-  setTimeout(() => {
-    openBuyerReLogin();
-  }, 500);
-}
-
-
-/* =========================
-   BUYER RE-LOGIN
-========================= */
-
-function openBuyerReLogin() {
-
-  document.getElementById("buyerReLoginPhone").value = "";
-  document.getElementById("buyerReLoginBeastId").value = "";
-  document.getElementById("buyerReLoginPin").value = "";
-
-  openModal("buyerReLoginModal");
-}
-
-
-function buyerReLoginContinue() {
-
-  const phone =
-    document.getElementById("buyerReLoginPhone").value;
-
-  const beastId =
-    document.getElementById("buyerReLoginBeastId").value;
-
-  const pin =
-    document.getElementById("buyerReLoginPin").value;
-
-  if (!validateBuyerCredentials(phone, beastId, pin)) {
-    toast("Re-login authentication failed.");
-    return;
-  }
-
-  closeModal("buyerReLoginModal");
-
-  requestFinalAuthorization();
-}
-
-
-/* =========================
-   AUTHORIZATION
-========================= */
-
-function requestFinalAuthorization() {
-
-  document.getElementById("authDescription").textContent =
-    `Final authorization required for ${money(
-      pendingTransaction.amount
-    )}.`;
-
-  document.getElementById("authPin").value = "";
-
-  openModal("authModal");
-}
-
-
-function authorizeTransaction() {
-
-  const pin =
-    document.getElementById("authPin").value;
-
-  if (pin !== state.beastPin) {
-    toast("Incorrect BEAST PIN.");
-    return;
-  }
-
-  if (!pendingTransaction) {
-    closeModal("authModal");
-    return;
-  }
-
-  if (pendingTransaction.type === "send") {
-    completeSendTransaction();
-  }
-
-  if (pendingTransaction.type === "receive") {
-    completeReceiveTransaction();
-  }
-
-  if (pendingTransaction.type === "withdraw") {
-    completeWithdrawTransaction();
-  }
-
-  if (pendingTransaction.type === "lipa") {
-    completeLipaTransaction();
-  }
-}
-
-
-/* =========================
-   COMPLETE SEND
-========================= */
-
-function completeSendTransaction() {
-
-  const tx = pendingTransaction;
-  const source = getSource(tx.sourceId);
+  const source =
+    getSource(selectedReceiveSource);
 
   if (!source) {
-    toast("Source no longer available.");
-    closeModal("authModal");
+    toast("Payment source unavailable.");
     return;
   }
 
-  if (source.balance < tx.amount) {
-    toast("Insufficient source balance.");
-    closeModal("authModal");
-    return;
-  }
+  $("finalAuthDetails").innerHTML = `
+    <div class="detail-row">
+      <span>Seller</span>
+      <strong>${escapeHTML(receiveSeller)}</strong>
+    </div>
 
-  source.balance -= tx.amount;
+    <div class="detail-row">
+      <span>Amount</span>
+      <strong>KES ${money(amount)}</strong>
+    </div>
 
-  state.balance = Math.max(
-    0,
-    state.balance - tx.amount
-  );
+    <div class="detail-row">
+      <span>Source</span>
+      <strong>${escapeHTML(source.provider)}</strong>
+    </div>
 
-  addHistory({
-    direction: "out",
-    title: "Money Sent",
-    amount: tx.amount,
-    source: sourceDescription(source),
-    recipient: tx.recipient,
-    status: "Completed"
-  });
+    <div class="detail-row">
+      <span>Status</span>
+      <strong style="color:var(--success)">
+        Seller Approved
+      </strong>
+    </div>
+  `;
 
-  save();
-  updateBalance();
-  renderSendSourcePicker();
-  renderHistory();
+  $("finalAuthPin").value = "";
 
-  closeModal("authModal");
-
-  document.getElementById("sendAmount").value = "";
-  document.getElementById("sendRecipient").value = "";
-
-  document.getElementById("recipientResult")
-    .classList.add("hidden");
-
-  selectedSendSource = null;
-
-  toast("Money sent successfully.");
-
-  pendingTransaction = null;
+  $("finalAuthModal")
+    .classList.remove("hidden");
 }
 
 
-/* =========================
-   COMPLETE RECEIVE
-========================= */
+function setupFinalAuthorization() {
+
+  $("finalAuthContinue").onclick = () => {
+
+    const pin =
+      $("finalAuthPin").value;
+
+    if (pin !== state.beastPin) {
+      toast("Invalid BEAST PIN.");
+      return;
+    }
+
+    completeReceiveTransaction();
+  };
+}
+
+
+/* =========================================================
+   RECEIVE COMPLETE
+   ========================================================= */
 
 function completeReceiveTransaction() {
 
-  const tx = pendingTransaction;
-  const source = getSource(tx.sourceId);
+  const amount =
+    Number($("receiveAmount").value);
 
-  if (!source) {
-    toast("Funding source unavailable.");
-    closeModal("authModal");
+  const source =
+    getSource(selectedReceiveSource);
+
+  if (!source || !amount || amount <= 0) {
+    toast("Invalid payment.");
     return;
   }
 
-  if (source.balance < tx.amount) {
-    toast("Buyer source balance changed.");
-    closeModal("authModal");
+  if (source.balance < amount) {
+    toast("Insufficient source balance.");
+    closeModal("finalAuthModal");
     return;
   }
 
-  /*
-    DEMO ONLY:
-    In a real implementation, the backend/payment provider
-    would authorize and debit the buyer's actual source.
-  */
+  source.balance -= amount;
 
-  source.balance -= tx.amount;
+  state.balance -= amount;
 
-  state.balance += tx.amount;
-
-  addHistory({
-    direction: "in",
-    title: "Payment Received",
-    amount: tx.amount,
-    source: sourceDescription(source),
-    recipient: tx.seller,
-    status: "Completed"
+  state.history.unshift({
+    title: "Payment Made",
+    amount: -amount,
+    source: source.provider,
+    recipient: receiveSeller,
+    status: "Completed",
+    reference: reference("PAY"),
+    date: nowText()
   });
 
   save();
-  updateBalance();
-  renderHistory();
 
-  closeModal("authModal");
+  closeModal("finalAuthModal");
+
+  $("receiveAmount").value = "";
+
+  updateDashboard();
+  renderAllSources();
+  renderHistory();
 
   toast(
-    `${money(tx.amount)} payment completed.`
+    `✓ Payment of KES ${money(amount)} completed.`
   );
 
-  pendingTransaction = null;
-
-  selectedReceiveSource = null;
+  resetReceiveVerification();
 }
 
 
-/* =========================
+/* =========================================================
    WITHDRAW
-========================= */
+   ========================================================= */
 
-function verifyReceiveWithdraw() {
+function setupWithdrawal() {
 
-  if (!selectedReceiveSource) {
-    toast("Select the source first.");
-    return;
-  }
+  $("verifyWithdrawalBtn").onclick = () => {
 
-  const agent =
-    document.getElementById("receiveAgentNumber")
-      .value.trim();
+    const agent =
+      normalizeKenyanPhone(
+        $("withdrawAgentNumber").value
+      );
 
-  const store =
-    document.getElementById("receiveStoreNumber")
-      .value.trim();
+    if (!validKenyanPhone(agent)) {
+      toast("Enter a valid agent number.");
+      return;
+    }
 
-  if (!agent || !store) {
-    toast("Enter agent and store number.");
-    return;
-  }
+    withdrawalVerified = true;
 
-  const source = getSource(selectedReceiveSource);
+    $("withdrawVerification").innerHTML = `
+      <strong>✓ AGENT VERIFIED</strong>
+      <span>
+        KRISH DEMO AGENT<br>
+        Agent: ${escapeHTML(agent)}
+      </span>
+    `;
 
-  if (!source) {
-    toast("Source not found.");
-    return;
-  }
+    $("withdrawVerification")
+      .classList.remove("hidden");
 
-  const result =
-    document.getElementById("receiveWithdrawResult");
-
-  result.classList.remove("hidden");
-
-  result.innerHTML = `
-    <strong>✓ Withdrawal details verified</strong>
-    <span>
-      ${sourceDescription(source)}
-      • Agent ${agent}
-      • Store ${store}
-    </span>
-  `;
-
-  receiveWithdrawVerified = true;
-}
-
-
-function withdrawMoney() {
-
-  if (!receiveWithdrawVerified) {
-    toast("Verify withdrawal details first.");
-    return;
-  }
-
-  const amount =
-    Number(
-      document.getElementById("receiveWithdrawAmount").value
-    );
-
-  if (!amount || amount <= 0) {
-    toast("Enter a valid amount.");
-    return;
-  }
-
-  const source = getSource(selectedReceiveSource);
-
-  if (!source) {
-    toast("Source not found.");
-    return;
-  }
-
-  if (amount > source.balance) {
-    toast("Insufficient balance.");
-    return;
-  }
-
-  pendingTransaction = {
-    type: "withdraw",
-    amount,
-    sourceId: source.id,
-    sourceName: sourceDescription(source)
+    toast("Agent details verified.");
   };
 
-  document.getElementById("authDescription").textContent =
-    `Authorize withdrawal of ${money(amount)} from ${sourceDescription(source)}.`;
 
-  document.getElementById("authPin").value = "";
+  $("withdrawBtn").onclick = () => {
 
-  openModal("authModal");
+    if (!withdrawalVerified) {
+      toast("Verify the agent first.");
+      return;
+    }
+
+    const amount =
+      Number($("withdrawAmount").value);
+
+    const source =
+      getSource(selectedReceiveSource);
+
+    if (!amount || amount <= 0) {
+      toast("Enter a valid amount.");
+      return;
+    }
+
+    if (!source) {
+      toast("Select a withdrawal source.");
+      return;
+    }
+
+    if (source.balance < amount) {
+      toast("Insufficient source balance.");
+      return;
+    }
+
+    const pin = prompt(
+      "BEAST SECURITY\n\nEnter your BEAST PIN:"
+    );
+
+    if (pin === null) return;
+
+    if (pin !== state.beastPin) {
+      toast("Invalid BEAST PIN.");
+      return;
+    }
+
+    source.balance -= amount;
+    state.balance -= amount;
+
+    state.history.unshift({
+      title: "Agent Withdrawal",
+      amount: -amount,
+      source: source.provider,
+      recipient: "KRISH DEMO AGENT",
+      status: "Completed",
+      reference: reference("OUT"),
+      date: nowText()
+    });
+
+    save();
+
+    $("withdrawAmount").value = "";
+
+    updateDashboard();
+    renderAllSources();
+    renderHistory();
+
+    toast(
+      `✓ KES ${money(amount)} withdrawal completed.`
+    );
+  };
 }
 
 
-function completeWithdrawTransaction() {
+/* =========================================================
+   LIPA OPTIONS
+   ========================================================= */
 
-  const tx = pendingTransaction;
-  const source = getSource(tx.sourceId);
+function setupLipaOptions() {
 
-  if (!source || source.balance < tx.amount) {
-    toast("Insufficient balance.");
-    closeModal("authModal");
-    return;
-  }
+  document.querySelectorAll(
+    ".lipa-option"
+  ).forEach(button => {
 
-  source.balance -= tx.amount;
+    button.onclick = () => {
 
-  state.balance = Math.max(
-    0,
-    state.balance - tx.amount
-  );
+      document.querySelectorAll(
+        ".lipa-option"
+      ).forEach(item =>
+        item.classList.remove("active")
+      );
 
-  addHistory({
-    direction: "out",
-    title: "Withdrawal",
-    amount: tx.amount,
-    source: tx.sourceName,
-    recipient: "Agent / Store",
-    status: "Demo Completed"
+      button.classList.add("active");
+
+      currentLipaType =
+        button.dataset.lipaType;
+
+      renderLipaFields();
+    };
   });
 
-  save();
-  updateBalance();
-  renderHistory();
-
-  closeModal("authModal");
-
-  document.getElementById("receiveWithdrawAmount").value = "";
-
-  toast("Withdrawal completed in demo mode.");
-
-  pendingTransaction = null;
+  renderLipaFields();
 }
 
 
-/* =========================
-   LIPA NA
-========================= */
-
-function renderLipaForm() {
+function renderLipaFields() {
 
   const container =
-    document.getElementById("lipaForm");
+    $("lipaFields");
 
   if (!container) return;
 
-  let html = "";
+  if (currentLipaType === "pochi") {
 
-  if (currentLipaType === "paybill") {
-
-    html = `
-      <label>Business Number</label>
-      <input id="lipaBusiness" placeholder="Business number">
-
-      <label>Account Number</label>
-      <input id="lipaAccount" placeholder="Account number">
-    `;
-
-  } else if (currentLipaType === "buygoods") {
-
-    html = `
-      <label>Till Number</label>
-      <input id="lipaTill" placeholder="Till number">
-    `;
-
-  } else {
-
-    html = `
-      <label>Pochi Phone Number</label>
-      <input id="lipaPhone"
+    container.innerHTML = `
+      <label>Seller Phone Number</label>
+      <input id="lipaPochiPhone"
              type="tel"
              placeholder="0712345678">
     `;
   }
 
-  html += `
-    <label>Amount</label>
+  if (currentLipaType === "buygoods") {
 
-    <div class="amount-input">
-      <span>KES</span>
-      <input id="lipaAmount"
-             type="number"
-             min="1"
-             placeholder="0">
-    </div>
-
-    <label>Payment Source</label>
-
-    <div id="lipaSourcePicker"
-         class="source-picker"></div>
-
-    <button id="lipaVerifyBtn"
-            class="secondary-btn full">
-      VERIFY PAYMENT DETAILS
-    </button>
-
-    <div id="lipaResult"
-         class="verification-result hidden"></div>
-
-    <button id="lipaPayBtn"
-            class="primary-btn full">
-      AUTHORIZE PAYMENT
-    </button>
-  `;
-
-  container.innerHTML = html;
-
-  renderSourcePicker(
-    "lipaSourcePicker",
-    null,
-    id => {
-      document
-        .getElementById("lipaSourcePicker")
-        .dataset.selected = id;
-    }
-  );
-
-  document
-    .getElementById("lipaVerifyBtn")
-    .addEventListener("click", verifyLipa);
-
-  document
-    .getElementById("lipaPayBtn")
-    .addEventListener("click", payLipa);
-}
-
-
-function verifyLipa() {
-
-  const result =
-    document.getElementById("lipaResult");
-
-  let target = "";
+    container.innerHTML = `
+      <label>Till Number</label>
+      <input id="lipaTill"
+             type="text"
+             placeholder="Enter Till Number">
+    `;
+  }
 
   if (currentLipaType === "paybill") {
 
-    const business =
-      document.getElementById("lipaBusiness").value.trim();
+    container.innerHTML = `
+      <label>Business Number</label>
+      <input id="lipaBusiness"
+             type="text"
+             placeholder="Enter Business Number">
 
-    const account =
-      document.getElementById("lipaAccount").value.trim();
-
-    if (!business || !account) {
-      toast("Enter business and account.");
-      return;
-    }
-
-    target =
-      `Business ${business} • Account ${account}`;
-
-  } else if (currentLipaType === "buygoods") {
-
-    target =
-      document.getElementById("lipaTill").value.trim();
-
-    if (!target) {
-      toast("Enter till number.");
-      return;
-    }
-
-  } else {
-
-    target =
-      document.getElementById("lipaPhone").value.trim();
-
-    if (!validKenyanPhone(target)) {
-      toast("Enter a valid phone number.");
-      return;
-    }
+      <label>Account Number</label>
+      <input id="lipaAccount"
+             type="text"
+             placeholder="Enter Account Number">
+    `;
   }
 
-  result.classList.remove("hidden");
+  lipaVerified = false;
 
-  result.innerHTML = `
-    <strong>✓ Payment destination verified</strong>
-    <span>${target}</span>
-  `;
+  $("lipaVerification")
+    .classList.add("hidden");
+
+  renderLipaSourcePicker();
 }
 
 
-function payLipa() {
+/* =========================================================
+   LIPA VERIFY
+   ========================================================= */
 
-  const result =
-    document.getElementById("lipaResult");
+function setupLipa() {
 
-  if (!result || result.classList.contains("hidden")) {
-    toast("Verify payment details first.");
-    return;
-  }
+  $("verifyLipaBtn").onclick = () => {
 
-  const amount =
-    Number(
-      document.getElementById("lipaAmount").value
-    );
+    let valid = false;
+    let seller = "";
 
-  if (!amount || amount <= 0) {
-    toast("Enter a valid amount.");
-    return;
-  }
+    if (currentLipaType === "pochi") {
 
-  const picker =
-    document.getElementById("lipaSourcePicker");
+      const phone =
+        normalizeKenyanPhone(
+          $("lipaPochiPhone").value
+        );
 
-  const sourceId =
-    picker.dataset.selected;
+      valid = validKenyanPhone(phone);
+      seller = "KRISH DEMO SELLER";
+    }
 
-  if (!sourceId) {
-    toast("Select payment source.");
-    return;
-  }
+    if (currentLipaType === "buygoods") {
 
-  const source = getSource(sourceId);
+      valid =
+        $("lipaTill").value.trim().length >= 3;
 
-  if (!source || source.balance < amount) {
-    toast("Insufficient source balance.");
-    return;
-  }
+      seller = "KRISH DEMO SHOP";
+    }
 
-  pendingTransaction = {
-    type: "lipa",
-    amount,
-    sourceId,
-    sourceName: sourceDescription(source)
+    if (currentLipaType === "paybill") {
+
+      valid =
+        $("lipaBusiness").value.trim() &&
+        $("lipaAccount").value.trim();
+
+      seller = "KRISH DEMO BUSINESS";
+    }
+
+    if (!valid) {
+      toast("Enter valid payment details.");
+      return;
+    }
+
+    lipaVerified = true;
+
+    $("lipaVerification").innerHTML = `
+      <strong>✓ PAYMENT TARGET VERIFIED</strong>
+      <span>${escapeHTML(seller)}</span>
+    `;
+
+    $("lipaVerification")
+      .classList.remove("hidden");
+
+    $("lipaVerification")
+      .dataset.seller = seller;
+
+    toast("Payment target verified.");
   };
 
-  document.getElementById("authDescription").textContent =
-    `Authorize ${money(amount)} Lipa Na payment from ${sourceDescription(source)}.`;
 
-  document.getElementById("authPin").value = "";
+  $("lipaPayBtn").onclick = () => {
 
-  openModal("authModal");
+    if (!lipaVerified) {
+      toast("Verify the payment target first.");
+      return;
+    }
+
+    const amount =
+      Number($("lipaAmount").value);
+
+    const source =
+      getSource(selectedLipaSource);
+
+    if (!amount || amount <= 0) {
+      toast("Enter a valid amount.");
+      return;
+    }
+
+    if (!source) {
+      toast("Select a payment source.");
+      return;
+    }
+
+    if (source.balance < amount) {
+      toast("Insufficient source balance.");
+      return;
+    }
+
+    const pin = prompt(
+      "BEAST SECURITY\n\nEnter your BEAST PIN to authorize:"
+    );
+
+    if (pin === null) return;
+
+    if (pin !== state.beastPin) {
+      toast("Invalid BEAST PIN.");
+      return;
+    }
+
+    const seller =
+      $("lipaVerification").dataset.seller ||
+      "KRISH DEMO SELLER";
+
+    source.balance -= amount;
+    state.balance -= amount;
+
+    state.history.unshift({
+      title: "Lipa Na Payment",
+      amount: -amount,
+      source: source.provider,
+      recipient: seller,
+      status: "Completed",
+      reference: reference("LIPA"),
+      date: nowText()
+    });
+
+    save();
+
+    $("lipaAmount").value = "";
+
+    updateDashboard();
+    renderAllSources();
+    renderHistory();
+
+    toast(
+      `✓ KES ${money(amount)} paid successfully.`
+    );
+  };
 }
 
 
-function completeLipaTransaction() {
-
-  const tx = pendingTransaction;
-  const source = getSource(tx.sourceId);
-
-  if (!source || source.balance < tx.amount) {
-    toast("Insufficient source balance.");
-    closeModal("authModal");
-    return;
-  }
-
-  source.balance -= tx.amount;
-
-  state.balance = Math.max(
-    0,
-    state.balance - tx.amount
-  );
-
-  addHistory({
-    direction: "out",
-    title: "Lipa Na Payment",
-    amount: tx.amount,
-    source: tx.sourceName,
-    recipient: currentLipaType.toUpperCase(),
-    status: "Completed"
-  });
-
-  save();
-  updateBalance();
-  renderHistory();
-  renderLipaForm();
-
-  closeModal("authModal");
-
-  toast("Lipa Na payment completed.");
-
-  pendingTransaction = null;
-}
-
-
-/* =========================
+/* =========================================================
    HISTORY
-========================= */
-
-function addHistory(item) {
-
-  state.history.unshift({
-    ...item,
-    reference:
-      "BT" +
-      Date.now().toString().slice(-10),
-
-    date:
-      new Date().toLocaleString("en-KE")
-  });
-
-  if (state.history.length > 100) {
-    state.history =
-      state.history.slice(0, 100);
-  }
-}
-
+   ========================================================= */
 
 function renderHistory() {
 
   const container =
-    document.getElementById("historyList");
+    $("historyList");
 
   if (!container) return;
 
   if (!state.history.length) {
 
     container.innerHTML = `
-      <div class="history-item">
-        <strong>No transactions yet</strong>
-        <small>Your demo transaction history will appear here.</small>
+      <div class="history-empty">
+        No transactions yet.
       </div>
     `;
 
@@ -1686,411 +1709,523 @@ function renderHistory() {
   container.innerHTML =
     state.history.map(item => {
 
-      const positive =
-        item.direction === "in";
+      const amount =
+        Number(item.amount || 0);
+
+      const sign =
+        amount < 0 ? "-" : "+";
 
       return `
         <div class="history-item">
 
-          <div class="history-item-top">
+          <div class="history-main">
+
             <div>
-              <strong>${item.title}</strong>
-              <small>${item.date}</small>
+              <div class="history-title">
+                ${escapeHTML(item.title)}
+              </div>
+
+              <div class="history-date">
+                ${escapeHTML(item.date)}
+              </div>
             </div>
 
-            <strong class="${
-              positive
-                ? "history-positive"
-                : "history-negative"
-            }">
-              ${positive ? "+" : "-"}${money(item.amount)}
-            </strong>
+            <div class="history-amount">
+              ${sign} KES ${money(Math.abs(amount))}
+            </div>
+
           </div>
 
-          <small>
-            Source: ${item.source}
-          </small>
+          <div class="history-meta">
 
-          <br>
+            <span class="history-tag">
+              ${escapeHTML(item.source)}
+            </span>
 
-          <small>
-            To/From: ${item.recipient}
-          </small>
+            <span class="history-tag">
+              ${escapeHTML(item.recipient)}
+            </span>
 
-          <br>
+            <span class="history-tag">
+              ${escapeHTML(item.status)}
+            </span>
 
-          <small>
-            ${item.status} • ${item.reference}
-          </small>
+            <span class="history-tag">
+              ${escapeHTML(item.reference)}
+            </span>
+
+          </div>
 
         </div>
       `;
-
     }).join("");
 }
 
 
-/* =========================
+/* =========================================================
    SETTINGS
-========================= */
+   ========================================================= */
 
 function openSettings() {
 
-  document.getElementById("securityAlertsToggle").checked =
-    !!state.settings.securityAlerts;
-
-  document.getElementById("notificationsToggle").checked =
-    !!state.settings.notifications;
-
-  document.getElementById("lightModeToggle").checked =
-    state.dark === false;
-
-  openModal("settingsModal");
-}
-
-
-function logout() {
-
-  state.registered = false;
-
-  save();
-
-  closeModal("settingsModal");
-
-  document.getElementById("beastApp")
-    .classList.add("hidden");
-
-  document.getElementById("registrationScreen")
+  $("settingsModal")
     .classList.remove("hidden");
-
-  document.getElementById("registrationName").value = "";
-  document.getElementById("registrationPhone").value = "";
-  document.getElementById("registrationId").value = "";
-  document.getElementById("registrationPin").value = "";
-  document.getElementById("registrationPinConfirm").value = "";
-
-  showRegistrationStep(1);
-
-  toast("Logged out.");
 }
 
 
-/* =========================
-   EVENTS
-========================= */
+function setupSettings() {
 
-document.addEventListener("DOMContentLoaded", () => {
+  $("settingsBtn").onclick =
+    openSettings;
 
-  load();
-  applyTheme();
+  $("bottomSettingsBtn").onclick =
+    openSettings;
 
-  /* Registration */
 
-  document
-    .getElementById("registrationNext1")
-    .addEventListener(
-      "click",
-      validateRegistrationStep1
+  $("lightModeToggle").onchange = event => {
+
+    state.dark =
+      !event.target.checked;
+
+    applyTheme();
+    save();
+
+    toast(
+      state.dark
+        ? "Dark Mode enabled."
+        : "Light Mode enabled."
     );
+  };
 
-  document
-    .getElementById("registrationBack1")
-    .addEventListener(
-      "click",
-      () => showRegistrationStep(1)
-    );
 
-  document
-    .getElementById("registrationNext2")
-    .addEventListener(
-      "click",
-      validateRegistrationStep2
-    );
-
-  document
-    .getElementById("registrationBack2")
-    .addEventListener(
-      "click",
-      () => showRegistrationStep(2)
-    );
-
-  document
-    .getElementById("registrationFinish")
-    .addEventListener(
-      "click",
-      finishRegistration
-    );
-
-
-  /* Navigation */
-
-  document
-    .querySelectorAll(".nav-btn")
-    .forEach(button => {
-
-      button.addEventListener("click", () => {
-
-        openPanel(
-          button.dataset.panel
-        );
-
-      });
-
-    });
-
-
-  /* Send */
-
-  document
-    .getElementById("verifyRecipientBtn")
-    .addEventListener(
-      "click",
-      verifyRecipient
-    );
-
-  document
-    .getElementById("sendBtn")
-    .addEventListener(
-      "click",
-      sendMoney
-    );
-
-
-  /* Receive tabs */
-
-  document
-    .getElementById("receiveSellTab")
-    .addEventListener("click", () => {
-
-      document
-        .getElementById("receiveSellTab")
-        .classList.add("active");
-
-      document
-        .getElementById("receiveWithdrawTab")
-        .classList.remove("active");
-
-      document
-        .getElementById("receiveSellSection")
-        .classList.remove("hidden");
-
-      document
-        .getElementById("receiveWithdrawSection")
-        .classList.add("hidden");
-
-    });
-
-
-  document
-    .getElementById("receiveWithdrawTab")
-    .addEventListener("click", () => {
-
-      document
-        .getElementById("receiveWithdrawTab")
-        .classList.add("active");
-
-      document
-        .getElementById("receiveSellTab")
-        .classList.remove("active");
-
-      document
-        .getElementById("receiveSellSection")
-        .classList.add("hidden");
-
-      document
-        .getElementById("receiveWithdrawSection")
-        .classList.remove("hidden");
-
-      renderReceiveWithdrawSource();
-
-    });
-
-
-  /* Receive types */
-
-  document
-    .querySelectorAll(".receive-option")
-    .forEach(button => {
-
-      if (button.dataset.receiveType) {
-
-        button.addEventListener("click", () => {
-
-          document
-            .querySelectorAll("[data-receive-type]")
-            .forEach(x =>
-              x.classList.remove("active")
-            );
-
-          button.classList.add("active");
-
-          currentReceiveType =
-            button.dataset.receiveType;
-
-          renderReceiveSellForm();
-
-        });
-
-      }
-
-    });
-
-
-  /* Lipa */
-
-  document
-    .querySelectorAll(".lipa-option")
-    .forEach(button => {
-
-      button.addEventListener("click", () => {
-
-        document
-          .querySelectorAll(".lipa-option")
-          .forEach(x =>
-            x.classList.remove("active")
-          );
-
-        button.classList.add("active");
-
-        currentLipaType =
-          button.dataset.lipaType;
-
-        renderLipaForm();
-
-      });
-
-    });
-
-
-  /* Withdraw */
-
-  document
-    .getElementById("verifyReceiveWithdrawBtn")
-    .addEventListener(
-      "click",
-      verifyReceiveWithdraw
-    );
-
-  document
-    .getElementById("receiveWithdrawBtn")
-    .addEventListener(
-      "click",
-      withdrawMoney
-    );
-
-
-  /* Buyer */
-
-  document
-    .getElementById("buyerLoginContinue")
-    .addEventListener(
-      "click",
-      buyerLoginContinue
-    );
-
-  document
-    .getElementById("sellerApproveBtn")
-    .addEventListener(
-      "click",
-      sellerApprove
-    );
-
-  document
-    .getElementById("sellerRejectBtn")
-    .addEventListener(
-      "click",
-      sellerReject
-    );
-
-  document
-    .getElementById("buyerReLoginContinue")
-    .addEventListener(
-      "click",
-      buyerReLoginContinue
-    );
-
-
-  /* Final authorization */
-
-  document
-    .getElementById("authorizeBtn")
-    .addEventListener(
-      "click",
-      authorizeTransaction
-    );
-
-
-  /* Settings */
-
-  document
-    .getElementById("settingsBtn")
-    .addEventListener(
-      "click",
-      openSettings
-    );
-
-  document
-    .getElementById("lightModeToggle")
-    .addEventListener("change", event => {
-
-      state.dark = !event.target.checked;
-
-      save();
-      applyTheme();
-
-    });
-
-
-  document
-    .getElementById("securityAlertsToggle")
-    .addEventListener("change", event => {
+  $("securityAlertsToggle").onchange =
+    event => {
 
       state.settings.securityAlerts =
         event.target.checked;
 
       save();
 
-    });
+      toast(
+        event.target.checked
+          ? "Security alerts enabled."
+          : "Security alerts disabled."
+      );
+    };
 
 
-  document
-    .getElementById("notificationsToggle")
-    .addEventListener("change", event => {
+  $("notificationsToggle").onchange =
+    event => {
 
       state.settings.notifications =
         event.target.checked;
 
       save();
 
-    });
+      toast(
+        event.target.checked
+          ? "Notifications enabled."
+          : "Notifications disabled."
+      );
+    };
 
 
-  document
-    .getElementById("logoutBtn")
-    .addEventListener(
-      "click",
-      logout
-    );
+  $("logoutBtn").onclick = () => {
+
+    closeModal("settingsModal");
+
+    state.registered = false;
+
+    save();
+
+    location.reload();
+  };
 
 
-  /* Close buttons */
+  document.querySelectorAll(
+    "[data-settings-page]"
+  ).forEach(button => {
 
-  document
-    .querySelectorAll("[data-close]")
-    .forEach(button => {
+    button.onclick = () => {
 
-      button.addEventListener("click", () => {
-
-        closeModal(
-          button.dataset.close
-        );
-
-      });
-
-    });
+      openSettingsSubPage(
+        button.dataset.settingsPage
+      );
+    };
+  });
 
 
-  /* Security visibility */
+  document.querySelectorAll(
+    "[data-close]"
+  ).forEach(button => {
+
+    button.onclick = () => {
+
+      closeModal(
+        button.dataset.close
+      );
+    };
+  });
+}
+
+
+/* =========================================================
+   SETTINGS SUB-PAGES
+   ========================================================= */
+
+function openSettingsSubPage(page) {
+
+  const container =
+    $("settingsSubContent");
+
+  let title = "";
+  let icon = "";
+  let content = "";
+
+
+  /* PERSONAL */
+  if (page === "personal") {
+
+    title = "Personal Details";
+    icon = "👤";
+
+    content = `
+      <div class="info-card">
+        <strong>Full Name</strong>
+        <span>${escapeHTML(state.fullName)}</span>
+      </div>
+
+      <div class="info-card">
+        <strong>Registered Phone</strong>
+        <span>${escapeHTML(state.phone)}</span>
+      </div>
+
+      <div class="info-card">
+        <strong>National ID</strong>
+        <span>${escapeHTML(state.nationalId)}</span>
+      </div>
+
+      <div class="info-card">
+        <strong>BEAST ID</strong>
+        <span>${escapeHTML(state.beastId)}</span>
+      </div>
+    `;
+  }
+
+
+  /* LINES */
+  if (page === "lines") {
+
+    title = "Line Management";
+    icon = "📱";
+
+    const lines =
+      state.sources.filter(
+        source =>
+          source.type === "M-PESA" ||
+          source.type === "Airtel Money"
+      );
+
+    content = lines.map(source => `
+      <div class="info-card">
+
+        <strong>
+          ${sourceIcon(source.type)}
+          ${escapeHTML(source.provider)}
+        </strong>
+
+        <span>
+          ${escapeHTML(source.number)}
+        </span>
+
+        <span class="service-balance">
+          KES ${money(source.balance)}
+        </span>
+
+        ${
+          source.label === "Primary Line"
+            ? `<span class="primary-tag">PRIMARY</span>`
+            : `<span class="line-status">CONNECTED</span>`
+        }
+
+      </div>
+    `).join("");
+
+    content += `
+      <button class="secondary-btn full"
+              onclick="toast('Demo: Add Line feature ready for backend integration.')">
+        + ADD NEW LINE
+      </button>
+    `;
+  }
+
+
+  /* M-PESA */
+  if (page === "mpesa") {
+
+    title = "M-PESA";
+    icon = "🟢";
+
+    content =
+      serviceCards(
+        state.sources.filter(
+          source => source.type === "M-PESA"
+        )
+      );
+  }
+
+
+  /* AIRTEL */
+  if (page === "airtel") {
+
+    title = "Airtel Money";
+    icon = "🔴";
+
+    content =
+      serviceCards(
+        state.sources.filter(
+          source => source.type === "Airtel Money"
+        )
+      );
+  }
+
+
+  /* BANKS */
+  if (page === "banks") {
+
+    title = "Bank Accounts";
+    icon = "🏦";
+
+    content =
+      serviceCards(
+        state.sources.filter(
+          source => source.type === "Bank"
+        )
+      );
+  }
+
+
+  /* CARDS */
+  if (page === "cards") {
+
+    title = "Cards";
+    icon = "💳";
+
+    content =
+      serviceCards(
+        state.sources.filter(
+          source => source.type === "Card"
+        )
+      );
+  }
+
+
+  /* WALLET */
+  if (page === "wallet") {
+
+    title = "BEAST Wallet";
+    icon = "🦁";
+
+    content =
+      serviceCards(
+        state.sources.filter(
+          source => source.type === "BEAST Wallet"
+        )
+      );
+  }
+
+
+  /* CHANGE PIN */
+  if (page === "pin") {
+
+    title = "Change BEAST PIN";
+    icon = "🔐";
+
+    content = `
+      <p class="muted">
+        Create a new 4–6 digit authorization PIN.
+      </p>
+
+      <label>Current BEAST PIN</label>
+      <input id="oldPin"
+             type="password"
+             inputmode="numeric"
+             maxlength="6"
+             placeholder="Current PIN">
+
+      <label>New BEAST PIN</label>
+      <input id="newPin"
+             type="password"
+             inputmode="numeric"
+             maxlength="6"
+             placeholder="New PIN">
+
+      <label>Confirm New PIN</label>
+      <input id="confirmNewPin"
+             type="password"
+             inputmode="numeric"
+             maxlength="6"
+             placeholder="Confirm new PIN">
+
+      <button id="saveNewPin"
+              class="primary-btn full">
+        CHANGE PIN
+      </button>
+    `;
+  }
+
+
+  container.innerHTML = `
+    <div class="sub-page-title">
+      <span>${icon}</span>
+      <h2>${title}</h2>
+    </div>
+
+    ${content}
+  `;
+
+  $("settingsSubModal")
+    .classList.remove("hidden");
+
+
+  if (page === "pin") {
+
+    $("saveNewPin").onclick = () => {
+
+      const oldPin =
+        $("oldPin").value;
+
+      const newPin =
+        $("newPin").value;
+
+      const confirm =
+        $("confirmNewPin").value;
+
+      if (oldPin !== state.beastPin) {
+        toast("Current PIN is incorrect.");
+        return;
+      }
+
+      if (!/^\d{4,6}$/.test(newPin)) {
+        toast("New PIN must contain 4–6 digits.");
+        return;
+      }
+
+      if (newPin !== confirm) {
+        toast("New PINs do not match.");
+        return;
+      }
+
+      state.beastPin = newPin;
+
+      save();
+
+      closeModal("settingsSubModal");
+
+      toast("✓ BEAST PIN changed successfully.");
+    };
+  }
+}
+
+
+/* =========================================================
+   SERVICE CARDS
+   ========================================================= */
+
+function serviceCards(sources) {
+
+  if (!sources.length) {
+
+    return `
+      <div class="history-empty">
+        No connected service.
+      </div>
+    `;
+  }
+
+  return sources.map(source => {
+
+    let extra = "";
+
+    if (source.accountType) {
+      extra += `
+        <span>
+          Account: ${escapeHTML(source.accountType)}
+        </span>
+      `;
+    }
+
+    if (source.cardType) {
+      extra += `
+        <span>
+          Card: ${escapeHTML(source.cardType)}
+        </span>
+      `;
+    }
+
+    if (source.network) {
+      extra += `
+        <span>
+          Network: ${escapeHTML(source.network)}
+        </span>
+      `;
+    }
+
+    if (source.walletType) {
+      extra += `
+        <span>
+          Wallet: ${escapeHTML(source.walletType)}
+        </span>
+      `;
+    }
+
+    return `
+      <div class="info-card">
+
+        <strong>
+          ${sourceIcon(source.type)}
+          ${escapeHTML(source.provider)}
+        </strong>
+
+        <span>
+          ${escapeHTML(source.number)}
+        </span>
+
+        ${extra}
+
+        <span class="service-balance">
+          KES ${money(source.balance)}
+        </span>
+
+        <span class="line-status">
+          CONNECTED
+        </span>
+
+      </div>
+    `;
+  }).join("");
+}
+
+
+/* =========================================================
+   MODALS
+   ========================================================= */
+
+function closeModal(id) {
+
+  const modal = $(id);
+
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+}
+
+
+/* =========================================================
+   SECURITY VISIBILITY CHECK
+   ========================================================= */
+
+function setupVisibilitySecurity() {
 
   document.addEventListener(
     "visibilitychange",
@@ -2098,26 +2233,63 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (
         document.hidden &&
-        state.settings.securityAlerts
+        state.settings.securityAlerts &&
+        state.registered
       ) {
         toast(
-          "Security alert: BEAST session was hidden."
+          "🛡️ BEAST security: session temporarily hidden."
         );
       }
-
     }
   );
+}
 
 
-  /* Initial render */
+/* =========================================================
+   INITIALIZATION
+   ========================================================= */
 
-  renderSendSourcePicker();
-  renderReceiveSellForm();
-  renderReceiveWithdrawSource();
-  renderLipaForm();
-  renderHistory();
-  updateBalance();
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
 
-  beginRegistration();
+    loadState();
 
-});
+    applyTheme();
+
+    setupRegistration();
+
+    setupNavigation();
+
+    setupSend();
+
+    setupReceiveOptions();
+
+    setupReceive();
+
+    setupBuyerLogin();
+
+    setupSellerApproval();
+
+    setupFinalAuthorization();
+
+    setupWithdrawal();
+
+    setupLipaOptions();
+
+    setupLipa();
+
+    setupSettings();
+
+    setupVisibilitySecurity();
+
+    renderHistory();
+
+    updateDashboard();
+
+    if (state.registered) {
+      renderAllSources();
+    }
+
+  }
+);
