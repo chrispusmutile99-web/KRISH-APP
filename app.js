@@ -1,3435 +1,2641 @@
 document.addEventListener("DOMContentLoaded", () => {
+  "use strict";
 
-/* =========================================================
-MONEY TRANSFER BEAST
-Customer + Owner/Admin + Fee/Revenue + BEAST AI
-DEMO / LOCAL STORAGE VERSION
-========================================================= */
+  /* =========================================================
+     MONEY TRANSFER BEAST
+     Clean Demo Application
+     ========================================================= */
 
-const KEY = "mtb_beast_v7";
-const REG_KEY = "mtb_beast_registration_v5";
+  const STORAGE_KEY = "money_transfer_beast_demo_v8";
+  const THEME_KEY = "money_transfer_beast_theme";
 
-const DEFAULT_STATE = {
-registered: false,
-fullName: "",
-phone: "",
-nationalId: "",
-beastId: "",
-beastPin: "",
-balance: 0,
-dark: true,
+  const DEMO_PIN = "1234";
+  const DEMO_PASSWORD = "beast123";
 
-settings: {
-  securityAlerts: true,
-  notifications: true
-},
+  const STARTING_BALANCE = 5000;
 
-sources: [
-  {
-    id: "mpesa1",
-    type: "M-PESA",
-    provider: "Safaricom M-PESA",
-    number: "0712345678",
-    label: "Primary Line",
-    balance: 2500
-  },
-  {
-    id: "mpesa2",
-    type: "M-PESA",
-    provider: "Safaricom M-PESA",
-    number: "0798765432",
-    label: "Secondary Line",
-    balance: 1200
-  },
-  {
-    id: "airtel1",
-    type: "Airtel Money",
-    provider: "Airtel Money",
-    number: "0734567890",
-    label: "Primary Line",
-    balance: 1500
-  },
-  {
-    id: "airtel2",
-    type: "Airtel Money",
-    provider: "Airtel Money",
-    number: "0787654321",
-    label: "Secondary Line",
-    balance: 900
-  },
-  {
-    id: "bank1",
-    type: "Bank",
-    provider: "KCB Bank",
-    number: "KCB •••• 4582",
-    label: "Savings",
-    balance: 8500
-  },
-  {
-    id: "bank2",
-    type: "Bank",
-    provider: "Equity Bank",
-    number: "Equity •••• 9134",
-    label: "Current",
-    balance: 4200
-  },
-  {
-    id: "bank3",
-    type: "Bank",
-    provider: "Co-operative Bank",
-    number: "Co-operative •••• 2210",
-    label: "Savings",
-    balance: 6700
-  },
-  {
-    id: "card1",
-    type: "Card",
-    provider: "BEAST Visa",
-    number: "BEAST Visa •••• 4821",
-    label: "Debit",
-    balance: 3000
-  },
-  {
-    id: "card2",
-    type: "Card",
-    provider: "M-PESA Card",
-    number: "M-PESA Card •••• 7720",
-    label: "Prepaid",
-    balance: 1800
-  },
-  {
-    id: "card3",
-    type: "Card",
-    provider: "Demo Mastercard",
-    number: "Mastercard •••• 1188",
-    label: "Debit",
-    balance: 2200
-  },
-  {
-    id: "wallet1",
-    type: "BEAST Wallet",
-    provider: "BEAST Wallet",
-    number: "Main Wallet",
-    label: "Personal Wallet",
-    balance: 5000
+  /* =========================================================
+     BASIC HELPERS
+     ========================================================= */
+
+  const $ = (id) => document.getElementById(id);
+
+  function qs(selector) {
+    return document.querySelector(selector);
   }
-],
 
-history: [],
+  function qsa(selector) {
+    return Array.from(document.querySelectorAll(selector));
+  }
 
-ownerLedger: {
-  beastFees: 0,
-  providerCosts: 0,
-  refunds: 0,
-  transactions: []
-},
+  function money(value) {
+    const number = Number(value) || 0;
 
-securityLogs: []
+    return number.toLocaleString("en-KE", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
 
-};
+  function shortMoney(value) {
+    return `KES ${money(value)}`;
+  }
 
-/* =========================================================
-STATE
-========================================================= */
+  function escapeHTML(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
 
-let state = loadState();
+  function nowISO() {
+    return new Date().toISOString();
+  }
 
-let selectedSendSource = null;
-let selectedReceiveSource = null;
-let selectedWithdrawSource = null;
-let selectedLipaSource = null;
+  function formatDate(value) {
+    if (!value) return "—";
 
-let receiveMethod = "paybill";
-let lipaMethod = "paybill";
+    const date = new Date(value);
 
-let pendingReceive = null;
-let pendingPinCallback = null;
-
-let currentAdminSection = "overview";
-
-/* =========================================================
-HELPERS
-========================================================= */
-
-function clone(obj) {
-return JSON.parse(JSON.stringify(obj));
-}
-
-function mergeState(base, saved) {
-const result = clone(base);
-
-if (!saved || typeof saved !== "object") {
-  return result;
-}
-
-Object.keys(saved).forEach(key => {
-  if (key === "settings") {
-    result.settings = {
-      ...result.settings,
-      ...(saved.settings || {})
-    };
-  } else if (key === "ownerLedger") {
-    result.ownerLedger = {
-      ...result.ownerLedger,
-      ...(saved.ownerLedger || {}),
-      transactions:
-        Array.isArray(saved.ownerLedger?.transactions)
-          ? saved.ownerLedger.transactions
-          : []
-    };
-  } else if (key === "sources") {
-    if (Array.isArray(saved.sources)) {
-      result.sources = saved.sources;
+    if (Number.isNaN(date.getTime())) {
+      return "—";
     }
-  } else if (key === "history") {
-    result.history = Array.isArray(saved.history)
-      ? saved.history
-      : [];
-  } else if (key === "securityLogs") {
-    result.securityLogs = Array.isArray(saved.securityLogs)
-      ? saved.securityLogs
-      : [];
-  } else {
-    result[key] = saved[key];
+
+    return date.toLocaleString("en-KE", {
+      dateStyle: "medium",
+      timeStyle: "short"
+    });
   }
-});
 
-return result;
+  function randomNumber(length = 6) {
+    let result = "";
 
-}
+    for (let i = 0; i < length; i++) {
+      result += Math.floor(Math.random() * 10);
+    }
 
-function loadState() {
-try {
-const saved = JSON.parse(localStorage.getItem(KEY));
-return mergeState(DEFAULT_STATE, saved);
-} catch (error) {
-return clone(DEFAULT_STATE);
-}
-}
+    return result;
+  }
 
-function saveState() {
-localStorage.setItem(KEY, JSON.stringify(state));
+  function generateBeastId() {
+    return `BEAST-${randomNumber(6)}`;
+  }
 
-localStorage.setItem(
-  REG_KEY,
-  JSON.stringify({
-    registered: state.registered,
-    fullName: state.fullName,
-    phone: state.phone,
-    nationalId: state.nationalId,
-    beastId: state.beastId
-  })
-);
+  function generateReference() {
+    return `BT${Date.now().toString().slice(-8)}${randomNumber(3)}`;
+  }
 
-}
+  function validKenyanPhone(phone) {
+    const cleaned = String(phone || "")
+      .replace(/\s+/g, "")
+      .replace(/-/g, "");
 
-function $(id) {
-return document.getElementById(id);
-}
+    return /^(?:2547\d{8}|07\d{8}|01\d{8})$/.test(cleaned);
+  }
 
-function money(value) {
-const number = Number(value || 0);
+  function normalizePhone(phone) {
+    let value = String(phone || "")
+      .replace(/\s+/g, "")
+      .replace(/-/g, "");
 
-return new Intl.NumberFormat("en-KE", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2
-}).format(number);
+    if (value.startsWith("+254")) {
+      value = value.slice(1);
+    }
 
-}
+    if (value.startsWith("254")) {
+      return value;
+    }
 
-function shortMoney(value) {
-return "KES ${money(value)}";
-}
+    if (value.startsWith("0")) {
+      return `254${value.slice(1)}`;
+    }
 
-function escapeHTML(value) {
-return String(value ?? "")
-.replaceAll("&", "&")
-.replaceAll("<", "<")
-.replaceAll(">", ">")
-.replaceAll('"', """)
-.replaceAll("'", "'");
-}
+    return value;
+  }
 
-function now() {
-return new Date().toLocaleString("en-KE", {
-dateStyle: "medium",
-timeStyle: "short"
-});
-}
+  function displayPhone(phone) {
+    const normalized = normalizePhone(phone);
 
-function reference() {
-return "BT" +
-Date.now().toString().slice(-8) +
-Math.floor(Math.random() * 90 + 10);
-}
+    if (normalized.startsWith("254") && normalized.length === 12) {
+      return `0${normalized.slice(3)}`;
+    }
 
-function amountValue(id) {
-const el = $(id);
-return Number(el?.value || 0);
-}
+    return phone || "—";
+  }
 
-function sourceById(id) {
-return state.sources.find(source => source.id === id) || null;
-}
+  function showElement(element) {
+    if (!element) return;
+    element.classList.remove("hidden");
+    element.style.display = "";
+  }
 
-function maskNumber(number) {
-const value = String(number || "");
+  function hideElement(element) {
+    if (!element) return;
+    element.classList.add("hidden");
+    element.style.display = "none";
+  }
 
-if (value.length <= 4) {
-  return value;
-}
+  function setText(id, value) {
+    const element = $(id);
 
-return value.slice(0, 3) +
-  "••••" +
-  value.slice(-3);
+    if (element) {
+      element.textContent = value;
+    }
+  }
 
-}
+  function setHTML(id, value) {
+    const element = $(id);
 
-function toast(message, type = "normal") {
-const el = $("toast");
+    if (element) {
+      element.innerHTML = value;
+    }
+  }
 
-if (!el) return;
+  function inputValue(id) {
+    const element = $(id);
+    return element ? String(element.value || "").trim() : "";
+  }
 
-el.textContent = message;
-el.className = `toast show ${type}`;
+  function clearInput(id) {
+    const element = $(id);
+    if (element) element.value = "";
+  }
 
-clearTimeout(window.__beastToastTimer);
+  /* =========================================================
+     STATE
+     ========================================================= */
 
-window.__beastToastTimer = setTimeout(() => {
-  el.className = "toast";
-}, 3000);
+  const defaultState = {
+    registered: false,
 
-}
+    user: {
+      name: "",
+      phone: "",
+      nationalId: "",
+      beastId: "",
+      pin: ""
+    },
 
-function normalizeKenyanPhone(phone) {
-let value = String(phone || "").replace(/\s+/g, "");
+    balance: STARTING_BALANCE,
 
-if (value.startsWith("+254")) {
-  value = "0" + value.slice(4);
-} else if (value.startsWith("254")) {
-  value = "0" + value.slice(3);
-}
+    sources: {
+      mpesa: {
+        name: "M-PESA",
+        balance: STARTING_BALANCE,
+        enabled: true
+      },
 
-return value;
+      airtel: {
+        name: "Airtel Money",
+        balance: 0,
+        enabled: false
+      },
 
-}
+      bank: {
+        name: "Bank Account",
+        balance: 0,
+        enabled: false
+      },
 
-function validKenyanPhone(phone) {
-const normalized = normalizeKenyanPhone(phone);
+      card: {
+        name: "Card",
+        balance: 0,
+        enabled: false
+      },
 
-return /^(07|01)\d{8}$/.test(normalized);
+      wallet: {
+        name: "BEAST Wallet",
+        balance: 0,
+        enabled: true
+      }
+    },
 
-}
+    selectedSource: "mpesa",
 
-function generateBeastId() {
-let id;
+    receiveLoggedIn: false,
+    receiveSellerVerified: false,
 
-do {
-  id =
-    "BEAST" +
-    Math.floor(100000 + Math.random() * 900000);
-} while (id === state.beastId);
+    transactions: [],
 
-return id;
+    notifications: [],
 
-}
+    securityEvents: [],
 
-function formatProvider(provider) {
-return provider || "BEAST Demo Provider";
-}
+    owner: {
+      beastFees: 0,
+      providerCosts: 0,
+      refunds: 0,
+      transactions: 0
+    },
 
-/* =========================================================
-FEE ENGINE
-========================================================= */
+    settings: {
+      biometric: false,
+      notifications: true,
+      screenSecurity: true
+    },
 
-/*
-BEAST platform fee:
-KES 1 - 1,000       = KES 5
-KES 1,001 - 10,000  = KES 10
-KES 10,001+         = KES 15
-
- Provider cost is kept separate.
-
- The Safaricom figures below are treated as a configurable
- business/API cost model, NOT as ordinary consumer M-PESA
- Send Money charges.
-
-*/
-
-const PROVIDER_COSTS = {
-SAFARICOM_API_B2C: [
-{ max: 100, fee: 0 },
-{ max: 1500, fee: 5 },
-{ max: 5000, fee: 9 },
-{ max: 20000, fee: 11 },
-{ max: 250000, fee: 13 }
-],
-
-AIRTEL_API: []
-
-};
-
-function calculateBeastFee(type, amount) {
-amount = Number(amount || 0);
-
-if (amount <= 0) return 0;
-
-if (amount <= 1000) return 5;
-
-if (amount <= 10000) return 10;
-
-return 15;
-
-}
-
-function providerTableFee(table, amount) {
-for (const band of table) {
-if (amount <= band.max) {
-return band.fee;
-}
-}
-
-return 0;
-
-}
-
-function getProviderRoute(type, source) {
-
-const sourceType = source?.type || "";
-const provider = source?.provider || sourceType || "Unknown";
-
-if (sourceType === "M-PESA") {
-  return {
-    provider: "Safaricom M-PESA",
-    route: `${String(type).toUpperCase()} / M-PESA`,
-    costModel: "Safaricom business/API demo schedule",
-    configured: true
+    theme: "dark"
   };
-}
 
-if (sourceType === "Airtel Money") {
-  return {
-    provider: "Airtel Money",
-    route: `${String(type).toUpperCase()} / AIRTEL MONEY`,
-    costModel: "Provider contract/API cost not configured",
-    configured: false
-  };
-}
+  let state = loadState();
 
-if (sourceType === "Bank") {
-  return {
-    provider,
-    route: `${String(type).toUpperCase()} / BANK`,
-    costModel: "Bank provider cost not configured",
-    configured: false
-  };
-}
+  function deepClone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
 
-if (sourceType === "Card") {
-  return {
-    provider,
-    route: `${String(type).toUpperCase()} / CARD`,
-    costModel: "Card provider cost not configured",
-    configured: false
-  };
-}
+  function mergeState(base, saved) {
+    if (!saved || typeof saved !== "object") {
+      return deepClone(base);
+    }
 
-if (sourceType === "BEAST Wallet") {
-  return {
-    provider: "BEAST Wallet",
-    route: `${String(type).toUpperCase()} / BEAST WALLET`,
-    costModel: "Internal demo route",
-    configured: true
-  };
-}
+    const merged = deepClone(base);
 
-return {
-  provider,
-  route: String(type).toUpperCase(),
-  costModel: "Not configured",
-  configured: false
-};
+    Object.keys(saved).forEach((key) => {
+      if (
+        saved[key] &&
+        typeof saved[key] === "object" &&
+        !Array.isArray(saved[key]) &&
+        merged[key] &&
+        typeof merged[key] === "object" &&
+        !Array.isArray(merged[key])
+      ) {
+        merged[key] = {
+          ...merged[key],
+          ...saved[key]
+        };
+      } else {
+        merged[key] = saved[key];
+      }
+    });
 
-}
+    return merged;
+  }
 
-function calculateProviderFee(type, amount, source) {
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
 
-amount = Number(amount || 0);
+      if (!raw) {
+        return deepClone(defaultState);
+      }
 
-if (amount <= 0) {
-  return 0;
-}
+      const parsed = JSON.parse(raw);
 
-const route = getProviderRoute(type, source);
+      return mergeState(defaultState, parsed);
+    } catch (error) {
+      console.error("MONEY TRANSFER BEAST: failed to load state", error);
+      return deepClone(defaultState);
+    }
+  }
 
-if (
-  source?.type === "M-PESA" &&
-  route.configured
-) {
-  return providerTableFee(
-    PROVIDER_COSTS.SAFARICOM_API_B2C,
-    amount
-  );
-}
+  function saveState() {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(state)
+      );
+    } catch (error) {
+      console.error("MONEY TRANSFER BEAST: failed to save state", error);
+    }
+  }
 
-/*
-  Do not pretend unknown provider contracts are free.
-  The demo uses zero until a provider-specific contract
-  cost is configured.
-*/
+  function resetState() {
+    state = deepClone(defaultState);
+    saveState();
+    location.reload();
+  }
 
-return 0;
+  /* =========================================================
+     TOAST / MESSAGES
+     ========================================================= */
 
-}
+  function showToast(message, type = "info") {
+    let toast = $("beastToast");
 
-function getFeeBreakdown(type, amount, source) {
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "beastToast";
+      toast.className = "beast-toast";
+      document.body.appendChild(toast);
+    }
 
-amount = Number(amount || 0);
+    toast.textContent = message;
+    toast.dataset.type = type;
+    toast.classList.add("show");
 
-const route = getProviderRoute(type, source);
+    clearTimeout(showToast.timer);
 
-const providerFee =
-  calculateProviderFee(type, amount, source);
+    showToast.timer = setTimeout(() => {
+      toast.classList.remove("show");
+    }, 3000);
+  }
 
-const beastFee =
-  calculateBeastFee(type, amount);
+  function registrationMessage(message, type = "error") {
+    const element = $("registrationMessage");
 
-return {
-  amount,
-  providerFee,
-  beastFee,
-  total: amount + providerFee + beastFee,
-  recipientReceives: amount,
-  provider: route.provider,
-  route: route.route,
-  providerCostStatus: route.costModel
-};
+    if (!element) return;
 
-}
+    element.textContent = message;
+    element.dataset.type = type;
+  }
 
-/* =========================================================
-FEE SUMMARY
-========================================================= */
+  /* =========================================================
+     NAVIGATION
+     ========================================================= */
 
-function renderFeeSummary(id, fees) {
-
-const el = $(id);
-
-if (!el) return;
-
-if (!fees || Number(fees.amount) <= 0) {
-  el.innerHTML = "";
-  return;
-}
-
-const status =
-  fees.providerCostStatus &&
-  fees.providerCostStatus !== "Safaricom business/API demo schedule"
-    ? `<div class="fee-note">${escapeHTML(fees.providerCostStatus)}</div>`
-    : "";
-
-el.innerHTML = `
-  <div class="fee-row">
-    <span>Amount</span>
-    <strong>KES ${money(fees.amount)}</strong>
-  </div>
-
-  <div class="fee-row">
-    <span>Provider cost</span>
-    <strong>KES ${money(fees.providerFee)}</strong>
-  </div>
-
-  <div class="fee-row">
-    <span>BEAST platform fee</span>
-    <strong>KES ${money(fees.beastFee)}</strong>
-  </div>
-
-  <div class="fee-row">
-    <span>Recipient receives</span>
-    <strong>KES ${money(fees.recipientReceives)}</strong>
-  </div>
-
-  <div class="fee-row total">
-    <span>Total debit</span>
-    <strong>KES ${money(fees.total)}</strong>
-  </div>
-
-  ${status}
-`;
-
-}
-
-/* =========================================================
-REGISTRATION
-========================================================= */
-
-function showRegistrationStep(step) {
-
-[1, 2, 3].forEach(number => {
-
-  const section = $(`registrationStep${number}`);
-  const dot = $(`progressDot${number}`);
-
-  if (section) {
-    section.classList.toggle(
-      "active",
-      number === step
+  function allScreens() {
+    return qsa(
+      ".screen, .app-screen, [data-screen]"
     );
   }
 
-  if (dot) {
-    dot.classList.toggle(
-      "active",
-      number === step
-    );
+  function showScreen(id) {
+    const target = $(id);
 
-    dot.classList.toggle(
-      "done",
-      number < step
-    );
+    if (!target) return;
+
+    allScreens().forEach((screen) => {
+      if (screen === target) {
+        screen.classList.add("active");
+        screen.classList.remove("hidden");
+        screen.style.display = "";
+      } else {
+        if (
+          screen.classList.contains("screen") ||
+          screen.classList.contains("app-screen") ||
+          screen.hasAttribute("data-screen")
+        ) {
+          screen.classList.remove("active");
+        }
+      }
+    });
+
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
   }
-});
 
-}
+  function hideRegistration() {
+    const screen = $("registrationScreen");
 
-function registrationMessage(message) {
-const el = $("registrationMessage");
+    if (screen) {
+      hideElement(screen);
+    }
+  }
 
-if (el) {
-  el.textContent = message || "";
-}
+  function showDashboard() {
+    hideRegistration();
 
-}
+    const candidates = [
+      "dashboardScreen",
+      "mainScreen",
+      "homeScreen",
+      "appScreen"
+    ];
 
-function setupRegistration() {
+    for (const id of candidates) {
+      if ($(id)) {
+        showScreen(id);
+        break;
+      }
+    }
 
-showRegistrationStep(1);
+    updateDashboard();
+  }
 
-const next1 = $("registrationNext1");
-const next2 = $("registrationNext2");
-const back1 = $("registrationBack1");
-const back2 = $("registrationBack2");
-const finish = $("registrationFinish");
+  /* =========================================================
+     REGISTRATION
+     ========================================================= */
 
-if (next1) {
-  next1.addEventListener("click", () => {
+  function showRegistrationStep(step) {
+    const steps = [
+      $("registrationStep1"),
+      $("registrationStep2"),
+      $("registrationStep3")
+    ];
 
-    registrationMessage("");
+    steps.forEach((element, index) => {
+      if (!element) return;
 
-    const name =
-      $("registrationName")?.value.trim() || "";
+      const active = index + 1 === step;
 
-    const phone =
-      normalizeKenyanPhone(
-        $("registrationPhone")?.value.trim() || ""
+      element.classList.toggle(
+        "active",
+        active
       );
 
-    const nationalId =
-      $("registrationId")?.value.trim() || "";
+      if (active) {
+        element.style.display = "";
+      } else {
+        element.style.display = "none";
+      }
+    });
 
-    if (name.length < 3) {
-      registrationMessage(
-        "Please enter your full name."
+    const dots = [
+      $("progressDot1"),
+      $("progressDot2"),
+      $("progressDot3")
+    ];
+
+    dots.forEach((dot, index) => {
+      if (!dot) return;
+
+      const number = index + 1;
+
+      dot.classList.toggle(
+        "active",
+        number <= step
       );
+
+      dot.classList.toggle(
+        "completed",
+        number < step
+      );
+    });
+  }
+
+  function setupRegistration() {
+    const registrationScreen = $("registrationScreen");
+
+    if (!registrationScreen) {
       return;
     }
 
-    if (!validKenyanPhone(phone)) {
-      registrationMessage(
-        "Enter a valid Kenyan phone number."
-      );
-      return;
-    }
-
-    if (nationalId.length < 5) {
-      registrationMessage(
-        "Enter your National ID."
-      );
-      return;
-    }
-
-    $("registrationPhone").value = phone;
-
-    showRegistrationStep(2);
-  });
-}
-
-if (back1) {
-  back1.addEventListener("click", () => {
-    registrationMessage("");
     showRegistrationStep(1);
-  });
-}
 
-if (next2) {
-  next2.addEventListener("click", () => {
+    const next1 = $("registrationNext1");
 
-    registrationMessage("");
+    if (next1) {
+      next1.addEventListener("click", () => {
+        registrationMessage("");
 
-    const pin =
-      $("registrationPin")?.value.trim() || "";
+        const name = inputValue("registrationName");
+        const phone = inputValue("registrationPhone");
+        const nationalId = inputValue("registrationId");
 
-    const confirmPin =
-      $("registrationPinConfirm")?.value.trim() || "";
-
-    if (!/^\d{4,6}$/.test(pin)) {
-      registrationMessage(
-        "BEAST PIN must contain 4–6 digits."
-      );
-      return;
-    }
-
-    if (pin !== confirmPin) {
-      registrationMessage(
-        "BEAST PIN confirmation does not match."
-      );
-      return;
-    }
-
-    const name =
-      $("registrationName")?.value.trim() || "";
-
-    const phone =
-      normalizeKenyanPhone(
-        $("registrationPhone")?.value.trim() || ""
-      );
-
-    const nationalId =
-      $("registrationId")?.value.trim() || "";
-
-    $("registrationSummaryName").textContent =
-      name;
-
-    $("registrationSummaryPhone").textContent =
-      phone;
-
-    $("registrationSummaryId").textContent =
-      nationalId;
-
-    const beastId = generateBeastId();
-
-    $("registrationBeastId").textContent =
-      beastId;
-
-    showRegistrationStep(3);
-  });
-}
-
-if (back2) {
-  back2.addEventListener("click", () => {
-    registrationMessage("");
-    showRegistrationStep(2);
-  });
-}
-
-if (finish) {
-  finish.addEventListener("click", () => {
-
-    registrationMessage("");
-
-    const name =
-      $("registrationName")?.value.trim() || "";
-
-    const phone =
-      normalizeKenyanPhone(
-        $("registrationPhone")?.value.trim() || ""
-      );
-
-    const nationalId =
-      $("registrationId")?.value.trim() || "";
-
-    const pin =
-      $("registrationPin")?.value.trim() || "";
-
-    const beastId =
-      $("registrationBeastId")?.textContent.trim() || "";
-
-    if (!name || !validKenyanPhone(phone)) {
-      registrationMessage(
-        "Registration information is incomplete."
-      );
-      showRegistrationStep(1);
-      return;
-    }
-
-    if (!/^\d{4,6}$/.test(pin)) {
-      registrationMessage(
-        "Invalid BEAST PIN."
-      );
-      showRegistrationStep(2);
-      return;
-    }
-
-    if (!beastId || beastId === "—") {
-      registrationMessage(
-        "BEAST ID could not be generated."
-      );
-      return;
-    }
-
-    state.registered = true;
-    state.fullName = name;
-    state.phone = phone;
-    state.nationalId = nationalId;
-    state.beastPin = pin;
-    state.beastId = beastId;
-
-    saveState();
-
-    showApp();
-
-    toast(
-      "BEAST account created successfully.",
-      "success"
-    );
-  });
-}
-
-}
-
-/* =========================================================
-APP VISIBILITY
-========================================================= */
-
-function showApp() {
-
-$("registrationScreen")?.classList.add("hidden");
-$("beastApp")?.classList.remove("hidden");
-$("adminScreen")?.classList.add("hidden");
-
-renderDashboard();
-renderAllSourcePickers();
-renderHistory();
-renderSettings();
-
-}
-
-function showRegistration() {
-
-$("registrationScreen")?.classList.remove("hidden");
-$("beastApp")?.classList.add("hidden");
-$("adminScreen")?.classList.add("hidden");
-
-showRegistrationStep(1);
-
-}
-
-/* =========================================================
-DASHBOARD
-========================================================= */
-
-function calculateTotalBalance() {
-
-return state.sources.reduce(
-  (total, source) =>
-    total + Number(source.balance || 0),
-  0
-);
-
-}
-
-function renderDashboard() {
-
-if ($("dashboardName")) {
-  $("dashboardName").textContent =
-    state.fullName || "BEAST USER";
-}
-
-if ($("dashboardBalance")) {
-  $("dashboardBalance").textContent =
-    shortMoney(calculateTotalBalance());
-}
-
-if ($("dashboardBeastId")) {
-  $("dashboardBeastId").textContent =
-    state.beastId || "—";
-}
-
-}
-
-/* =========================================================
-SOURCE PICKERS
-========================================================= */
-
-function renderSourcePicker(id, selectedId, onSelect) {
-
-const container = $(id);
-
-if (!container) return;
-
-container.innerHTML = state.sources.map(source => {
-
-  const active =
-    source.id === selectedId
-      ? "active"
-      : "";
-
-  return `
-    <button
-      type="button"
-      class="source-card ${active}"
-      data-source-id="${escapeHTML(source.id)}"
-    >
-      <strong>${escapeHTML(source.provider)}</strong>
-      <span>${escapeHTML(source.label)} · ${escapeHTML(maskNumber(source.number))}</span>
-      <span class="source-balance">
-        KES ${money(source.balance)}
-      </span>
-    </button>
-  `;
-}).join("");
-
-container
-  .querySelectorAll(".source-card")
-  .forEach(button => {
-
-    button.addEventListener("click", () => {
-
-      const sourceId =
-        button.dataset.sourceId;
-
-      onSelect(sourceId);
-
-      renderAllSourcePickers();
-      updateFeeSummaries();
-    });
-  });
-
-}
-
-function renderAllSourcePickers() {
-
-renderSourcePicker(
-  "sendSourcePicker",
-  selectedSendSource,
-  id => {
-    selectedSendSource = id;
-  }
-);
-
-renderSourcePicker(
-  "receiveSourcePicker",
-  selectedReceiveSource,
-  id => {
-    selectedReceiveSource = id;
-  }
-);
-
-renderSourcePicker(
-  "withdrawSourcePicker",
-  selectedWithdrawSource,
-  id => {
-    selectedWithdrawSource = id;
-  }
-);
-
-renderSourcePicker(
-  "lipaSourcePicker",
-  selectedLipaSource,
-  id => {
-    selectedLipaSource = id;
-  }
-);
-
-}
-
-/* =========================================================
-SEND
-========================================================= */
-
-function setupSend() {
-
-$("verifyRecipientButton")?.addEventListener(
-  "click",
-  verifyRecipient
-);
-
-$("sendRecipient")?.addEventListener(
-  "input",
-  () => {
-    $("recipientVerification")
-      ?.classList.add("hidden");
-  }
-);
-
-$("sendAmount")?.addEventListener(
-  "input",
-  updateFeeSummaries
-);
-
-$("sendButton")?.addEventListener(
-  "click",
-  beginSend
-);
-
-}
-
-function verifyRecipient() {
-
-const phone =
-  normalizeKenyanPhone(
-    $("sendRecipient")?.value.trim() || ""
-  );
-
-if (!validKenyanPhone(phone)) {
-  toast(
-    "Enter a valid Kenyan recipient number.",
-    "error"
-  );
-  return;
-}
-
-$("sendRecipient").value = phone;
-
-$("recipientName").textContent =
-  "KRISH DEMO RECIPIENT";
-
-$("recipientVerification")
-  ?.classList.remove("hidden");
-
-toast(
-  "Recipient verified.",
-  "success"
-);
-
-}
-
-function beginSend() {
-
-const source =
-  sourceById(selectedSendSource);
-
-const recipient =
-  normalizeKenyanPhone(
-    $("sendRecipient")?.value.trim() || ""
-  );
-
-const amount =
-  amountValue("sendAmount");
-
-if (!source) {
-  toast(
-    "Select a payment source.",
-    "error"
-  );
-  return;
-}
-
-if (!validKenyanPhone(recipient)) {
-  toast(
-    "Verify a valid recipient first.",
-    "error"
-  );
-  return;
-}
-
-if (amount <= 0) {
-  toast(
-    "Enter a valid amount.",
-    "error"
-  );
-  return;
-}
-
-const fees =
-  getFeeBreakdown(
-    "SEND",
-    amount,
-    source
-  );
-
-if (source.balance < fees.total) {
-  toast(
-    "Insufficient source balance.",
-    "error"
-  );
-  return;
-}
-
-openPinModal(
-  "Authorize Send Money",
-  fees,
-  () => completeSendTransaction(
-    source,
-    recipient,
-    fees
-  )
-);
-
-}
-
-function completeSendTransaction(
-source,
-recipient,
-fees
-) {
-
-source.balance -= fees.total;
-
-const tx = recordTransaction({
-  type: "SEND",
-  provider: fees.provider,
-  route: fees.route,
-  source: source.provider,
-  recipient: recipient,
-  amount: fees.amount,
-  providerFee: fees.providerFee,
-  beastFee: fees.beastFee,
-  total: fees.total,
-  status: "COMPLETED"
-});
-
-recordRevenue(
-  fees,
-  {
-    ...tx
-  }
-);
-
-saveState();
-
-renderDashboard();
-renderAllSourcePickers();
-renderHistory();
-
-$("sendAmount").value = "";
-
-updateFeeSummaries();
-
-toast(
-  `KES ${money(fees.amount)} sent successfully.`,
-  "success"
-);
-
-}
-
-/* =========================================================
-RECEIVE / SELL
-========================================================= */
-
-function setupReceive() {
-
-document
-  .querySelectorAll(".receive-option")
-  .forEach(button => {
-
-    button.addEventListener("click", () => {
-
-      document
-        .querySelectorAll(".receive-option")
-        .forEach(item =>
-          item.classList.remove("active")
-        );
-
-      button.classList.add("active");
-
-      receiveMethod =
-        button.dataset.receiveMethod ||
-        "paybill";
-
-      renderReceiveForm();
-    });
-  });
-
-$("verifySellerButton")?.addEventListener(
-  "click",
-  verifySeller
-);
-
-$("receiveAmount")?.addEventListener(
-  "input",
-  updateFeeSummaries
-);
-
-$("receiveButton")?.addEventListener(
-  "click",
-  beginReceive
-);
-
-$("verifyWithdrawButton")?.addEventListener(
-  "click",
-  verifyWithdrawal
-);
-
-$("withdrawAmount")?.addEventListener(
-  "input",
-  updateFeeSummaries
-);
-
-$("withdrawButton")?.addEventListener(
-  "click",
-  beginWithdraw
-);
-
-}
-
-function renderReceiveForm() {
-
-const sellPanel =
-  $("sellReceivePanel");
-
-const withdrawPanel =
-  $("withdrawPanel");
-
-if (receiveMethod === "withdraw") {
-
-  sellPanel?.classList.add("hidden");
-  withdrawPanel?.classList.remove("hidden");
-
-} else {
-
-  sellPanel?.classList.remove("hidden");
-  withdrawPanel?.classList.add("hidden");
-}
-
-updateFeeSummaries();
-
-}
-
-function verifySeller() {
-
-const seller =
-  $("receiveSeller")?.value.trim() || "";
-
-if (seller.length < 4) {
-  toast(
-    "Enter a valid seller or business number.",
-    "error"
-  );
-  return;
-}
-
-$("sellerName").textContent =
-  receiveMethod === "paybill"
-    ? "KRISH DEMO BUSINESS"
-    : receiveMethod === "buygoods"
-      ? "KRISH DEMO SHOP"
-      : "KRISH DEMO POCHI";
-
-$("sellerVerification")
-  ?.classList.remove("hidden");
-
-toast(
-  "Seller verified.",
-  "success"
-);
-
-}
-
-function beginReceive() {
-
-const source =
-  sourceById(selectedReceiveSource);
-
-const seller =
-  $("receiveSeller")?.value.trim() || "";
-
-const amount =
-  amountValue("receiveAmount");
-
-if (!source) {
-  toast(
-    "Select a payment source.",
-    "error"
-  );
-  return;
-}
-
-if (seller.length < 4) {
-  toast(
-    "Verify the seller first.",
-    "error"
-  );
-  return;
-}
-
-if (amount <= 0) {
-  toast(
-    "Enter a valid amount.",
-    "error"
-  );
-  return;
-}
-
-const fees =
-  getFeeBreakdown(
-    `RECEIVE-${receiveMethod}`,
-    amount,
-    source
-  );
-
-if (source.balance < fees.total) {
-  toast(
-    "Insufficient source balance.",
-    "error"
-  );
-  return;
-}
-
-pendingReceive = {
-  sourceId: source.id,
-  seller,
-  amount,
-  fees,
-  method: receiveMethod
-};
-
-openBuyerLogin();
-
-}
-
-/* =========================================================
-BUYER LOGIN
-========================================================= */
-
-function openBuyerLogin() {
-
-$("buyerLoginModal")
-  ?.classList.remove("hidden");
-
-$("buyerLoginPhone").value =
-  state.phone || "";
-
-$("buyerLoginBeastId").value =
-  state.beastId || "";
-
-$("buyerLoginPin").value = "";
-
-}
-
-function setupBuyerLogin() {
-
-$("buyerLoginClose")?.addEventListener(
-  "click",
-  () => {
-    $("buyerLoginModal")
-      ?.classList.add("hidden");
-  }
-);
-
-$("buyerLoginContinue")?.addEventListener(
-  "click",
-  continueBuyerLogin
-);
-
-$("buyerUnavailableButton")?.addEventListener(
-  "click",
-  () => {
-    toast(
-      "Use secure terminal/agent verification in the production version.",
-      "normal"
-    );
-  }
-);
-
-}
-
-function continueBuyerLogin() {
-
-const phone =
-  normalizeKenyanPhone(
-    $("buyerLoginPhone")?.value.trim() || ""
-  );
-
-const beastId =
-  $("buyerLoginBeastId")?.value.trim() || "";
-
-const pin =
-  $("buyerLoginPin")?.value.trim() || "";
-
-if (
-  phone !== normalizeKenyanPhone(state.phone) ||
-  beastId !== state.beastId ||
-  pin !== state.beastPin
-) {
-  toast(
-    "Buyer login details are incorrect.",
-    "error"
-  );
-  return;
-}
-
-$("buyerLoginModal")
-  ?.classList.add("hidden");
-
-openSellerApproval();
-
-}
-
-/* =========================================================
-SELLER APPROVAL
-========================================================= */
-
-function openSellerApproval() {
-
-if (!pendingReceive) {
-  toast(
-    "No pending payment found.",
-    "error"
-  );
-  return;
-}
-
-const details =
-  $("sellerApprovalDetails");
-
-if (details) {
-
-  details.innerHTML = `
-    <div>
-      <span>Seller</span>
-      <strong>${escapeHTML(
-        $("sellerName")?.textContent || "Verified Seller"
-      )}</strong>
-    </div>
-
-    <div>
-      <span>Amount</span>
-      <strong>KES ${money(
-        pendingReceive.fees.amount
-      )}</strong>
-    </div>
-
-    <div>
-      <span>Total debit</span>
-      <strong>KES ${money(
-        pendingReceive.fees.total
-      )}</strong>
-    </div>
-  `;
-}
-
-$("sellerApprovalModal")
-  ?.classList.remove("hidden");
-
-}
-
-function setupSellerApproval() {
-
-$("sellerRejectButton")?.addEventListener(
-  "click",
-  () => {
-
-    pendingReceive = null;
-
-    $("sellerApprovalModal")
-      ?.classList.add("hidden");
-
-    toast(
-      "Seller rejected the payment.",
-      "error"
-    );
-  }
-);
-
-$("sellerApproveButton")?.addEventListener(
-  "click",
-  () => {
-
-    $("sellerApprovalModal")
-      ?.classList.add("hidden");
-
-    openFinalAuthorization();
-  }
-);
-
-}
-
-/* =========================================================
-FINAL AUTHORIZATION
-========================================================= */
-
-function openFinalAuthorization() {
-
-if (!pendingReceive) return;
-
-const details =
-  $("finalAuthorizationSummary");
-
-if (details) {
-
-  details.innerHTML = `
-    <div>
-      <span>Seller</span>
-      <strong>${escapeHTML(
-        $("sellerName")?.textContent || "Verified Seller"
-      )}</strong>
-    </div>
-
-    <div>
-      <span>Amount</span>
-      <strong>KES ${money(
-        pendingReceive.fees.amount
-      )}</strong>
-    </div>
-
-    <div>
-      <span>BEAST fee</span>
-      <strong>KES ${money(
-        pendingReceive.fees.beastFee
-      )}</strong>
-    </div>
-
-    <div>
-      <span>Total debit</span>
-      <strong>KES ${money(
-        pendingReceive.fees.total
-      )}</strong>
-    </div>
-  `;
-}
-
-$("finalAuthorizationPin").value = "";
-
-$("finalAuthorizationModal")
-  ?.classList.remove("hidden");
-
-}
-
-function setupFinalAuthorization() {
-
-$("finalAuthorizationButton")
-  ?.addEventListener(
-    "click",
-    finalReceiveAuthorization
-  );
-
-}
-
-function finalReceiveAuthorization() {
-
-const pin =
-  $("finalAuthorizationPin")
-    ?.value.trim() || "";
-
-if (pin !== state.beastPin) {
-
-  toast(
-    "Incorrect BEAST PIN.",
-    "error"
-  );
-
-  return;
-}
-
-$("finalAuthorizationModal")
-  ?.classList.add("hidden");
-
-completeReceiveTransaction();
-
-}
-
-function completeReceiveTransaction() {
-
-if (!pendingReceive) return;
-
-const source =
-  sourceById(
-    pendingReceive.sourceId
-  );
-
-if (!source) {
-  toast(
-    "Payment source is no longer available.",
-    "error"
-  );
-
-  pendingReceive = null;
-  return;
-}
-
-const fees =
-  pendingReceive.fees;
-
-if (source.balance < fees.total) {
-
-  toast(
-    "Insufficient source balance.",
-    "error"
-  );
-
-  pendingReceive = null;
-  return;
-}
-
-source.balance -= fees.total;
-
-const tx = recordTransaction({
-  type: "RECEIVE / SELL",
-  provider: fees.provider,
-  route: fees.route,
-  source: source.provider,
-  recipient:
-    $("sellerName")?.textContent ||
-    "Verified Seller",
-  amount: fees.amount,
-  providerFee: fees.providerFee,
-  beastFee: fees.beastFee,
-  total: fees.total,
-  status: "COMPLETED"
-});
-
-recordRevenue(
-  fees,
-  {
-    ...tx
-  }
-);
-
-saveState();
-
-renderDashboard();
-renderAllSourcePickers();
-renderHistory();
-
-$("receiveAmount").value = "";
-
-updateFeeSummaries();
-
-pendingReceive = null;
-
-toast(
-  "Payment completed successfully.",
-  "success"
-);
-
-}
-
-/* =========================================================
-WITHDRAW
-========================================================= */
-
-function verifyWithdrawal() {
-
-const agent =
-  normalizeKenyanPhone(
-    $("withdrawAgent")?.value.trim() || ""
-  );
-
-if (!validKenyanPhone(agent)) {
-  toast(
-    "Enter a valid Kenyan agent number.",
-    "error"
-  );
-  return;
-}
-
-$("withdrawAgent").value = agent;
-
-$("withdrawAgentName").textContent =
-  "KRISH DEMO VERIFIED AGENT";
-
-$("withdrawVerification")
-  ?.classList.remove("hidden");
-
-toast(
-  "Agent verified.",
-  "success"
-);
-
-}
-
-function beginWithdraw() {
-
-const source =
-  sourceById(selectedWithdrawSource);
-
-const agent =
-  normalizeKenyanPhone(
-    $("withdrawAgent")?.value.trim() || ""
-  );
-
-const amount =
-  amountValue("withdrawAmount");
-
-if (!source) {
-  toast(
-    "Select a withdrawal source.",
-    "error"
-  );
-  return;
-}
-
-if (!validKenyanPhone(agent)) {
-  toast(
-    "Verify the agent first.",
-    "error"
-  );
-  return;
-}
-
-if (amount <= 0) {
-  toast(
-    "Enter a valid amount.",
-    "error"
-  );
-  return;
-}
-
-const fees =
-  getFeeBreakdown(
-    "WITHDRAW",
-    amount,
-    source
-  );
-
-if (source.balance < fees.total) {
-  toast(
-    "Insufficient source balance.",
-    "error"
-  );
-  return;
-}
-
-openPinModal(
-  "Authorize Withdrawal",
-  fees,
-  () => {
-
-    source.balance -= fees.total;
-
-    const tx = recordTransaction({
-      type: "WITHDRAW",
-      provider: fees.provider,
-      route: fees.route,
-      source: source.provider,
-      recipient:
-        `Agent ${agent}`,
-      amount: fees.amount,
-      providerFee: fees.providerFee,
-      beastFee: fees.beastFee,
-      total: fees.total,
-      status: "COMPLETED"
-    });
-
-    recordRevenue(
-      fees,
-      {
-        ...tx
-      }
-    );
-
-    saveState();
-
-    renderDashboard();
-    renderAllSourcePickers();
-    renderHistory();
-
-    $("withdrawAmount").value = "";
-
-    updateFeeSummaries();
-
-    toast(
-      "Withdrawal completed.",
-      "success"
-    );
-  }
-);
-
-}
-
-/* =========================================================
-LIPA NA
-========================================================= */
-
-function setupLipa() {
-
-document
-  .querySelectorAll("[data-lipa-method]")
-  .forEach(button => {
-
-    button.addEventListener("click", () => {
-
-      document
-        .querySelectorAll("[data-lipa-method]")
-        .forEach(item =>
-          item.classList.remove("active")
-        );
-
-      button.classList.add("active");
-
-      lipaMethod =
-        button.dataset.lipaMethod ||
-        "paybill";
-
-      updateFeeSummaries();
-    });
-  });
-
-$("verifyLipaButton")?.addEventListener(
-  "click",
-  verifyLipaDestination
-);
-
-$("lipaAmount")?.addEventListener(
-  "input",
-  updateFeeSummaries
-);
-
-$("lipaButton")?.addEventListener(
-  "click",
-  beginLipa
-);
-
-}
-
-function verifyLipaDestination() {
-
-const destination =
-  $("lipaDestination")?.value.trim() || "";
-
-if (destination.length < 4) {
-  toast(
-    "Enter a valid destination.",
-    "error"
-  );
-  return;
-}
-
-$("lipaDestinationName").textContent =
-  lipaMethod === "paybill"
-    ? "KRISH DEMO PAYBILL"
-    : lipaMethod === "buygoods"
-      ? "KRISH DEMO BUSINESS"
-      : "KRISH DEMO POCHI";
-
-$("lipaVerification")
-  ?.classList.remove("hidden");
-
-toast(
-  "Destination verified.",
-  "success"
-);
-
-}
-
-function beginLipa() {
-
-const source =
-  sourceById(selectedLipaSource);
-
-const destination =
-  $("lipaDestination")?.value.trim() || "";
-
-const amount =
-  amountValue("lipaAmount");
-
-if (!source) {
-  toast(
-    "Select a payment source.",
-    "error"
-  );
-  return;
-}
-
-if (destination.length < 4) {
-  toast(
-    "Verify the destination first.",
-    "error"
-  );
-  return;
-}
-
-if (amount <= 0) {
-  toast(
-    "Enter a valid amount.",
-    "error"
-  );
-  return;
-}
-
-const fees =
-  getFeeBreakdown(
-    `LIPA-${lipaMethod}`,
-    amount,
-    source
-  );
-
-if (source.balance < fees.total) {
-  toast(
-    "Insufficient source balance.",
-    "error"
-  );
-  return;
-}
-
-openPinModal(
-  "Authorize Lipa Na",
-  fees,
-  () => {
-
-    source.balance -= fees.total;
-
-    const tx = recordTransaction({
-      type: "LIPA NA",
-      provider: fees.provider,
-      route: fees.route,
-      source: source.provider,
-      recipient:
-        $("lipaDestinationName")?.textContent ||
-        destination,
-      amount: fees.amount,
-      providerFee: fees.providerFee,
-      beastFee: fees.beastFee,
-      total: fees.total,
-      status: "COMPLETED"
-    });
-
-    recordRevenue(
-      fees,
-      {
-        ...tx
-      }
-    );
-
-    saveState();
-
-    renderDashboard();
-    renderAllSourcePickers();
-    renderHistory();
-
-    $("lipaAmount").value = "";
-
-    updateFeeSummaries();
-
-    toast(
-      "Payment completed.",
-      "success"
-    );
-  }
-);
-
-}
-
-/* =========================================================
-PIN AUTHORIZATION
-========================================================= */
-
-function setupPin() {
-
-$("pinModalClose")?.addEventListener(
-  "click",
-  closePinModal
-);
-
-$("confirmPinButton")?.addEventListener(
-  "click",
-  confirmPin
-);
-
-}
-
-function openPinModal(title, fees, callback) {
-
-pendingPinCallback = callback;
-
-$("pinModalTitle").textContent =
-  title || "Authorize Transaction";
-
-renderFeeSummary(
-  "pinTransactionSummary",
-  fees
-);
-
-$("transactionPin").value = "";
-
-$("pinModal")
-  ?.classList.remove("hidden");
-
-setTimeout(() => {
-  $("transactionPin")?.focus();
-}, 100);
-
-}
-
-function closePinModal() {
-
-$("pinModal")
-  ?.classList.add("hidden");
-
-pendingPinCallback = null;
-
-}
-
-function confirmPin() {
-
-const pin =
-  $("transactionPin")
-    ?.value.trim() || "";
-
-if (pin !== state.beastPin) {
-
-  toast(
-    "Incorrect BEAST PIN.",
-    "error"
-  );
-
-  return;
-}
-
-const callback =
-  pendingPinCallback;
-
-closePinModal();
-
-if (typeof callback === "function") {
-  callback();
-}
-
-}
-
-/* =========================================================
-FEE UPDATES
-========================================================= */
-
-function updateFeeSummaries() {
-
-const sendSource =
-  sourceById(selectedSendSource);
-
-const sendAmount =
-  amountValue("sendAmount");
-
-renderFeeSummary(
-  "sendFeeSummary",
-  sendSource && sendAmount > 0
-    ? getFeeBreakdown(
-        "SEND",
-        sendAmount,
-        sendSource
-      )
-    : null
-);
-
-
-const receiveSource =
-  sourceById(selectedReceiveSource);
-
-const receiveAmount =
-  amountValue("receiveAmount");
-
-renderFeeSummary(
-  "receiveFeeSummary",
-  receiveSource && receiveAmount > 0
-    ? getFeeBreakdown(
-        `RECEIVE-${receiveMethod}`,
-        receiveAmount,
-        receiveSource
-      )
-    : null
-);
-
-
-const withdrawSource =
-  sourceById(selectedWithdrawSource);
-
-const withdrawAmount =
-  amountValue("withdrawAmount");
-
-renderFeeSummary(
-  "withdrawFeeSummary",
-  withdrawSource && withdrawAmount > 0
-    ? getFeeBreakdown(
-        "WITHDRAW",
-        withdrawAmount,
-        withdrawSource
-      )
-    : null
-);
-
-
-const lipaSource =
-  sourceById(selectedLipaSource);
-
-const lipaAmount =
-  amountValue("lipaAmount");
-
-renderFeeSummary(
-  "lipaFeeSummary",
-  lipaSource && lipaAmount > 0
-    ? getFeeBreakdown(
-        `LIPA-${lipaMethod}`,
-        lipaAmount,
-        lipaSource
-      )
-    : null
-);
-
-}
-
-/* =========================================================
-TRANSACTION HISTORY
-========================================================= */
-
-function recordTransaction(data) {
-
-const transaction = {
-  id: reference(),
-  reference: reference(),
-  date: now(),
-  timestamp: Date.now(),
-
-  type: data.type || "TRANSACTION",
-
-  provider:
-    data.provider ||
-    "BEAST Demo Provider",
-
-  route:
-    data.route ||
-    "BEAST DEMO",
-
-  source:
-    data.source ||
-    "",
-
-  recipient:
-    data.recipient ||
-    "",
-
-  amount:
-    Number(data.amount || 0),
-
-  providerFee:
-    Number(data.providerFee || 0),
-
-  beastFee:
-    Number(data.beastFee || 0),
-
-  total:
-    Number(data.total || 0),
-
-  netBeastRevenue:
-    Number(data.beastFee || 0) -
-    Number(data.providerFee || 0),
-
-  status:
-    data.status ||
-    "COMPLETED"
-};
-
-state.history.unshift(transaction);
-
-if (state.history.length > 300) {
-  state.history =
-    state.history.slice(0, 300);
-}
-
-return transaction;
-
-}
-
-function recordRevenue(fees, transactionMeta = {}) {
-
-const beastFee =
-  Number(fees?.beastFee || 0);
-
-const providerFee =
-  Number(fees?.providerFee || 0);
-
-const netRevenue =
-  beastFee - providerFee;
-
-state.ownerLedger.beastFees +=
-  beastFee;
-
-state.ownerLedger.providerCosts +=
-  providerFee;
-
-state.ownerLedger.transactions.unshift({
-  reference:
-    transactionMeta.reference ||
-    transactionMeta.id ||
-    reference(),
-
-  id:
-    transactionMeta.id ||
-    "",
-
-  date:
-    transactionMeta.date ||
-    now(),
-
-  timestamp:
-    transactionMeta.timestamp ||
-    Date.now(),
-
-  type:
-    transactionMeta.type ||
-    "TRANSACTION",
-
-  provider:
-    fees.provider ||
-    transactionMeta.provider ||
-    "",
-
-  route:
-    fees.route ||
-    transactionMeta.route ||
-    "",
-
-  amount:
-    Number(fees.amount || 0),
-
-  providerFee,
-
-  beastFee,
-
-  total:
-    Number(fees.total || 0),
-
-  netBeastRevenue:
-    netRevenue,
-
-  status:
-    transactionMeta.status ||
-    "COMPLETED"
-});
-
-if (
-  state.ownerLedger.transactions.length >
-  500
-) {
-  state.ownerLedger.transactions =
-    state.ownerLedger.transactions.slice(
-      0,
-      500
-    );
-}
-
-}
-
-function renderHistory() {
-
-const container =
-  $("historyList");
-
-if (!container) return;
-
-if (!state.history.length) {
-
-  container.innerHTML = `
-    <div class="form-card">
-      <p class="muted">
-        No transactions yet.
-      </p>
-    </div>
-  `;
-
-  return;
-}
-
-container.innerHTML =
-  state.history.map(tx => {
-
-    const positive =
-      [
-        "RECEIVE"
-      ].includes(tx.type);
-
-    return `
-      <div class="history-item">
-
-        <div>
-          <strong>
-            ${escapeHTML(tx.type)}
-          </strong>
-
-          <small>
-            ${escapeHTML(tx.provider)}
-            · ${escapeHTML(tx.route)}
-          </small>
-
-          <small>
-            ${escapeHTML(tx.date)}
-            · ${escapeHTML(tx.reference)}
-          </small>
-
-          <small>
-            BEAST fee:
-            KES ${money(tx.beastFee)}
-            · Provider:
-            KES ${money(tx.providerFee)}
-          </small>
-        </div>
-
-        <div
-          class="history-amount ${
-            positive
-              ? "positive"
-              : "negative"
-          }"
-        >
-          ${positive ? "+" : "-"}
-          KES ${money(tx.total)}
-        </div>
-
-      </div>
-    `;
-  }).join("");
-
-}
-
-/* =========================================================
-MAIN NAVIGATION
-========================================================= */
-
-function setupMainNavigation() {
-
-document
-  .querySelectorAll("[data-page]")
-  .forEach(button => {
-
-    button.addEventListener("click", () => {
-
-      const page =
-        button.dataset.page;
-
-      if (!page) return;
-
-      document
-        .querySelectorAll(".app-page")
-        .forEach(section =>
-          section.classList.remove("active")
-        );
-
-      $(page)?.classList.add("active");
-
-      document
-        .querySelectorAll(
-          ".main-tab,.bottom-nav-btn"
-        )
-        .forEach(item => {
-
-          item.classList.toggle(
-            "active",
-            item.dataset.page === page
+        if (name.length < 3) {
+          registrationMessage(
+            "Please enter your full name."
           );
-        });
-
-      updateFeeSummaries();
-    });
-  });
-
-}
-
-/* =========================================================
-SETTINGS
-========================================================= */
-
-function setupSettings() {
-
-$("settingsButton")?.addEventListener(
-  "click",
-  () => {
-    renderSettings();
-    $("settingsModal")
-      ?.classList.remove("hidden");
-  }
-);
-
-$("settingsClose")?.addEventListener(
-  "click",
-  () => {
-    $("settingsModal")
-      ?.classList.add("hidden");
-  }
-);
-
-$("settingsSubClose")?.addEventListener(
-  "click",
-  () => {
-    $("settingsSubModal")
-      ?.classList.add("hidden");
-  }
-);
-
-document
-  .querySelectorAll("[data-setting]")
-  .forEach(button => {
-
-    button.addEventListener("click", () => {
-
-      renderSettingsSubPage(
-        button.dataset.setting
-      );
-
-      $("settingsSubModal")
-        ?.classList.remove("hidden");
-    });
-  });
-
-$("lightModeToggle")
-  ?.addEventListener(
-    "change",
-    event => {
-
-      state.dark =
-        !event.target.checked;
-
-      applyTheme();
-      saveState();
-    }
-  );
-
-$("securityAlertsToggle")
-  ?.addEventListener(
-    "change",
-    event => {
-
-      state.settings.securityAlerts =
-        event.target.checked;
-
-      saveState();
-    }
-  );
-
-$("notificationsToggle")
-  ?.addEventListener(
-    "change",
-    event => {
-
-      state.settings.notifications =
-        event.target.checked;
-
-      saveState();
-    }
-  );
-
-$("logoutButton")?.addEventListener(
-  "click",
-  () => {
-
-    $("settingsModal")
-      ?.classList.add("hidden");
-
-    toast(
-      "Demo logout completed.",
-      "success"
-    );
-  }
-);
-
-$("ownerDashboardButton")
-  ?.addEventListener(
-    "click",
-    () => {
-
-      $("settingsModal")
-        ?.classList.add("hidden");
-
-      $("ownerLoginModal")
-        ?.classList.remove("hidden");
-    }
-  );
-
-}
-
-function renderSettings() {
-
-if ($("lightModeToggle")) {
-  $("lightModeToggle").checked =
-    !state.dark;
-}
-
-if ($("securityAlertsToggle")) {
-  $("securityAlertsToggle").checked =
-    Boolean(
-      state.settings.securityAlerts
-    );
-}
-
-if ($("notificationsToggle")) {
-  $("notificationsToggle").checked =
-    Boolean(
-      state.settings.notifications
-    );
-}
-
-}
-
-function renderSettingsSubPage(type) {
-
-const title =
-  $("settingsSubTitle");
-
-const content =
-  $("settingsSubContent");
-
-if (!title || !content) return;
-
-const pages = {
-
-  personal: {
-    title: "Personal Details",
-    html: `
-      <div class="summary-box">
-        <div>
-          <span>Full name</span>
-          <strong>${escapeHTML(state.fullName)}</strong>
-        </div>
-        <div>
-          <span>Phone</span>
-          <strong>${escapeHTML(state.phone)}</strong>
-        </div>
-        <div>
-          <span>National ID</span>
-          <strong>${escapeHTML(state.nationalId)}</strong>
-        </div>
-        <div>
-          <span>BEAST ID</span>
-          <strong>${escapeHTML(state.beastId)}</strong>
-        </div>
-      </div>
-    `
-  },
-
-  lines: {
-    title: "Line Management",
-    html: renderSourceType("M-PESA")
-  },
-
-  mpesa: {
-    title: "M-PESA",
-    html: renderSourceType("M-PESA")
-  },
-
-  airtel: {
-    title: "Airtel Money",
-    html: renderSourceType("Airtel Money")
-  },
-
-  bank: {
-    title: "Bank Accounts",
-    html: renderSourceType("Bank")
-  },
-
-  card: {
-    title: "Cards",
-    html: renderSourceType("Card")
-  },
-
-  wallet: {
-    title: "BEAST Wallet",
-    html: renderSourceType("BEAST Wallet")
-  },
-
-  pin: {
-    title: "Change BEAST PIN",
-    html: `
-      <label>Current PIN</label>
-      <input id="oldPin" type="password" inputmode="numeric">
-
-      <label>New PIN</label>
-      <input id="newPin" type="password" inputmode="numeric" maxlength="6">
-
-      <label>Confirm new PIN</label>
-      <input id="confirmNewPin" type="password" inputmode="numeric" maxlength="6">
-
-      <button id="changePinButton" class="primary-btn">
-        CHANGE PIN
-      </button>
-    `
-  }
-
-};
-
-const page =
-  pages[type] || pages.personal;
-
-title.textContent =
-  page.title;
-
-content.innerHTML =
-  page.html;
-
-if (type === "pin") {
-
-  $("changePinButton")
-    ?.addEventListener(
-      "click",
-      changePin
-    );
-}
-
-}
-
-function renderSourceType(type) {
-
-const sources =
-  state.sources.filter(
-    source => source.type === type
-  );
-
-if (!sources.length) {
-  return `
-    <p class="muted">
-      No ${escapeHTML(type)} accounts connected.
-    </p>
-  `;
-}
-
-return `
-  <div class="source-picker">
-    ${sources.map(source => `
-      <div class="source-card">
-        <strong>${escapeHTML(source.provider)}</strong>
-        <span>${escapeHTML(source.label)}</span>
-        <span>${escapeHTML(maskNumber(source.number))}</span>
-        <span class="source-balance">
-          KES ${money(source.balance)}
-        </span>
-      </div>
-    `).join("")}
-  </div>
-`;
-
-}
-
-function changePin() {
-
-const oldPin =
-  $("oldPin")?.value.trim() || "";
-
-const newPin =
-  $("newPin")?.value.trim() || "";
-
-const confirmPin =
-  $("confirmNewPin")?.value.trim() || "";
-
-if (oldPin !== state.beastPin) {
-  toast(
-    "Current PIN is incorrect.",
-    "error"
-  );
-  return;
-}
-
-if (!/^\d{4,6}$/.test(newPin)) {
-  toast(
-    "New PIN must contain 4–6 digits.",
-    "error"
-  );
-  return;
-}
-
-if (newPin !== confirmPin) {
-  toast(
-    "New PIN confirmation does not match.",
-    "error"
-  );
-  return;
-}
-
-state.beastPin = newPin;
-
-saveState();
-
-$("settingsSubModal")
-  ?.classList.add("hidden");
-
-toast(
-  "BEAST PIN changed successfully.",
-  "success"
-);
-
-}
-
-/* =========================================================
-THEME
-========================================================= */
-
-function applyTheme() {
-
-document.body.classList.toggle(
-  "light-mode",
-  !state.dark
-);
-
-}
-
-/* =========================================================
-SECURITY
-========================================================= */
-
-function logSecurityEvent(message) {
-
-if (!state.settings.securityAlerts) {
-  return;
-}
-
-state.securityLogs.unshift({
-  id: reference(),
-  message,
-  date: now(),
-  timestamp: Date.now()
-});
-
-if (state.securityLogs.length > 200) {
-  state.securityLogs =
-    state.securityLogs.slice(0, 200);
-}
-
-saveState();
-
-}
-
-function setupSecurity() {
-
-document.addEventListener(
-  "visibilitychange",
-  () => {
-
-    if (
-      document.visibilityState ===
-      "hidden"
-    ) {
-
-      logSecurityEvent(
-        "Session visibility changed."
-      );
-    }
-  }
-);
-
-}
-
-/* =========================================================
-OWNER LOGIN
-========================================================= */
-
-function setupOwnerLogin() {
-
-$("ownerLoginClose")
-  ?.addEventListener(
-    "click",
-    () => {
-      $("ownerLoginModal")
-        ?.classList.add("hidden");
-    }
-  );
-
-$("ownerLoginButton")
-  ?.addEventListener(
-    "click",
-    ownerLogin
-  );
-
-$("adminBackButton")
-  ?.addEventListener(
-    "click",
-    () => {
-
-      $("adminScreen")
-        ?.classList.add("hidden");
-
-      $("beastApp")
-        ?.classList.remove("hidden");
-
-      renderDashboard();
-    }
-  );
-
-}
-
-function ownerLogin() {
-
-const id =
-  $("ownerLoginId")
-    ?.value.trim() || "";
-
-const pin =
-  $("ownerLoginPin")
-    ?.value.trim() || "";
-
-/*
-  Demo owner credentials only.
-  Production must use secure backend
-  authentication.
-*/
-
-if (
-  id !== "BEASTADMIN" ||
-  pin !== "999999"
-) {
-
-  toast(
-    "Owner credentials are incorrect.",
-    "error"
-  );
-
-  return;
-}
-
-$("ownerLoginModal")
-  ?.classList.add("hidden");
-
-$("beastApp")
-  ?.classList.add("hidden");
-
-$("adminScreen")
-  ?.classList.remove("hidden");
-
-logSecurityEvent(
-  "Owner dashboard login."
-);
-
-renderAdmin();
-
-toast(
-  "Owner dashboard opened.",
-  "success"
-);
-
-}
-
-/* =========================================================
-ADMIN NAVIGATION
-========================================================= */
-
-function setupAdminNavigation() {
-
-document
-  .querySelectorAll(
-    "[data-admin-section]"
-  )
-  .forEach(button => {
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        currentAdminSection =
-          button.dataset.adminSection ||
-          "overview";
-
-        renderAdminSection();
-      }
-    );
-  });
-
-$("adminCustomerSearch")
-  ?.addEventListener(
-    "input",
-    renderAdminCustomers
-  );
-
-}
-
-function renderAdmin() {
-renderAdminSection();
-renderAdminStats();
-renderAdminCustomers();
-renderAdminTransactions();
-renderAdminRevenue();
-renderAdminSecurity();
-}
-
-function renderAdminSection() {
-
-const sectionMap = {
-  overview: "adminOverview",
-  customers: "adminCustomers",
-  transactions: "adminTransactions",
-  revenue: "adminRevenue",
-  security: "adminSecurity",
-  ai: "adminAI"
-};
-
-document
-  .querySelectorAll(".admin-section")
-  .forEach(section =>
-    section.classList.remove("active")
-  );
-
-$(sectionMap[currentAdminSection])
-  ?.classList.add("active");
-
-document
-  .querySelectorAll(
-    "[data-admin-section]"
-  )
-  .forEach(button =>
-    button.classList.toggle(
-      "active",
-      button.dataset.adminSection ===
-      currentAdminSection
-    )
-  );
-
-}
-
-/* =========================================================
-ADMIN STATS
-========================================================= */
-
-function renderAdminStats() {
-
-const transactions =
-  state.ownerLedger.transactions || [];
-
-const gross =
-  Number(
-    state.ownerLedger.beastFees || 0
-  );
-
-if ($("adminCustomerCount")) {
-  $("adminCustomerCount")
-    .textContent =
-    state.registered ? "1" : "0";
-}
-
-if ($("adminActiveCustomers")) {
-  $("adminActiveCustomers")
-    .textContent =
-    state.registered ? "1" : "0";
-}
-
-if ($("adminTransactionCount")) {
-  $("adminTransactionCount")
-    .textContent =
-    transactions.length;
-}
-
-if ($("adminFeeTotal")) {
-  $("adminFeeTotal")
-    .textContent =
-    shortMoney(gross);
-}
-
-if ($("feeFlowProvider")) {
-  $("feeFlowProvider")
-    .textContent =
-    shortMoney(
-      state.ownerLedger.providerCosts
-    );
-}
-
-if ($("feeFlowBeast")) {
-  $("feeFlowBeast")
-    .textContent =
-    shortMoney(gross);
-}
-
-if ($("feeFlowRevenue")) {
-
-  const net =
-    gross -
-    Number(
-      state.ownerLedger.providerCosts || 0
-    ) -
-    Number(
-      state.ownerLedger.refunds || 0
-    );
-
-  $("feeFlowRevenue")
-    .textContent =
-    shortMoney(net);
-}
-
-}
-
-/* =========================================================
-ADMIN CUSTOMERS
-========================================================= */
-
-function renderAdminCustomers() {
-
-const table =
-  $("adminCustomersTable");
-
-if (!table) return;
-
-const search =
-  $("adminCustomerSearch")
-    ?.value.trim()
-    .toLowerCase() || "";
-
-if (!state.registered) {
-
-  table.innerHTML = `
-    <tr>
-      <td colspan="4">
-        No registered customer.
-      </td>
-    </tr>
-  `;
-
-  return;
-}
-
-const customer = {
-  name: state.fullName,
-  phone: state.phone,
-  beastId: state.beastId,
-  status: "ACTIVE"
-};
-
-const haystack =
-  `${customer.name} ${customer.phone} ${customer.beastId}`
-    .toLowerCase();
-
-if (
-  search &&
-  !haystack.includes(search)
-) {
-
-  table.innerHTML = `
-    <tr>
-      <td colspan="4">
-        No matching customer.
-      </td>
-    </tr>
-  `;
-
-  return;
-}
-
-table.innerHTML = `
-  <tr>
-    <td>${escapeHTML(customer.name)}</td>
-    <td>${escapeHTML(customer.phone)}</td>
-    <td>${escapeHTML(customer.beastId)}</td>
-    <td>${customer.status}</td>
-  </tr>
-`;
-
-}
-
-/* =========================================================
-ADMIN TRANSACTIONS
-========================================================= */
-
-function renderAdminTransactions() {
-
-const table =
-  $("adminTransactionsTable");
-
-if (!table) return;
-
-const transactions =
-  state.ownerLedger.transactions || [];
-
-if (!transactions.length) {
-
-  table.innerHTML = `
-    <tr>
-      <td colspan="7">
-        No transactions yet.
-      </td>
-    </tr>
-  `;
-
-  return;
-}
-
-table.innerHTML =
-  transactions.map(tx => `
-    <tr>
-      <td>${escapeHTML(tx.reference)}</td>
-      <td>${escapeHTML(tx.type)}</td>
-      <td>${escapeHTML(tx.provider)}</td>
-      <td>KES ${money(tx.amount)}</td>
-      <td>KES ${money(tx.beastFee)}</td>
-      <td>KES ${money(tx.providerFee)}</td>
-      <td>${escapeHTML(tx.status)}</td>
-    </tr>
-  `).join("");
-
-}
-
-/* =========================================================
-ADMIN REVENUE
-========================================================= */
-
-function renderAdminRevenue() {
-
-const gross =
-  Number(
-    state.ownerLedger.beastFees || 0
-  );
-
-const providerCosts =
-  Number(
-    state.ownerLedger.providerCosts || 0
-  );
-
-const refunds =
-  Number(
-    state.ownerLedger.refunds || 0
-  );
-
-const net =
-  gross -
-  providerCosts -
-  refunds;
-
-if ($("adminGrossFees")) {
-  $("adminGrossFees")
-    .textContent =
-    shortMoney(gross);
-}
-
-if ($("adminProviderCosts")) {
-  $("adminProviderCosts")
-    .textContent =
-    shortMoney(providerCosts);
-}
-
-if ($("adminRefunds")) {
-  $("adminRefunds")
-    .textContent =
-    shortMoney(refunds);
-}
-
-if ($("adminNetRevenue")) {
-  $("adminNetRevenue")
-    .textContent =
-    shortMoney(net);
-}
-
-if ($("adminRevenueBalance")) {
-  $("adminRevenueBalance")
-    .textContent =
-    shortMoney(net);
-}
-
-const list =
-  $("adminRevenueList");
-
-if (list) {
-
-  const transactions =
-    state.ownerLedger.transactions || [];
-
-  list.innerHTML =
-    transactions.slice(0, 20).map(tx => `
-      <div class="history-item">
-        <div>
-          <strong>
-            ${escapeHTML(tx.type)}
-          </strong>
-
-          <small>
-            ${escapeHTML(tx.reference)}
-            · ${escapeHTML(tx.date)}
-          </small>
-        </div>
-
-        <div class="history-amount positive">
-          KES ${money(tx.netBeastRevenue)}
-        </div>
-      </div>
-    `).join("") || `
-      <p class="muted">
-        No revenue records yet.
-      </p>
-    `;
-}
-
-}
-
-/* =========================================================
-ADMIN SECURITY
-========================================================= */
-
-function renderAdminSecurity() {
-
-const container =
-  $("adminSecurityAlerts");
-
-if (!container) return;
-
-if (!state.securityLogs.length) {
-
-  container.innerHTML = `
-    <p class="muted">
-      No security events recorded.
-    </p>
-  `;
-
-  return;
-}
-
-container.innerHTML =
-  state.securityLogs
-    .slice(0, 50)
-    .map(log => `
-      <div class="history-item">
-        <div>
-          <strong>
-            Security event
-          </strong>
-
-          <small>
-            ${escapeHTML(log.message)}
-          </small>
-
-          <small>
-            ${escapeHTML(log.date)}
-          </small>
-        </div>
-      </div>
-    `)
-    .join("");
-
-}
-
-/* =========================================================
-BEAST AI
-========================================================= */
-
-function setupAdminAI() {
-
-$("adminAISend")
-  ?.addEventListener(
-    "click",
-    sendAIQuestion
-  );
-
-$("adminAIInput")
-  ?.addEventListener(
-    "keydown",
-    event => {
-
-      if (event.key === "Enter") {
-        sendAIQuestion();
-      }
-    }
-  );
-
-document
-  .querySelectorAll("[data-ai-question]")
-  .forEach(button => {
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        const question =
-          button.dataset.aiQuestion || "";
-
-        if ($("adminAIInput")) {
-          $("adminAIInput").value =
-            question;
+          return;
         }
 
-        sendAIQuestion();
+        if (!validKenyanPhone(phone)) {
+          registrationMessage(
+            "Enter a valid Kenyan phone number."
+          );
+          return;
+        }
+
+        if (nationalId.length < 5) {
+          registrationMessage(
+            "Enter a valid National ID."
+          );
+          return;
+        }
+
+        state.user.name = name;
+        state.user.phone = normalizePhone(phone);
+        state.user.nationalId = nationalId;
+
+        if (!state.user.beastId) {
+          state.user.beastId = generateBeastId();
+        }
+
+        saveState();
+
+        setText(
+          "registrationSummaryName",
+          state.user.name
+        );
+
+        setText(
+          "registrationSummaryPhone",
+          displayPhone(state.user.phone)
+        );
+
+        setText(
+          "registrationSummaryId",
+          state.user.nationalId
+        );
+
+        setText(
+          "registrationBeastId",
+          state.user.beastId
+        );
+
+        showRegistrationStep(2);
+      });
+    }
+
+    const next2 = $("registrationNext2");
+
+    if (next2) {
+      next2.addEventListener("click", () => {
+        registrationMessage("");
+
+        const pin = inputValue("registrationPin");
+        const confirmPin = inputValue(
+          "registrationPinConfirm"
+        );
+
+        if (!/^\d{4}$/.test(pin)) {
+          registrationMessage(
+            "BEAST PIN must contain exactly 4 digits."
+          );
+          return;
+        }
+
+        if (pin !== confirmPin) {
+          registrationMessage(
+            "The BEAST PINs do not match."
+          );
+          return;
+        }
+
+        state.user.pin = pin;
+
+        saveState();
+
+        setText(
+          "registrationSummaryName",
+          state.user.name
+        );
+
+        setText(
+          "registrationSummaryPhone",
+          displayPhone(state.user.phone)
+        );
+
+        setText(
+          "registrationSummaryId",
+          state.user.nationalId
+        );
+
+        setText(
+          "registrationBeastId",
+          state.user.beastId
+        );
+
+        showRegistrationStep(3);
+      });
+    }
+
+    const back1 = $("registrationBack1");
+
+    if (back1) {
+      back1.addEventListener("click", () => {
+        registrationMessage("");
+        showRegistrationStep(1);
+      });
+    }
+
+    const back2 = $("registrationBack2");
+
+    if (back2) {
+      back2.addEventListener("click", () => {
+        registrationMessage("");
+        showRegistrationStep(2);
+      });
+    }
+
+    const finish = $("registrationFinish");
+
+    if (finish) {
+      finish.addEventListener("click", () => {
+        registrationMessage("");
+
+        if (!state.user.name) {
+          registrationMessage(
+            "Complete your registration first."
+          );
+          showRegistrationStep(1);
+          return;
+        }
+
+        if (!state.user.pin) {
+          registrationMessage(
+            "Create your BEAST PIN first."
+          );
+          showRegistrationStep(2);
+          return;
+        }
+
+        state.registered = true;
+
+        if (!state.balance) {
+          state.balance = STARTING_BALANCE;
+        }
+
+        if (
+          !state.sources.mpesa ||
+          !Number.isFinite(state.sources.mpesa.balance)
+        ) {
+          state.sources.mpesa = {
+            name: "M-PESA",
+            balance: STARTING_BALANCE,
+            enabled: true
+          };
+        }
+
+        state.notifications.unshift({
+          id: generateReference(),
+          type: "account",
+          title: "BEAST account created",
+          message: `Welcome ${state.user.name}.`,
+          createdAt: nowISO(),
+          read: false
+        });
+
+        saveState();
+
+        showToast(
+          "BEAST account created successfully.",
+          "success"
+        );
+
+        setTimeout(() => {
+          showDashboard();
+        }, 400);
+      });
+    }
+  }
+
+  function updateRegistrationSummary() {
+    setText(
+      "registrationSummaryName",
+      state.user.name || "—"
+    );
+
+    setText(
+      "registrationSummaryPhone",
+      displayPhone(state.user.phone)
+    );
+
+    setText(
+      "registrationSummaryId",
+      state.user.nationalId || "—"
+    );
+
+    setText(
+      "registrationBeastId",
+      state.user.beastId || "—"
+    );
+  }
+
+  /* =========================================================
+     BALANCE / DASHBOARD
+     ========================================================= */
+
+  function getTotalBalance() {
+    let total = 0;
+
+    Object.values(state.sources || {}).forEach((source) => {
+      if (source && Number.isFinite(Number(source.balance))) {
+        total += Number(source.balance);
+      }
+    });
+
+    return total;
+  }
+
+  function syncMainBalance() {
+    if (
+      state.sources &&
+      state.sources[state.selectedSource]
+    ) {
+      state.balance = Number(
+        state.sources[state.selectedSource].balance
+      ) || 0;
+    }
+
+    saveState();
+  }
+
+  function updateDashboard() {
+    syncMainBalance();
+
+    const total = getTotalBalance();
+
+    const balanceIds = [
+      "balanceAmount",
+      "dashboardBalance",
+      "mainBalance",
+      "walletBalance",
+      "accountBalance"
+    ];
+
+    balanceIds.forEach((id) => {
+      if ($(id)) {
+        setText(id, shortMoney(total));
+      }
+    });
+
+    setText(
+      "userName",
+      state.user.name || "BEAST USER"
+    );
+
+    setText(
+      "profileName",
+      state.user.name || "BEAST USER"
+    );
+
+    setText(
+      "beastIdDisplay",
+      state.user.beastId || "—"
+    );
+
+    setText(
+      "phoneDisplay",
+      displayPhone(state.user.phone)
+    );
+
+    updateSourceDisplays();
+    updateHistory();
+    updateOwnerDashboard();
+    updateNotificationDisplays();
+  }
+
+  function updateSourceDisplays() {
+    const sourceElements = qsa(
+      "[data-source-balance]"
+    );
+
+    sourceElements.forEach((element) => {
+      const sourceKey =
+        element.dataset.sourceBalance;
+
+      const source = state.sources[sourceKey];
+
+      if (source) {
+        element.textContent = shortMoney(
+          source.balance
+        );
+      }
+    });
+
+    qsa("[data-source]").forEach((element) => {
+      const sourceKey = element.dataset.source;
+
+      element.classList.toggle(
+        "selected",
+        sourceKey === state.selectedSource
+      );
+    });
+  }
+
+  /* =========================================================
+     SOURCE SELECTION
+     ========================================================= */
+
+  function selectSource(sourceKey) {
+    if (!state.sources[sourceKey]) {
+      showToast(
+        "Payment source is not available.",
+        "error"
+      );
+      return;
+    }
+
+    if (!state.sources[sourceKey].enabled) {
+      showToast(
+        `${state.sources[sourceKey].name} is not connected.`,
+        "error"
+      );
+      return;
+    }
+
+    state.selectedSource = sourceKey;
+
+    syncMainBalance();
+    saveState();
+
+    updateSourceDisplays();
+
+    qsa(
+      "[data-selected-source]"
+    ).forEach((element) => {
+      element.textContent =
+        state.sources[sourceKey].name;
+    });
+
+    showToast(
+      `${state.sources[sourceKey].name} selected.`,
+      "success"
+    );
+  }
+
+  function setupSourceSelectors() {
+    qsa("[data-source]").forEach((element) => {
+      element.addEventListener("click", () => {
+        selectSource(
+          element.dataset.source
+        );
+      });
+    });
+
+    qsa(".source-option").forEach((element) => {
+      element.addEventListener("click", () => {
+        const key =
+          element.dataset.source ||
+          element.dataset.sourceKey;
+
+        if (key) {
+          selectSource(key);
+        }
+      });
+    });
+  }
+
+  /* =========================================================
+     BEAST FEES
+     ========================================================= */
+
+  function beastFeeFor(amount) {
+    const value = Number(amount) || 0;
+
+    if (value <= 0) {
+      return 0;
+    }
+
+    if (value <= 1000) {
+      return 5;
+    }
+
+    if (value <= 10000) {
+      return 10;
+    }
+
+    return 15;
+  }
+
+  function providerCostFor(
+    amount,
+    provider = "mpesa"
+  ) {
+    const value = Number(amount) || 0;
+
+    if (provider !== "mpesa") {
+      return 0;
+    }
+
+    if (value <= 100) return 0;
+    if (value <= 1500) return 5;
+    if (value <= 5000) return 9;
+    if (value <= 20000) return 11;
+    if (value <= 250000) return 13;
+
+    return 13;
+  }
+
+  function calculateTransactionCost(
+    amount,
+    provider = "mpesa"
+  ) {
+    const beastFee = beastFeeFor(amount);
+    const providerCost = providerCostFor(
+      amount,
+      provider
+    );
+
+    return {
+      beastFee,
+      providerCost,
+      total: Number(amount) + beastFee
+    };
+  }
+
+  /* =========================================================
+     TRANSACTIONS
+     ========================================================= */
+
+  function recordTransaction({
+    type = "payment",
+    amount = 0,
+    fee = 0,
+    providerCost = 0,
+    source = state.selectedSource,
+    recipient = "",
+    recipientName = "",
+    status = "completed",
+    description = "",
+    metadata = {}
+  }) {
+    const numericAmount =
+      Number(amount) || 0;
+
+    const transaction = {
+      id: generateReference(),
+      reference: generateReference(),
+      type,
+      amount: numericAmount,
+      fee: Number(fee) || 0,
+      providerCost: Number(providerCost) || 0,
+      source,
+      recipient,
+      recipientName,
+      status,
+      description,
+      metadata,
+      createdAt: nowISO()
+    };
+
+    state.transactions.unshift(
+      transaction
+    );
+
+    state.owner.transactions += 1;
+    state.owner.beastFees +=
+      Number(fee) || 0;
+
+    state.owner.providerCosts +=
+      Number(providerCost) || 0;
+
+    saveState();
+
+    return transaction;
+  }
+
+  /* =========================================================
+     SEND MONEY
+     ========================================================= */
+
+  function getSendFields() {
+    return {
+      phone:
+        inputValue("sendPhone") ||
+        inputValue("recipientPhone") ||
+        inputValue("receiverPhone"),
+
+      amount:
+        inputValue("sendAmount") ||
+        inputValue("transferAmount") ||
+        inputValue("amount"),
+
+      source:
+        inputValue("sendSource") ||
+        state.selectedSource
+    };
+  }
+
+  function verifyRecipient(phone) {
+    const normalized = normalizePhone(phone);
+
+    if (!validKenyanPhone(phone)) {
+      return null;
+    }
+
+    if (
+      normalizePhone(state.user.phone) ===
+      normalized
+    ) {
+      return {
+        name: state.user.name,
+        phone: displayPhone(phone),
+        beastId: state.user.beastId
+      };
+    }
+
+    return {
+      name: "Verified BEAST Recipient",
+      phone: displayPhone(phone),
+      beastId: `BEAST-${normalized.slice(-6)}`
+    };
+  }
+
+  function showRecipientConfirmation(
+    recipient
+  ) {
+    setText(
+      "recipientName",
+      recipient.name
+    );
+
+    setText(
+      "recipientPhoneDisplay",
+      recipient.phone
+    );
+
+    setText(
+      "verifiedRecipientName",
+      recipient.name
+    );
+
+    setText(
+      "verifiedRecipientPhone",
+      recipient.phone
+    );
+
+    showToast(
+      `Recipient verified: ${recipient.name}`,
+      "success"
+    );
+  }
+
+  function performSend(
+    phone,
+    amount,
+    sourceKey,
+    recipientName = ""
+  ) {
+    const source =
+      state.sources[sourceKey];
+
+    if (!source) {
+      showToast(
+        "Select a valid payment source.",
+        "error"
+      );
+      return false;
+    }
+
+    const numericAmount =
+      Number(amount) || 0;
+
+    if (numericAmount <= 0) {
+      showToast(
+        "Enter a valid amount.",
+        "error"
+      );
+      return false;
+    }
+
+    const costs =
+      calculateTransactionCost(
+        numericAmount,
+        sourceKey
+      );
+
+    const total =
+      costs.total;
+
+    if (Number(source.balance) < total) {
+      showToast(
+        `Insufficient balance. Required ${shortMoney(total)}.`,
+        "error"
+      );
+      return false;
+    }
+
+    source.balance =
+      Number(source.balance) - total;
+
+    syncMainBalance();
+
+    const transaction =
+      recordTransaction({
+        type: "send",
+        amount: numericAmount,
+        fee: costs.beastFee,
+        providerCost: costs.providerCost,
+        source: sourceKey,
+        recipient: normalizePhone(phone),
+        recipientName,
+        description: `Money sent to ${recipientName || displayPhone(phone)}`
+      });
+
+    state.notifications.unshift({
+      id: transaction.id,
+      type: "transaction",
+      title: "Money sent",
+      message: `${shortMoney(numericAmount)} sent successfully.`,
+      createdAt: nowISO(),
+      read: false
+    });
+
+    saveState();
+    updateDashboard();
+
+    showToast(
+      `Payment successful. ${shortMoney(numericAmount)} sent.`,
+      "success"
+    );
+
+    return true;
+  }
+
+  function setupSend() {
+    const verifyButtons = [
+      $("verifyRecipient"),
+      $("verifyReceiver"),
+      $("verifySendRecipient")
+    ].filter(Boolean);
+
+    verifyButtons.forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          const phone =
+            inputValue("sendPhone") ||
+            inputValue("recipientPhone") ||
+            inputValue("receiverPhone");
+
+          const recipient =
+            verifyRecipient(phone);
+
+          if (!recipient) {
+            showToast(
+              "Enter a valid Kenyan recipient number.",
+              "error"
+            );
+            return;
+          }
+
+          showRecipientConfirmation(
+            recipient
+          );
+        }
+      );
+    });
+
+    const sendButtons = [
+      $("sendMoneyButton"),
+      $("confirmSend"),
+      $("sendButton"),
+      $("submitSend")
+    ].filter(Boolean);
+
+    sendButtons.forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          const fields =
+            getSendFields();
+
+          const recipient =
+            verifyRecipient(fields.phone);
+
+          if (!recipient) {
+            showToast(
+              "Verify the recipient first.",
+              "error"
+            );
+            return;
+          }
+
+          performSend(
+            fields.phone,
+            fields.amount,
+            fields.source,
+            recipient.name
+          );
+        }
+      );
+    });
+
+    qsa("[data-send-source]").forEach(
+      (element) => {
+        element.addEventListener(
+          "click",
+          () => {
+            selectSource(
+              element.dataset.sendSource
+            );
+          }
+        );
       }
     );
-  });
-
-}
-
-function addAIMessage(text, user = false) {
-
-const chat =
-  $("adminAIChat");
-
-if (!chat) return;
-
-const message =
-  document.createElement("div");
-
-message.className =
-  `ai-message ${user ? "user" : ""}`;
-
-message.textContent =
-  text;
-
-chat.appendChild(message);
-
-chat.scrollTop =
-  chat.scrollHeight;
-
-}
-
-function sendAIQuestion() {
-
-const input =
-  $("adminAIInput");
-
-if (!input) return;
-
-const question =
-  input.value.trim();
-
-if (!question) return;
-
-addAIMessage(
-  question,
-  true
-);
-
-input.value = "";
-
-const lower =
-  question.toLowerCase();
-
-const gross =
-  Number(
-    state.ownerLedger.beastFees || 0
-  );
-
-const providerCosts =
-  Number(
-    state.ownerLedger.providerCosts || 0
-  );
-
-const refunds =
-  Number(
-    state.ownerLedger.refunds || 0
-  );
-
-const net =
-  gross -
-  providerCosts -
-  refunds;
-
-let answer =
-  "BEAST AI: I can analyze the local demo operations data.";
-
-if (
-  lower.includes("revenue") ||
-  lower.includes("income")
-) {
-
-  answer =
-    `Gross BEAST fees are KES ${money(gross)}. ` +
-    `Provider costs are KES ${money(providerCosts)}. ` +
-    `Refunds are KES ${money(refunds)}. ` +
-    `Current demo net revenue is KES ${money(net)}.`;
-}
-
-else if (
-  lower.includes("transaction")
-) {
-
-  answer =
-    `The demo has ${
-      state.ownerLedger.transactions.length
-    } recorded transactions.`;
-}
-
-else if (
-  lower.includes("provider")
-) {
-
-  answer =
-    `Recorded provider costs are KES ${money(providerCosts)}.`;
-}
-
-else if (
-  lower.includes("security")
-) {
-
-  answer =
-    `There are ${
-      state.securityLogs.length
-    } recorded security events.`;
-}
-
-else if (
-  lower.includes("customer")
-) {
-
-  answer =
-    state.registered
-      ? `There is 1 locally registered demo customer: ${state.fullName}.`
-      : "There are no locally registered demo customers.";
-}
-
-addAIMessage(answer);
-
-if ($("adminAIMessage")) {
-  $("adminAIMessage").textContent =
-    answer;
-}
-
-}
-
-/* =========================================================
-INITIALIZATION
-========================================================= */
-
-function initializeSources() {
-
-if (!state.sources.length) {
-  return;
-}
-
-selectedSendSource =
-  state.sources[0].id;
-
-selectedReceiveSource =
-  state.sources[0].id;
-
-selectedWithdrawSource =
-  state.sources[0].id;
-
-selectedLipaSource =
-  state.sources[0].id;
-
-}
-
-function initialize() {
-
-setupRegistration();
-
-setupSend();
-
-setupReceive();
-
-setupBuyerLogin();
-
-setupSellerApproval();
-
-setupFinalAuthorization();
-
-setupLipa();
-
-setupPin();
-
-setupMainNavigation();
-
-setupSettings();
-
-setupSecurity();
-
-setupOwnerLogin();
-
-setupAdminNavigation();
-
-setupAdminAI();
-
-initializeSources();
-
-renderReceiveForm();
-
-applyTheme();
-
-renderSettings();
-
-renderAllSourcePickers();
-
-renderDashboard();
-
-renderHistory();
-
-/*
-  Important:
-  Existing registered accounts remain registered.
-  New accounts use the fixed registration flow.
-*/
-
-if (state.registered) {
-  showApp();
-} else {
-  showRegistration();
-}
-
-}
-
-initialize();
-
+  }
+
+  /* =========================================================
+     LIPA NA
+     ========================================================= */
+
+  function setupLipaNa() {
+    const payButtons = [
+      $("lipaPayButton"),
+      $("payBillButton"),
+      $("confirmLipa"),
+      $("submitLipa")
+    ].filter(Boolean);
+
+    payButtons.forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          const number =
+            inputValue("lipaNumber") ||
+            inputValue("tillNumber") ||
+            inputValue("paybillNumber") ||
+            inputValue("businessNumber");
+
+          const amount =
+            inputValue("lipaAmount") ||
+            inputValue("billAmount") ||
+            inputValue("paymentAmount");
+
+          if (!number) {
+            showToast(
+              "Enter the business, Till or PayBill number.",
+              "error"
+            );
+            return;
+          }
+
+          const numericAmount =
+            Number(amount) || 0;
+
+          if (numericAmount <= 0) {
+            showToast(
+              "Enter a valid payment amount.",
+              "error"
+            );
+            return;
+          }
+
+          const sourceKey =
+            state.selectedSource;
+
+          const source =
+            state.sources[sourceKey];
+
+          const costs =
+            calculateTransactionCost(
+              numericAmount,
+              sourceKey
+            );
+
+          if (
+            !source ||
+            source.balance <
+              costs.total
+          ) {
+            showToast(
+              "Insufficient balance.",
+              "error"
+            );
+            return;
+          }
+
+          source.balance -=
+            costs.total;
+
+          const transaction =
+            recordTransaction({
+              type: "lipa_na",
+              amount: numericAmount,
+              fee: costs.beastFee,
+              providerCost:
+                costs.providerCost,
+              source: sourceKey,
+              recipient: number,
+              recipientName:
+                "Business / Merchant",
+              description:
+                `Lipa Na payment to ${number}`
+            });
+
+          state.notifications.unshift({
+            id: transaction.id,
+            type: "transaction",
+            title: "Lipa Na payment",
+            message: `${shortMoney(numericAmount)} paid successfully.`,
+            createdAt: nowISO(),
+            read: false
+          });
+
+          saveState();
+          updateDashboard();
+
+          showToast(
+            "Lipa Na payment completed.",
+            "success"
+          );
+        }
+      );
+    });
+  }
+
+  /* =========================================================
+     WITHDRAW
+     ========================================================= */
+
+  function setupWithdraw() {
+    const verifyButtons = [
+      $("verifyAgent"),
+      $("verifyWithdrawAgent")
+    ].filter(Boolean);
+
+    verifyButtons.forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          const agent =
+            inputValue("agentNumber") ||
+            inputValue("withdrawAgent");
+
+          if (!validKenyanPhone(agent)) {
+            showToast(
+              "Enter a valid Kenyan agent number.",
+              "error"
+            );
+            return;
+          }
+
+          setText(
+            "verifiedAgent",
+            displayPhone(agent)
+          );
+
+          setText(
+            "agentName",
+            "Verified BEAST Agent"
+          );
+
+          showToast(
+            "Agent verified.",
+            "success"
+          );
+        }
+      );
+    });
+
+    const withdrawButtons = [
+      $("withdrawButton"),
+      $("confirmWithdraw"),
+      $("submitWithdraw")
+    ].filter(Boolean);
+
+    withdrawButtons.forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          const agent =
+            inputValue("agentNumber") ||
+            inputValue("withdrawAgent");
+
+          const amount =
+            inputValue("withdrawAmount") ||
+            inputValue("withdrawalAmount");
+
+          const numericAmount =
+            Number(amount) || 0;
+
+          if (!validKenyanPhone(agent)) {
+            showToast(
+              "Verify the agent number.",
+              "error"
+            );
+            return;
+          }
+
+          if (numericAmount <= 0) {
+            showToast(
+              "Enter a valid withdrawal amount.",
+              "error"
+            );
+            return;
+          }
+
+          const source =
+            state.sources[state.selectedSource];
+
+          const fee =
+            beastFeeFor(numericAmount);
+
+          const total =
+            numericAmount + fee;
+
+          if (!source || source.balance < total) {
+            showToast(
+              `Insufficient balance. Required ${shortMoney(total)}.`,
+              "error"
+            );
+            return;
+          }
+
+          source.balance -= total;
+
+          const transaction =
+            recordTransaction({
+              type: "withdraw",
+              amount: numericAmount,
+              fee,
+              providerCost: 0,
+              source: state.selectedSource,
+              recipient:
+                normalizePhone(agent),
+              recipientName:
+                "BEAST Agent",
+              description:
+                `Withdrawal through agent ${displayPhone(agent)}`
+            });
+
+          state.notifications.unshift({
+            id: transaction.id,
+            type: "transaction",
+            title: "Withdrawal completed",
+            message: `${shortMoney(numericAmount)} withdrawn.`,
+            createdAt: nowISO(),
+            read: false
+          });
+
+          saveState();
+          updateDashboard();
+
+          showToast(
+            "Withdrawal completed successfully.",
+            "success"
+          );
+        }
+      );
+    });
+  }
+
+  /* =========================================================
+     RECEIVE / SELL
+     ========================================================= */
+
+  function setupReceive() {
+    const loginButtons = [
+      $("buyerLoginButton"),
+      $("receiveLoginButton"),
+      $("loginBuyer")
+    ].filter(Boolean);
+
+    loginButtons.forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          const account =
+            inputValue("buyerAccount") ||
+            inputValue("receiveAccount") ||
+            inputValue("loginAccount");
+
+          const password =
+            inputValue("buyerPassword") ||
+            inputValue("receivePassword") ||
+            inputValue("loginPassword");
+
+          const normalized =
+            normalizePhone(account);
+
+          const validAccount =
+            account === "BEAST-20481" ||
+            normalized ===
+              normalizePhone(state.user.phone) ||
+            validKenyanPhone(account);
+
+          if (
+            !validAccount ||
+            password !== DEMO_PASSWORD
+          ) {
+            showToast(
+              "Buyer login details are not valid.",
+              "error"
+            );
+            return;
+          }
+
+          state.receiveLoggedIn = true;
+          saveState();
+
+          showToast(
+            "Buyer verified.",
+            "success"
+          );
+
+          updateReceiveUI();
+        }
+      );
+    });
+
+    const verifySellerButtons = [
+      $("verifySeller"),
+      $("sellerVerifyButton"),
+      $("verifyMerchant")
+    ].filter(Boolean);
+
+    verifySellerButtons.forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          const seller =
+            inputValue("sellerNumber") ||
+            inputValue("sellerAccount") ||
+            inputValue("merchantNumber");
+
+          if (!seller) {
+            showToast(
+              "Enter the seller number.",
+              "error"
+            );
+            return;
+          }
+
+          state.receiveSellerVerified = true;
+
+          setText(
+            "sellerName",
+            "Verified Seller"
+          );
+
+          setText(
+            "verifiedSellerName",
+            "Verified Seller"
+          );
+
+          setText(
+            "verifiedSellerNumber",
+            seller
+          );
+
+          saveState();
+
+          showToast(
+            "Seller verified.",
+            "success"
+          );
+
+          updateReceiveUI();
+        }
+      );
+    });
+
+    const sellerApprovalButtons = [
+      $("sellerApprove"),
+      $("approvePayment"),
+      $("sellerApprovalButton")
+    ].filter(Boolean);
+
+    sellerApprovalButtons.forEach(
+      (button) => {
+        button.addEventListener(
+          "click",
+          () => {
+            if (!state.receiveLoggedIn) {
+              showToast(
+                "Buyer verification is required.",
+                "error"
+              );
+              return;
+            }
+
+            if (
+              !state.receiveSellerVerified
+            ) {
+              showToast(
+                "Verify the seller first.",
+                "error"
+              );
+              return;
+            }
+
+            showToast(
+              "Seller approval received.",
+              "success"
+            );
+          }
+        );
+      }
+    );
+  }
+
+  function updateReceiveUI() {
+    qsa(
+      "[data-receive-logged-in]"
+    ).forEach((element) => {
+      element.textContent =
+        state.receiveLoggedIn
+          ? "Verified"
+          : "Not verified";
+    });
+
+    qsa(
+      "[data-seller-verified]"
+    ).forEach((element) => {
+      element.textContent =
+        state.receiveSellerVerified
+          ? "Verified"
+          : "Not verified";
+    });
+  }
+
+  /* =========================================================
+     PIN AUTHORIZATION
+     ========================================================= */
+
+  let pendingAuthorization = null;
+
+  function openPinModal(callback) {
+    pendingAuthorization = callback;
+
+    const modal =
+      $("pinModal") ||
+      $("authorizationModal") ||
+      $("authModal");
+
+    if (!modal) {
+      const pin =
+        window.prompt(
+          "Enter your BEAST PIN"
+        );
+
+      if (
+        pin &&
+        pin === state.user.pin
+      ) {
+        if (callback) callback();
+      } else {
+        showToast(
+          "Authorization failed.",
+          "error"
+        );
+      }
+
+      return;
+    }
+
+    showElement(modal);
+
+    const pinInput =
+      $("authorizationPin") ||
+      $("pinInput") ||
+      $("beastPinInput");
+
+    if (pinInput) {
+      pinInput.value = "";
+      pinInput.focus();
+    }
+  }
+
+  function closePinModal() {
+    const modal =
+      $("pinModal") ||
+      $("authorizationModal") ||
+      $("authModal");
+
+    hideElement(modal);
+
+    pendingAuthorization = null;
+  }
+
+  function setupPinAuthorization() {
+    const confirmButtons = [
+      $("confirmPin"),
+      $("authorizeButton"),
+      $("submitPin"),
+      $("pinConfirm")
+    ].filter(Boolean);
+
+    confirmButtons.forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          const pin =
+            inputValue("authorizationPin") ||
+            inputValue("pinInput") ||
+            inputValue("beastPinInput");
+
+          const expected =
+            state.user.pin ||
+            DEMO_PIN;
+
+          if (pin !== expected) {
+            showToast(
+              "Incorrect BEAST PIN.",
+              "error"
+            );
+            return;
+          }
+
+          const callback =
+            pendingAuthorization;
+
+          closePinModal();
+
+          if (callback) {
+            callback();
+          }
+        }
+      );
+    });
+
+    const cancelButtons = [
+      $("cancelPin"),
+      $("closePinModal"),
+      $("authorizationCancel")
+    ].filter(Boolean);
+
+    cancelButtons.forEach((button) => {
+      button.addEventListener(
+        "click",
+        closePinModal
+      );
+    });
+  }
+
+  /* =========================================================
+     HISTORY
+     ========================================================= */
+
+  function transactionLabel(transaction) {
+    switch (transaction.type) {
+      case "send":
+        return "Money Transfer";
+
+      case "lipa_na":
+        return "Lipa Na";
+
+      case "withdraw":
+        return "Withdrawal";
+
+      case "receive":
+        return "Received Money";
+
+      default:
+        return "Transaction";
+    }
+  }
+
+  function updateHistory() {
+    const containers = [
+      $("historyList"),
+      $("transactionHistory"),
+      $("historyContainer")
+    ].filter(Boolean);
+
+    containers.forEach((container) => {
+      if (!state.transactions.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            No transactions yet.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML =
+        state.transactions
+          .slice(0, 100)
+          .map((transaction) => {
+            const outgoing =
+              [
+                "send",
+                "lipa_na",
+                "withdraw"
+              ].includes(
+                transaction.type
+              );
+
+            const sign =
+              outgoing ? "-" : "+";
+
+            return `
+              <div class="transaction-item">
+                <div class="transaction-main">
+                  <strong>
+                    ${escapeHTML(
+                      transactionLabel(
+                        transaction
+                      )
+                    )}
+                  </strong>
+
+                  <small>
+                    ${escapeHTML(
+                      transaction.description ||
+                        ""
+                    )}
+                  </small>
+
+                  <small>
+                    ${escapeHTML(
+                      formatDate(
+                        transaction.createdAt
+                      )
+                    )}
+                  </small>
+                </div>
+
+                <div class="transaction-amount ${
+                  outgoing
+                    ? "outgoing"
+                    : "incoming"
+                }">
+                  ${sign} ${escapeHTML(
+                    shortMoney(
+                      transaction.amount
+                    )
+                  )}
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+    });
+  }
+
+  /* =========================================================
+     NOTIFICATIONS
+     ========================================================= */
+
+  function updateNotificationDisplays() {
+    const unread =
+      state.notifications.filter(
+        (item) => !item.read
+      ).length;
+
+    qsa(
+      "[data-notification-count]"
+    ).forEach((element) => {
+      element.textContent = String(unread);
+      element.style.display =
+        unread > 0 ? "" : "none";
+    });
+
+    const containers = [
+      $("notificationList"),
+      $("notificationsList")
+    ].filter(Boolean);
+
+    containers.forEach((container) => {
+      if (!state.notifications.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            No notifications.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML =
+        state.notifications
+          .slice(0, 50)
+          .map(
+            (item) => `
+              <div class="notification-item ${
+                item.read ? "read" : "unread"
+              }">
+                <strong>
+                  ${escapeHTML(
+                    item.title
+                  )}
+                </strong>
+                <p>
+                  ${escapeHTML(
+                    item.message
+                  )}
+                </p>
+                <small>
+                  ${escapeHTML(
+                    formatDate(
+                      item.createdAt
+                    )
+                  )}
+                </small>
+              </div>
+            `
+          )
+          .join("");
+    });
+  }
+
+  function markNotificationsRead() {
+    state.notifications.forEach(
+      (item) => {
+        item.read = true;
+      }
+    );
+
+    saveState();
+    updateNotificationDisplays();
+  }
+
+  /* =========================================================
+     SETTINGS
+     ========================================================= */
+
+  function applyTheme(theme) {
+    state.theme = theme;
+
+    document.documentElement.dataset.theme =
+      theme;
+
+    document.body.dataset.theme =
+      theme;
+
+    try {
+      localStorage.setItem(
+        THEME_KEY,
+        theme
+      );
+    } catch (_) {}
+
+    qsa(
+      "[data-theme-toggle]"
+    ).forEach((button) => {
+      button.textContent =
+        theme === "light"
+          ? "Dark Mode"
+          : "Light Mode";
+    });
+
+    saveState();
+  }
+
+  function setupSettings() {
+    const savedTheme =
+      localStorage.getItem(
+        THEME_KEY
+      );
+
+    if (
+      savedTheme === "light" ||
+      savedTheme === "dark"
+    ) {
+      state.theme = savedTheme;
+    }
+
+    applyTheme(state.theme);
+
+    qsa(
+      "[data-theme-toggle]"
+    ).forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          applyTheme(
+            state.theme === "dark"
+              ? "light"
+              : "dark"
+          );
+        }
+      );
+    });
+
+    const themeButtons = [
+      $("darkModeButton"),
+      $("lightModeButton")
+    ].filter(Boolean);
+
+    themeButtons.forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          const theme =
+            button.id ===
+            "lightModeButton"
+              ? "light"
+              : "dark";
+
+          applyTheme(theme);
+        }
+      );
+    });
+
+    const biometric =
+      $("biometricToggle");
+
+    if (biometric) {
+      biometric.checked =
+        !!state.settings.biometric;
+
+      biometric.addEventListener(
+        "change",
+        () => {
+          state.settings.biometric =
+            biometric.checked;
+
+          saveState();
+        }
+      );
+    }
+
+    const notifications =
+      $("notificationsToggle");
+
+    if (notifications) {
+      notifications.checked =
+        !!state.settings.notifications;
+
+      notifications.addEventListener(
+        "change",
+        () => {
+          state.settings.notifications =
+            notifications.checked;
+
+          saveState();
+        }
+      );
+    }
+
+    const screenSecurity =
+      $("screenSecurityToggle");
+
+    if (screenSecurity) {
+      screenSecurity.checked =
+        !!state.settings.screenSecurity;
+
+      screenSecurity.addEventListener(
+        "change",
+        () => {
+          state.settings.screenSecurity =
+            screenSecurity.checked;
+
+          saveState();
+        }
+      );
+    }
+
+    const resetButtons = [
+      $("resetDemo"),
+      $("resetDemoButton"),
+      $("clearDemo")
+    ].filter(Boolean);
+
+    resetButtons.forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          const confirmed =
+            window.confirm(
+              "Reset the MONEY TRANSFER BEAST demo?"
+            );
+
+          if (confirmed) {
+            resetState();
+          }
+        }
+      );
+    });
+  }
+
+  /* =========================================================
+     PIN CHANGE
+     ========================================================= */
+
+  function setupPinChange() {
+    const changeButton =
+      $("changePinButton");
+
+    if (!changeButton) return;
+
+    changeButton.addEventListener(
+      "click",
+      () => {
+        const oldPin =
+          inputValue("oldPin");
+
+        const newPin =
+          inputValue("newPin");
+
+        const confirmPin =
+          inputValue("confirmNewPin");
+
+        if (
+          oldPin !== state.user.pin
+        ) {
+          showToast(
+            "Current BEAST PIN is incorrect.",
+            "error"
+          );
+          return;
+        }
+
+        if (!/^\d{4}$/.test(newPin)) {
+          showToast(
+            "New PIN must contain 4 digits.",
+            "error"
+          );
+          return;
+        }
+
+        if (newPin !== confirmPin) {
+          showToast(
+            "New PINs do not match.",
+            "error"
+          );
+          return;
+        }
+
+        state.user.pin = newPin;
+
+        saveState();
+
+        showToast(
+          "BEAST PIN changed successfully.",
+          "success"
+        );
+      }
+    );
+  }
+
+  /* =========================================================
+     MENU / NAVIGATION BUTTONS
+     ========================================================= */
+
+  function setupNavigation() {
+    qsa("[data-go]").forEach(
+      (button) => {
+        button.addEventListener(
+          "click",
+          () => {
+            const target =
+              button.dataset.go;
+
+            if (target) {
+              showScreen(target);
+            }
+          }
+        );
+      }
+    );
+
+    const menuButton =
+      $("menuButton") ||
+      $("hamburgerButton") ||
+      $("openMenu");
+
+    const menu =
+      $("sideMenu") ||
+      $("menuPanel") ||
+      $("navigationMenu");
+
+    if (menuButton && menu) {
+      menuButton.addEventListener(
+        "click",
+        () => {
+          menu.classList.toggle("open");
+          menu.classList.toggle("active");
+        }
+      );
+    }
+
+    qsa(
+      "[data-close-menu]"
+    ).forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          if (menu) {
+            menu.classList.remove(
+              "open",
+              "active"
+            );
+          }
+        }
+      );
+    });
+
+    qsa(
+      "[data-action='home']"
+    ).forEach((button) => {
+      button.addEventListener(
+        "click",
+        showDashboard
+      );
+    });
+
+    qsa(
+      "[data-action='history']"
+    ).forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          showScreen("historyScreen");
+          updateHistory();
+        }
+      );
+    });
+
+    qsa(
+      "[data-action='settings']"
+    ).forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          showScreen("settingsScreen");
+        }
+      );
+    });
+
+    qsa(
+      "[data-action='notifications']"
+    ).forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          showScreen(
+            "notificationsScreen"
+          );
+
+          markNotificationsRead();
+        }
+      );
+    });
+  }
+
+  /* =========================================================
+     LOGOUT
+     ========================================================= */
+
+  function setupLogout() {
+    qsa(
+      "[data-action='logout'], #logoutButton, #logout"
+    ).forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          state.receiveLoggedIn = false;
+          state.receiveSellerVerified =
+            false;
+
+          saveState();
+
+          showToast(
+            "Session ended.",
+            "success"
+          );
+
+          showDashboard();
+        }
+      );
+    });
+  }
+
+  /* =========================================================
+     OWNER / ADMIN DEMO
+     ========================================================= */
+
+  function updateOwnerDashboard() {
+    setText(
+      "ownerTransactions",
+      String(
+        state.owner.transactions || 0
+      )
+    );
+
+    setText(
+      "ownerFees",
+      shortMoney(
+        state.owner.beastFees || 0
+      )
+    );
+
+    setText(
+      "ownerProviderCosts",
+      shortMoney(
+        state.owner.providerCosts || 0
+      )
+    );
+
+    const net =
+      Number(state.owner.beastFees || 0) -
+      Number(
+        state.owner.providerCosts || 0
+      );
+
+    setText(
+      "ownerNetRevenue",
+      shortMoney(net)
+    );
+
+    setText(
+      "adminRevenue",
+      shortMoney(net)
+    );
+  }
+
+  function setupOwnerLogin() {
+    const button =
+      $("ownerLoginButton") ||
+      $("adminLoginButton");
+
+    if (!button) return;
+
+    button.addEventListener(
+      "click",
+      () => {
+        const password =
+          inputValue("ownerPassword") ||
+          inputValue("adminPassword");
+
+        if (
+          password !== DEMO_PASSWORD
+        ) {
+          showToast(
+            "Owner password is incorrect.",
+            "error"
+          );
+          return;
+        }
+
+        showToast(
+          "Owner dashboard unlocked.",
+          "success"
+        );
+
+        const screen =
+          $("ownerDashboardScreen") ||
+          $("adminDashboardScreen");
+
+        if (screen) {
+          showScreen(screen.id);
+        }
+
+        updateOwnerDashboard();
+      }
+    );
+  }
+
+  /* =========================================================
+     SECURITY
+     ========================================================= */
+
+  function addSecurityEvent(
+    title,
+    message,
+    severity = "info"
+  ) {
+    const event = {
+      id: generateReference(),
+      title,
+      message,
+      severity,
+      createdAt: nowISO()
+    };
+
+    state.securityEvents.unshift(
+      event
+    );
+
+    saveState();
+
+    updateSecurityDisplays();
+  }
+
+  function updateSecurityDisplays() {
+    const containers = [
+      $("securityEvents"),
+      $("securityLog"),
+      $("securityList")
+    ].filter(Boolean);
+
+    containers.forEach((container) => {
+      container.innerHTML =
+        state.securityEvents
+          .slice(0, 50)
+          .map(
+            (event) => `
+              <div class="security-event ${escapeHTML(
+                event.severity
+              )}">
+                <strong>
+                  ${escapeHTML(
+                    event.title
+                  )}
+                </strong>
+                <p>
+                  ${escapeHTML(
+                    event.message
+                  )}
+                </p>
+                <small>
+                  ${escapeHTML(
+                    formatDate(
+                      event.createdAt
+                    )
+                  )}
+                </small>
+              </div>
+            `
+          )
+          .join("");
+    });
+  }
+
+  function setupSecurityProtection() {
+    if (
+      !state.settings.screenSecurity
+    ) {
+      return;
+    }
+
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+        if (
+          document.visibilityState ===
+          "hidden"
+        ) {
+          addSecurityEvent(
+            "Security Alert",
+            "The BEAST application was moved to the background.",
+            "warning"
+          );
+        }
+      }
+    );
+
+    window.addEventListener(
+      "blur",
+      () => {
+        addSecurityEvent(
+          "Security Alert",
+          "Application focus changed.",
+          "warning"
+        );
+      }
+    );
+  }
+
+  /* =========================================================
+     CAMERA / QR PLACEHOLDER
+     ========================================================= */
+
+  function setupCameraButtons() {
+    qsa(
+      "[data-action='camera'], #openCamera, #cameraButton"
+    ).forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          showToast(
+            "Camera scanner is available for the future mobile version.",
+            "info"
+          );
+        }
+      );
+    });
+  }
+
+  /* =========================================================
+     DEMO LOGIN
+     ========================================================= */
+
+  function setupDemoLogin() {
+    qsa(
+      "#loginButton, #customerLoginButton"
+    ).forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          const account =
+            inputValue("loginAccount") ||
+            inputValue("accountNumber") ||
+            inputValue("phoneNumber");
+
+          const name =
+            inputValue("loginName") ||
+            inputValue("fullName");
+
+          if (!account || !name) {
+            showToast(
+              "Enter your account/phone number and full name.",
+              "error"
+            );
+            return;
+          }
+
+          if (
+            normalizePhone(account) !==
+              normalizePhone(
+                state.user.phone
+              ) &&
+            account !== state.user.beastId
+          ) {
+            showToast(
+              "Account could not be verified.",
+              "error"
+            );
+            return;
+          }
+
+          if (
+            name.toLowerCase() !==
+            String(
+              state.user.name
+            ).toLowerCase()
+          ) {
+            showToast(
+              "Full name does not match.",
+              "error"
+            );
+            return;
+          }
+
+          showToast(
+            `Account verified. Balance: ${shortMoney(
+              getTotalBalance()
+            )}`,
+            "success"
+          );
+
+          setText(
+            "loginBalance",
+            shortMoney(
+              getTotalBalance()
+            )
+          );
+        }
+      );
+    });
+  }
+
+  /* =========================================================
+     BALANCE REFRESH
+     ========================================================= */
+
+  function setupBalanceRefresh() {
+    qsa(
+      "#refreshBalance, [data-action='refresh-balance']"
+    ).forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          updateDashboard();
+
+          showToast(
+            "Balance refreshed.",
+            "success"
+          );
+        }
+      );
+    });
+  }
+
+  /* =========================================================
+     FORM SUBMISSION PROTECTION
+     ========================================================= */
+
+  function preventUnexpectedFormSubmission() {
+    qsa("form").forEach((form) => {
+      form.addEventListener(
+        "submit",
+        (event) => {
+          event.preventDefault();
+        }
+      );
+    });
+  }
+
+  /* =========================================================
+     INITIAL UI
+     ========================================================= */
+
+  function initializeRegistrationState() {
+    const registration =
+      $("registrationScreen");
+
+    if (!registration) {
+      return;
+    }
+
+    updateRegistrationSummary();
+
+    if (state.registered) {
+      hideRegistration();
+      showDashboard();
+    } else {
+      showElement(registration);
+      showRegistrationStep(1);
+    }
+  }
+
+  function initialize() {
+    console.log(
+      "MONEY TRANSFER BEAST initializing..."
+    );
+
+    setupRegistration();
+    setupSourceSelectors();
+    setupSend();
+    setupLipaNa();
+    setupWithdraw();
+    setupReceive();
+    setupPinAuthorization();
+    setupSettings();
+    setupPinChange();
+    setupNavigation();
+    setupLogout();
+    setupOwnerLogin();
+    setupSecurityProtection();
+    setupCameraButtons();
+    setupDemoLogin();
+    setupBalanceRefresh();
+
+    preventUnexpectedFormSubmission();
+
+    updateDashboard();
+    updateRegistrationSummary();
+    updateReceiveUI();
+    updateSecurityDisplays();
+
+    initializeRegistrationState();
+
+    console.log(
+      "MONEY TRANSFER BEAST initialized successfully."
+    );
+  }
+
+  /* =========================================================
+     START
+     ========================================================= */
+
+  initialize();
 });
