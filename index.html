@@ -2,117 +2,1669 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#07111f">
-  <meta name="description" content="MONEY TRANSFER BEAST - Kenya payment platform prototype">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="theme-color"
+    content="#07111f"
+  >
+
+  <meta
+    name="description"
+    content="MONEY TRANSFER BEAST - Kenya payment platform prototype"
+  >
+
   <title>MONEY TRANSFER BEAST</title>
-  <link rel="stylesheet" href="style.css">
+
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
 </head>
+
 <body data-theme="dark">
+
 <div id="app">
+
+  <!-- =====================================================
+       TOP BAR
+  ====================================================== -->
+
   <header class="topbar">
-    <button class="icon-btn" data-action="home" aria-label="Home">⌂</button>
-    <div class="brand"><span>BEAST</span><small>MONEY TRANSFER</small></div>
-    <div class="top-actions">
-      <button class="icon-btn" data-action="notifications">🔔<b data-notification-count>0</b></button>
-      <button class="icon-btn" data-action="settings">⚙</button>
+
+    <button
+      type="button"
+      data-action="home"
+      class="icon-button"
+    >
+      🏠
+    </button>
+
+    <div class="brand">
+      <strong>MONEY TRANSFER BEAST</strong>
+      <span>KENYA PAYMENT PLATFORM</span>
     </div>
+
+    <div class="top-actions">
+
+      <button
+        type="button"
+        data-action="notifications"
+        class="icon-button"
+      >
+        🔔
+        <span
+          data-notification-count
+          class="notification-count"
+        >0</span>
+      </button>
+
+      <button
+        type="button"
+        data-action="settings"
+        class="icon-button"
+      >
+        ⚙️
+      </button>
+
+    </div>
+
   </header>
 
-  <div class="demo-banner">DEMO / PROTOTYPE ONLY • No real M-PESA, bank, card or Airtel transactions</div>
 
-  <main>
-    <section id="registrationScreen" class="app-screen active">
-      <div class="hero-card"><div class="logo-mark">🐾</div><h1>MONEY TRANSFER BEAST</h1><p>One identity. Multiple payment sources. Fast transfers.</p></div>
-      <div class="step-dots"><i class="active"></i><i></i><i></i></div>
-      <div class="card registration-step" data-registration-step="1">
-        <h2>Create your BEAST account</h2>
-        <label>Full name<input id="regName" autocomplete="name" placeholder="Full name"></label>
-        <label>Kenyan phone number<input id="regPhone" inputmode="tel" placeholder="0712345678"></label>
-        <label>National ID number<input id="regNationalId" inputmode="numeric" placeholder="National ID"></label>
-        <button class="primary" id="registrationNext1">CONTINUE</button>
-      </div>
-      <div class="card registration-step hidden" data-registration-step="2">
-        <h2>Create BEAST PIN</h2><p class="muted">Use 4 digits to authorize transfers.</p>
-        <label>BEAST PIN<input id="regPin" type="password" inputmode="numeric" maxlength="4" placeholder="••••"></label>
-        <label>Confirm PIN<input id="regPinConfirm" type="password" inputmode="numeric" maxlength="4" placeholder="••••"></label>
-        <button class="primary" id="registrationNext2">CONTINUE</button>
-        <button class="ghost" data-registration-back="1">BACK</button>
-      </div>
-      <div class="card registration-step hidden" data-registration-step="3">
-        <h2>Confirm details</h2><div id="registrationSummary" class="summary"></div>
-        <button class="primary" id="finishRegistration">CREATE BEAST ACCOUNT</button>
-        <button class="ghost" data-registration-back="2">BACK</button>
-      </div>
-    </section>
+  <!-- =====================================================
+       SECURITY / DEMO BANNER
+  ====================================================== -->
 
-    <section id="dashboardScreen" class="app-screen">
-      <div class="welcome"><div><span class="eyebrow">WELCOME</span><h2 id="dashboardName">BEAST USER</h2><p id="dashboardBeastId">BEAST-000000</p></div><button class="avatar" data-go="profileScreen">👤</button></div>
-      <div class="balance-card"><div><span>ACCOUNT BALANCE</span><strong id="dashboardBalance">KES 0.00</strong><small id="dashboardPhone">—</small></div><button data-action="refresh-balance">↻</button></div>
+  <div class="demo-banner">
+    <strong>DEMO / PROTOTYPE</strong>
+    <span>
+      No real M-PESA, Airtel, bank or card transactions.
+    </span>
+  </div>
 
-      <div class="home-grid">
-        <div class="home-column card">
-          <h3>Money</h3>
-          <button class="action-tile" data-go="sendScreen"><span>↗</span><b>Send</b><small>Transfer money</small></button>
-          <button class="action-tile" data-go="receiveScreen"><span>↙</span><b>Receive</b><small>Receive payment</small></button>
-          <button class="action-tile" data-go="withdrawScreen"><span>🏧</span><b>Withdraw</b><small>Use BEAST agent</small></button>
-          <button class="action-tile" data-go="lipaScreen"><span>▣</span><b>Lipa Na</b><small>Pay bill / till</small></button>
+
+  <!-- =====================================================
+       REGISTRATION
+  ====================================================== -->
+
+  <section
+    id="registrationScreen"
+    class="app-screen active"
+  >
+
+    <div class="hero-card">
+
+      <div class="logo-beast">
+        🦁
+      </div>
+
+      <h1>MONEY TRANSFER BEAST</h1>
+
+      <p>
+        One identity. Multiple financial accounts.
+        Fast and secure money movement.
+      </p>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="step-dots">
+        <i class="active"></i>
+        <i></i>
+        <i></i>
+      </div>
+
+
+      <!-- STEP 1 -->
+
+      <div
+        data-registration-step="1"
+      >
+
+        <h2>Create BEAST Account</h2>
+
+        <label>
+          Full Name
+        </label>
+
+        <input
+          id="regName"
+          type="text"
+          placeholder="Enter full name"
+        >
+
+        <label>
+          Phone Number
+        </label>
+
+        <input
+          id="regPhone"
+          inputmode="numeric"
+          placeholder="07XXXXXXXX"
+        >
+
+        <label>
+          National ID
+        </label>
+
+        <input
+          id="regNationalId"
+          inputmode="numeric"
+          placeholder="National ID Number"
+        >
+
+        <button
+          type="button"
+          id="registrationNext1"
+          class="primary-button"
+        >
+          CONTINUE
+        </button>
+
+      </div>
+
+
+      <!-- STEP 2 -->
+
+      <div
+        data-registration-step="2"
+        class="hidden"
+      >
+
+        <h2>Create BEAST PIN</h2>
+
+        <p class="muted">
+          Your 4-digit PIN authorizes money movement.
+        </p>
+
+        <label>
+          BEAST PIN
+        </label>
+
+        <input
+          id="regPin"
+          type="password"
+          inputmode="numeric"
+          maxlength="4"
+          placeholder="••••"
+        >
+
+        <label>
+          Confirm PIN
+        </label>
+
+        <input
+          id="regPinConfirm"
+          type="password"
+          inputmode="numeric"
+          maxlength="4"
+          placeholder="••••"
+        >
+
+        <button
+          type="button"
+          id="registrationNext2"
+          class="primary-button"
+        >
+          CONTINUE
+        </button>
+
+        <button
+          type="button"
+          data-registration-back="1"
+          class="secondary-button"
+        >
+          BACK
+        </button>
+
+      </div>
+
+
+      <!-- STEP 3 -->
+
+      <div
+        data-registration-step="3"
+        class="hidden"
+      >
+
+        <h2>Confirm BEAST Account</h2>
+
+        <div
+          id="registrationSummary"
+          class="summary-box"
+        ></div>
+
+        <button
+          type="button"
+          id="finishRegistration"
+          class="primary-button"
+        >
+          CREATE BEAST ACCOUNT
+        </button>
+
+        <button
+          type="button"
+          data-registration-back="2"
+          class="secondary-button"
+        >
+          BACK
+        </button>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       DASHBOARD
+  ====================================================== -->
+
+  <section
+    id="dashboardScreen"
+    class="app-screen"
+  >
+
+    <div class="dashboard-header">
+
+      <div>
+        <span class="muted">
+          Welcome
+        </span>
+
+        <h2 id="dashboardName">
+          BEAST USER
+        </h2>
+
+        <small id="dashboardBeastId">
+          BEAST-000000
+        </small>
+      </div>
+
+      <button
+        type="button"
+        data-action="refresh-balance"
+        class="icon-button"
+      >
+        🔄
+      </button>
+
+    </div>
+
+
+    <!-- =================================================
+         MAIN ACCOUNT COLUMN
+    ================================================== -->
+
+    <div class="dashboard-columns">
+
+
+      <!-- ACCOUNT BALANCE -->
+
+      <div class="dashboard-column">
+
+        <div class="balance-card">
+
+          <span>
+            TOTAL ACCOUNT BALANCE
+          </span>
+
+          <strong id="dashboardBalance">
+            KES 0.00
+          </strong>
+
+          <small>
+            BEAST linked accounts
+          </small>
+
         </div>
-        <div class="home-column card">
-          <h3>BEAST</h3>
-          <button class="action-tile" data-go="beastOwnScreen"><span>🐾</span><b>BEAST Own</b><small>Wallet & accounts</small></button>
-          <button class="action-tile" data-go="loginScreen"><span>💳</span><b>Account Balance</b><small>Check account</small></button>
-          <button class="action-tile" data-go="ownerLoginScreen"><span>🛡</span><b>BEAST Admin</b><small>Owner dashboard</small></button>
-          <button class="action-tile" data-go="historyScreen"><span>▤</span><b>History</b><small>Transactions</small></button>
+
+
+        <!-- BEAST OWN -->
+
+        <button
+          type="button"
+          data-go="beastOwnScreen"
+          class="square-card beast-card"
+        >
+          <span>🦁</span>
+          <b>BEAST OWN</b>
+          <small>
+            My linked accounts
+          </small>
+        </button>
+
+
+        <!-- ACCOUNT BALANCE -->
+
+        <button
+          type="button"
+          data-go="loginScreen"
+          class="square-card"
+        >
+          <span>💰</span>
+          <b>ACCOUNT BALANCE</b>
+          <small>
+            Check account
+          </small>
+        </button>
+
+
+        <!-- BEAST ADMIN -->
+
+        <button
+          type="button"
+          data-go="ownerLoginScreen"
+          class="square-card"
+        >
+          <span>🛡️</span>
+          <b>BEAST ADMIN</b>
+          <small>
+            Owner dashboard
+          </small>
+        </button>
+
+      </div>
+
+
+      <!-- =================================================
+           QUICK ACTIONS
+      ================================================== -->
+
+      <div class="dashboard-column">
+
+        <h3>QUICK ACTIONS</h3>
+
+        <div class="square-grid">
+
+          <button
+            type="button"
+            data-go="sendScreen"
+            class="square-card"
+          >
+            <span>📤</span>
+            <b>SEND</b>
+            <small>
+              Send money
+            </small>
+          </button>
+
+          <button
+            type="button"
+            data-go="receiveScreen"
+            class="square-card"
+          >
+            <span>📥</span>
+            <b>RECEIVE</b>
+            <small>
+              Buyer payment
+            </small>
+          </button>
+
+          <button
+            type="button"
+            data-go="withdrawScreen"
+            class="square-card"
+          >
+            <span>🏧</span>
+            <b>WITHDRAW</b>
+            <small>
+              Agent withdrawal
+            </small>
+          </button>
+
+          <button
+            type="button"
+            data-go="lipaScreen"
+            class="square-card"
+          >
+            <span>🛒</span>
+            <b>LIPA NA</b>
+            <small>
+              Pay business
+            </small>
+          </button>
+
+          <button
+            type="button"
+            data-go="historyScreen"
+            class="square-card"
+          >
+            <span>📜</span>
+            <b>HISTORY</b>
+            <small>
+              Transactions
+            </small>
+          </button>
+
+          <button
+            type="button"
+            data-go="profileScreen"
+            class="square-card"
+          >
+            <span>👤</span>
+            <b>PROFILE</b>
+            <small>
+              My account
+            </small>
+          </button>
+
+          <button
+            type="button"
+            data-go="securityScreen"
+            class="square-card"
+          >
+            <span>🔐</span>
+            <b>SECURITY</b>
+            <small>
+              Security events
+            </small>
+          </button>
+
+          <button
+            type="button"
+            data-go="settingsScreen"
+            class="square-card"
+          >
+            <span>⚙️</span>
+            <b>SETTINGS</b>
+            <small>
+              App settings
+            </small>
+          </button>
+
         </div>
+
       </div>
 
-      <div class="card"><div class="section-head"><h3>Linked accounts</h3><span>DEMO</span></div><div id="sourceList" class="source-list"></div></div>
-      <div class="card security-mini"><div><b>Security</b><p>PIN authorization and activity protection are enabled.</p></div><button class="ghost" data-go="securityScreen">VIEW</button></div>
-    </section>
+    </div>
 
-    <section id="beastOwnScreen" class="app-screen"><div class="screen-head"><button class="back" data-action="home">←</button><div><span class="eyebrow">BEAST OWN</span><h2>Wallet & Accounts</h2></div></div><div id="beastOwnContent" class="stack"></div></section>
 
-    <section id="sendScreen" class="app-screen"><div class="screen-head"><button class="back" data-action="home">←</button><div><span class="eyebrow">TRANSFER</span><h2>Send Money</h2></div></div>
-      <div class="card one-screen-form">
-        <label>Receiver phone / BEAST ID<input id="sendPhone" inputmode="tel" placeholder="0712345678"></label>
-        <button class="secondary" id="verifyRecipient">VERIFY RECIPIENT</button>
-        <div id="recipientVerification" class="verification hidden"></div>
-        <label>Amount (KES)<input id="sendAmount" inputmode="decimal" placeholder="0.00"></label>
-        <div class="fee-box"><span>Source</span><select id="sendSource"></select><span>BEAST fee</span><strong id="sendFee">KES 0.00</strong></div>
-        <button class="primary" id="sendMoneyButton">SEND MONEY</button>
+    <!-- =================================================
+         LINKED ACCOUNTS
+    ================================================== -->
+
+    <div class="card">
+
+      <div class="section-title">
+
+        <div>
+          <h3>LINKED ACCOUNTS</h3>
+
+          <small class="muted">
+            Select a payment source
+          </small>
+        </div>
+
       </div>
-    </section>
 
-    <section id="receiveScreen" class="app-screen"><div class="screen-head"><button class="back" data-action="home">←</button><div><span class="eyebrow">RECEIVE</span><h2>Receive Money</h2></div></div>
-      <div class="card"><div class="receive-code">🐾</div><h3>BEAST ID</h3><strong id="receiveBeastId">BEAST-000000</strong><p id="receiveProfileName">BEAST USER</p><div class="copy-row"><input id="receiveNumber" readonly><button class="secondary" data-action="copy-receive">COPY</button></div></div>
-      <div class="card"><label>Verify sender / seller number<input id="sellerNumber" inputmode="tel" placeholder="0712345678"></label><button class="secondary" id="verifySeller">VERIFY</button><div id="sellerVerification" class="verification hidden"></div></div>
-    </section>
+      <div
+        id="sourceList"
+        class="source-grid"
+      ></div>
 
-    <section id="withdrawScreen" class="app-screen"><div class="screen-head"><button class="back" data-action="home">←</button><div><span class="eyebrow">CASH OUT</span><h2>Withdraw</h2></div></div><div class="card one-screen-form"><label>Agent number<input id="agentNumber" inputmode="tel" placeholder="0712345678"></label><button class="secondary" id="verifyAgent">VERIFY AGENT</button><div id="agentVerification" class="verification hidden"></div><label>Amount (KES)<input id="withdrawAmount" inputmode="decimal" placeholder="0.00"></label><div class="fee-box"><span>BEAST fee</span><strong id="withdrawFee">KES 0.00</strong></div><button class="primary" id="withdrawButton">WITHDRAW</button></div></section>
+    </div>
 
-    <section id="lipaScreen" class="app-screen"><div class="screen-head"><button class="back" data-action="home">←</button><div><span class="eyebrow">PAYMENTS</span><h2>Lipa Na</h2></div></div><div class="card one-screen-form"><label>Business / Till / PayBill number<input id="lipaNumber" inputmode="tel" placeholder="Till or PayBill"></label><label>Amount (KES)<input id="lipaAmount" inputmode="decimal" placeholder="0.00"></label><div class="fee-box"><span>Source</span><select id="lipaSource"></select><span>BEAST fee</span><strong id="lipaFee">KES 0.00</strong></div><button class="primary" id="lipaPayButton">PAY NOW</button></div></section>
 
-    <section id="historyScreen" class="app-screen"><div class="screen-head"><button class="back" data-action="home">←</button><div><span class="eyebrow">ACTIVITY</span><h2>Transaction History</h2></div></div><div id="historyList" class="stack"></div></section>
-    <section id="notificationsScreen" class="app-screen"><div class="screen-head"><button class="back" data-action="home">←</button><div><span class="eyebrow">ALERTS</span><h2>Notifications</h2></div></div><div id="notificationList" class="stack"></div></section>
-    <section id="securityScreen" class="app-screen"><div class="screen-head"><button class="back" data-action="home">←</button><div><span class="eyebrow">PROTECTION</span><h2>Security</h2></div></div><div class="card"><p>Demo protection events and app visibility events.</p><div id="securityList" class="stack"></div></div></section>
+    <!-- SECURITY -->
 
-    <section id="profileScreen" class="app-screen"><div class="screen-head"><button class="back" data-action="home">←</button><div><span class="eyebrow">ACCOUNT</span><h2>Profile</h2></div></div><div class="card profile-card"><div class="avatar big">👤</div><h2 id="profileName">BEAST USER</h2><p id="profilePhone">—</p><p id="profileBeastId">BEAST-000000</p></div><div class="card"><button class="secondary" data-go="loginScreen">Check Balance</button><button class="ghost" data-action="logout">End Session</button></div></section>
+    <div class="card security-card">
 
-    <section id="settingsScreen" class="app-screen"><div class="screen-head"><button class="back" data-action="home">←</button><div><span class="eyebrow">CONTROL</span><h2>Settings</h2></div></div><div class="card settings-list"><label class="switch-row">Notifications<input id="notificationsToggle" type="checkbox" checked><span></span></label><label class="switch-row">Screen security<input id="screenSecurityToggle" type="checkbox" checked><span></span></label><label class="switch-row">Biometric placeholder<input id="biometricToggle" type="checkbox"><span></span></label><button class="secondary" data-theme-toggle>Toggle Theme</button><button class="secondary" data-go="changePinScreen">Change BEAST PIN</button><button class="danger" id="resetDemo">Reset Demo</button></div></section>
+      <h3>🛡️ BEAST SECURITY</h3>
 
-    <section id="changePinScreen" class="app-screen"><div class="screen-head"><button class="back" data-go="settingsScreen">←</button><div><span class="eyebrow">SECURITY</span><h2>Change PIN</h2></div></div><div class="card"><label>Old PIN<input id="oldPin" type="password" maxlength="4" inputmode="numeric"></label><label>New PIN<input id="newPin" type="password" maxlength="4" inputmode="numeric"></label><label>Confirm new PIN<input id="confirmNewPin" type="password" maxlength="4" inputmode="numeric"></label><button class="primary" id="changePinButton">CHANGE PIN</button></div></section>
+      <p>
+        Every money movement requires authorization.
+      </p>
 
-    <section id="loginScreen" class="app-screen"><div class="screen-head"><button class="back" data-action="home">←</button><div><span class="eyebrow">ACCOUNT ACCESS</span><h2>Check Balance</h2></div></div><div class="card"><label>Phone / Account number<input id="loginAccount" inputmode="tel"></label><label>Full name<input id="loginName"></label><button class="primary" id="loginButton">CHECK BALANCE</button><div id="loginBalance" class="balance-result hidden"></div></div></section>
+      <p class="muted">
+        Recipient verification and transaction
+        notifications help reduce wrong transfers.
+      </p>
 
-    <section id="ownerLoginScreen" class="app-screen"><div class="screen-head"><button class="back" data-action="home">←</button><div><span class="eyebrow">BEAST ADMIN</span><h2>Owner Login</h2></div></div><div class="card"><p class="muted">Demo password: beast123</p><input id="ownerPassword" type="password" placeholder="Admin password"><button class="primary" id="ownerLoginButton">OPEN ADMIN</button></div></section>
-    <section id="ownerDashboardScreen" class="app-screen"><div class="screen-head"><button class="back" data-action="home">←</button><div><span class="eyebrow">BEAST ADMIN</span><h2>Owner Dashboard</h2></div></div><div class="stats-grid"><div class="stat"><span>Fees</span><b id="ownerFees">KES 0.00</b></div><div class="stat"><span>Provider Costs</span><b id="ownerProviderCosts">KES 0.00</b></div><div class="stat"><span>Volume</span><b id="ownerVolume">KES 0.00</b></div><div class="stat"><span>Transactions</span><b id="ownerTransactions">0</b></div><div class="stat"><span>Net Revenue</span><b id="ownerNetRevenue">KES 0.00</b></div></div><div class="card"><p>BEAST fees are tracked separately from customer balances. Provider costs are tracked separately for settlement/accounting.</p></div></section>
-  </main>
+    </div>
 
-  <nav class="bottom-nav"><button data-action="home">⌂<span>Home</span></button><button data-go="sendScreen">↗<span>Send</span></button><button data-go="historyScreen">▤<span>History</span></button><button data-go="profileScreen">👤<span>Profile</span></button><button data-action="settings">⚙<span>Settings</span></button></nav>
+  </section>
+
+
+  <!-- =====================================================
+       BEAST OWN
+  ====================================================== -->
+
+  <section
+    id="beastOwnScreen"
+    class="app-screen"
+  >
+
+    <div class="screen-header">
+      <button
+        type="button"
+        data-action="home"
+        class="icon-button"
+      >
+        ←
+      </button>
+
+      <div>
+        <h2>BEAST OWN</h2>
+        <small>
+          My linked financial accounts
+        </small>
+      </div>
+    </div>
+
+    <div class="card">
+
+      <h3>Linked Accounts</h3>
+
+      <div
+        id="sourceList"
+        class="source-grid"
+      ></div>
+
+      <div id="beastOwnContent"></div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       SEND
+  ====================================================== -->
+
+  <section
+    id="sendScreen"
+    class="app-screen"
+  >
+
+    <div class="screen-header">
+
+      <button
+        type="button"
+        data-action="home"
+        class="icon-button"
+      >
+        ←
+      </button>
+
+      <div>
+        <h2>SEND MONEY</h2>
+        <small>
+          One-screen transfer
+        </small>
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <label>
+        Recipient Phone Number
+      </label>
+
+      <input
+        id="sendPhone"
+        inputmode="numeric"
+        placeholder="07XXXXXXXX"
+      >
+
+      <button
+        type="button"
+        id="verifyRecipient"
+        class="secondary-button"
+      >
+        VERIFY RECIPIENT
+      </button>
+
+      <div
+        id="recipientVerification"
+        class="verification-box hidden"
+      ></div>
+
+
+      <label>
+        Payment Source
+      </label>
+
+      <select id="sendSource"></select>
+
+
+      <label>
+        Amount
+      </label>
+
+      <input
+        id="sendAmount"
+        type="number"
+        min="1"
+        placeholder="KES"
+      >
+
+
+      <div class="fee-row">
+
+        <span>
+          BEAST Fee
+        </span>
+
+        <strong id="sendFee">
+          KES 7.00
+        </strong>
+
+      </div>
+
+
+      <button
+        type="button"
+        id="sendMoneyButton"
+        class="primary-button"
+      >
+        SEND & AUTHORIZE
+      </button>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       RECEIVE / BUYER PAYMENT
+  ====================================================== -->
+
+  <section
+    id="receiveScreen"
+    class="app-screen"
+  >
+
+    <div class="screen-header">
+
+      <button
+        type="button"
+        data-action="home"
+        class="icon-button"
+      >
+        ←
+      </button>
+
+      <div>
+        <h2>RECEIVE</h2>
+        <small>
+          Buyer payment without exposing seller balance
+        </small>
+      </div>
+
+    </div>
+
+
+    <!-- BUYER LOGIN -->
+
+    <div class="card">
+
+      <h3>1. BUYER LOGIN</h3>
+
+      <p class="muted">
+        The buyer can authorize a payment without
+        handing over the buyer's phone or card.
+      </p>
+
+      <label>
+        Buyer Phone
+      </label>
+
+      <input
+        id="buyerPhone"
+        inputmode="numeric"
+        placeholder="07XXXXXXXX"
+      >
+
+      <label>
+        National ID
+      </label>
+
+      <input
+        id="buyerNationalId"
+        inputmode="numeric"
+        placeholder="National ID"
+      >
+
+      <label>
+        BEAST Password
+      </label>
+
+      <input
+        id="buyerPassword"
+        type="password"
+        placeholder="Password"
+      >
+
+      <button
+        type="button"
+        id="verifyBuyer"
+        class="primary-button"
+      >
+        LOGIN & VERIFY BUYER
+      </button>
+
+      <div
+        id="buyerLoginVerification"
+        class="verification-box hidden"
+      ></div>
+
+    </div>
+
+
+    <!-- DESTINATION -->
+
+    <div
+      id="receiveDestinationSection"
+      class="card"
+    >
+
+      <h3>2. WHERE SHOULD MONEY GO?</h3>
+
+      <label>
+        Destination Type
+      </label>
+
+      <select id="receiveDestinationType">
+
+        <option value="pochi">
+          Pochi la Biashara
+        </option>
+
+        <option value="till">
+          Till
+        </option>
+
+        <option value="paybill">
+          PayBill
+        </option>
+
+        <option value="bank">
+          Bank Account
+        </option>
+
+        <option value="card">
+          Card
+        </option>
+
+        <option value="other">
+          Other Account
+        </option>
+
+      </select>
+
+
+      <div
+        id="receiveDestinationFields"
+      ></div>
+
+
+      <button
+        type="button"
+        id="verifyReceiveDestination"
+        class="secondary-button"
+      >
+        VERIFY DESTINATION
+      </button>
+
+
+      <div
+        id="receiveDestinationVerification"
+        class="verification-box hidden"
+      ></div>
+
+    </div>
+
+
+    <!-- AMOUNT -->
+
+    <div
+      id="receiveAmountSection"
+      class="card"
+    >
+
+      <h3>3. PAYMENT</h3>
+
+      <label>
+        Remove Money From
+      </label>
+
+      <select id="receiveSource"></select>
+
+      <label>
+        Amount
+      </label>
+
+      <input
+        id="receiveAmount"
+        type="number"
+        min="1"
+        placeholder="KES"
+      >
+
+      <div class="fee-row">
+
+        <span>
+          BEAST Fee
+        </span>
+
+        <strong>
+          Calculated before authorization
+        </strong>
+
+      </div>
+
+
+      <button
+        type="button"
+        id="receiveMoneyButton"
+        class="primary-button"
+      >
+        CONFIRM & ENTER PIN
+      </button>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       WITHDRAW
+  ====================================================== -->
+
+  <section
+    id="withdrawScreen"
+    class="app-screen"
+  >
+
+    <div class="screen-header">
+
+      <button
+        type="button"
+        data-action="home"
+        class="icon-button"
+      >
+        ←
+      </button>
+
+      <h2>WITHDRAW</h2>
+
+    </div>
+
+
+    <div class="card">
+
+      <h3>1. AGENT</h3>
+
+      <label>
+        Agent Number
+      </label>
+
+      <input
+        id="agentNumber"
+        inputmode="numeric"
+        placeholder="07XXXXXXXX"
+      >
+
+      <label>
+        Store Number
+      </label>
+
+      <input
+        id="storeNumber"
+        placeholder="Store Number"
+      >
+
+      <button
+        type="button"
+        id="verifyAgent"
+        class="secondary-button"
+      >
+        VERIFY AGENT
+      </button>
+
+      <div
+        id="agentVerification"
+        class="verification-box hidden"
+      ></div>
+
+    </div>
+
+
+    <div class="card">
+
+      <h3>2. WITHDRAWAL</h3>
+
+      <label>
+        Remove Money From
+      </label>
+
+      <select id="withdrawSource"></select>
+
+      <label>
+        Amount
+      </label>
+
+      <input
+        id="withdrawAmount"
+        type="number"
+        min="1"
+        placeholder="KES"
+      >
+
+      <button
+        type="button"
+        id="withdrawButton"
+        class="primary-button"
+      >
+        WITHDRAW & ENTER PIN
+      </button>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       LIPA NA
+  ====================================================== -->
+
+  <section
+    id="lipaScreen"
+    class="app-screen"
+  >
+
+    <div class="screen-header">
+
+      <button
+        type="button"
+        data-action="home"
+        class="icon-button"
+      >
+        ←
+      </button>
+
+      <div>
+        <h2>LIPA NA</h2>
+        <small>
+          Pay businesses and accounts
+        </small>
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <label>
+        Payment Source / Network
+      </label>
+
+      <select id="lipaType">
+
+        <option value="mpesa">
+          M-PESA
+        </option>
+
+        <option value="airtel">
+          Airtel Money
+        </option>
+
+        <option value="bank">
+          Bank
+        </option>
+
+        <option value="card">
+          Card
+        </option>
+
+      </select>
+
+
+      <div id="lipaFields"></div>
+
+
+      <label>
+        Remove Money From
+      </label>
+
+      <select id="lipaSource"></select>
+
+
+      <label>
+        Amount
+      </label>
+
+      <input
+        id="lipaAmount"
+        type="number"
+        min="1"
+        placeholder="KES"
+      >
+
+
+      <button
+        type="button"
+        id="lipaPayButton"
+        class="primary-button"
+      >
+        PAY & ENTER PIN
+      </button>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       HISTORY
+  ====================================================== -->
+
+  <section
+    id="historyScreen"
+    class="app-screen"
+  >
+
+    <div class="screen-header">
+
+      <button
+        type="button"
+        data-action="home"
+        class="icon-button"
+      >
+        ←
+      </button>
+
+      <h2>TRANSACTION HISTORY</h2>
+
+    </div>
+
+    <div
+      id="historyList"
+      class="history-list"
+    ></div>
+
+  </section>
+
+
+  <!-- =====================================================
+       NOTIFICATIONS
+  ====================================================== -->
+
+  <section
+    id="notificationsScreen"
+    class="app-screen"
+  >
+
+    <div class="screen-header">
+
+      <button
+        type="button"
+        data-action="home"
+        class="icon-button"
+      >
+        ←
+      </button>
+
+      <h2>NOTIFICATIONS</h2>
+
+    </div>
+
+    <div
+      id="notificationList"
+    ></div>
+
+  </section>
+
+
+  <!-- =====================================================
+       SECURITY
+  ====================================================== -->
+
+  <section
+    id="securityScreen"
+    class="app-screen"
+  >
+
+    <div class="screen-header">
+
+      <button
+        type="button"
+        data-action="home"
+        class="icon-button"
+      >
+        ←
+      </button>
+
+      <h2>SECURITY</h2>
+
+    </div>
+
+    <div class="card">
+
+      <h3>Security Events</h3>
+
+      <div
+        id="securityList"
+      ></div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       PROFILE
+  ====================================================== -->
+
+  <section
+    id="profileScreen"
+    class="app-screen"
+  >
+
+    <div class="screen-header">
+
+      <button
+        type="button"
+        data-action="home"
+        class="icon-button"
+      >
+        ←
+      </button>
+
+      <h2>PROFILE</h2>
+
+    </div>
+
+    <div class="card">
+
+      <div class="profile-avatar">
+        👤
+      </div>
+
+      <h2 id="profileName">
+        BEAST USER
+      </h2>
+
+      <p id="profilePhone">
+        —
+      </p>
+
+      <p>
+        BEAST ID:
+        <strong id="profileBeastId">
+          —
+        </strong>
+      </p>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       LOGIN / BALANCE
+  ====================================================== -->
+
+  <section
+    id="loginScreen"
+    class="app-screen"
+  >
+
+    <div class="screen-header">
+
+      <button
+        type="button"
+        data-action="home"
+        class="icon-button"
+      >
+        ←
+      </button>
+
+      <h2>ACCOUNT BALANCE</h2>
+
+    </div>
+
+
+    <div class="card">
+
+      <label>
+        Phone / Account Number
+      </label>
+
+      <input
+        id="loginAccount"
+        placeholder="Phone or Account Number"
+      >
+
+      <label>
+        Full Name
+      </label>
+
+      <input
+        id="loginName"
+        placeholder="Full Name"
+      >
+
+      <button
+        type="button"
+        id="loginButton"
+        class="primary-button"
+      >
+        CHECK BALANCE
+      </button>
+
+
+      <div
+        id="loginBalance"
+        class="balance-result hidden"
+      ></div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       SETTINGS
+  ====================================================== -->
+
+  <section
+    id="settingsScreen"
+    class="app-screen"
+  >
+
+    <div class="screen-header">
+
+      <button
+        type="button"
+        data-action="home"
+        class="icon-button"
+      >
+        ←
+      </button>
+
+      <h2>SETTINGS</h2>
+
+    </div>
+
+
+    <div class="card">
+
+      <h3>Appearance</h3>
+
+      <button
+        type="button"
+        data-theme-toggle
+        class="secondary-button"
+      >
+        🌙 LIGHT / DARK MODE
+      </button>
+
+    </div>
+
+
+    <div class="card">
+
+      <h3>Security</h3>
+
+      <label class="switch-row">
+        Notifications
+        <input
+          id="notificationsToggle"
+          type="checkbox"
+          checked
+        >
+      </label>
+
+      <label class="switch-row">
+        Screen Security
+        <input
+          id="screenSecurityToggle"
+          type="checkbox"
+          checked
+        >
+      </label>
+
+      <label class="switch-row">
+        Biometric
+        <input
+          id="biometricToggle"
+          type="checkbox"
+        >
+      </label>
+
+    </div>
+
+
+    <div class="card">
+
+      <h3>Change BEAST PIN</h3>
+
+      <input
+        id="oldPin"
+        type="password"
+        maxlength="4"
+        inputmode="numeric"
+        placeholder="Old PIN"
+      >
+
+      <input
+        id="newPin"
+        type="password"
+        maxlength="4"
+        inputmode="numeric"
+        placeholder="New PIN"
+      >
+
+      <input
+        id="confirmNewPin"
+        type="password"
+        maxlength="4"
+        inputmode="numeric"
+        placeholder="Confirm New PIN"
+      >
+
+      <button
+        type="button"
+        id="changePinButton"
+        class="primary-button"
+      >
+        CHANGE PIN
+      </button>
+
+    </div>
+
+
+    <div class="card danger-card">
+
+      <h3>Demo Data</h3>
+
+      <button
+        type="button"
+        id="resetDemo"
+        class="danger-button"
+      >
+        RESET DEMO
+      </button>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       BEAST ADMIN LOGIN
+  ====================================================== -->
+
+  <section
+    id="ownerLoginScreen"
+    class="app-screen"
+  >
+
+    <div class="screen-header">
+
+      <button
+        type="button"
+        data-action="home"
+        class="icon-button"
+      >
+        ←
+      </button>
+
+      <h2>BEAST ADMIN</h2>
+
+    </div>
+
+
+    <div class="card">
+
+      <h3>Owner / Admin Access</h3>
+
+      <p class="muted">
+        Demo administration area.
+      </p>
+
+      <label>
+        Admin Password
+      </label>
+
+      <input
+        id="ownerPassword"
+        type="password"
+        placeholder="Password"
+      >
+
+      <button
+        type="button"
+        id="ownerLoginButton"
+        class="primary-button"
+      >
+        UNLOCK ADMIN
+      </button>
+
+      <small class="muted">
+        Demo password: beast123
+      </small>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       BEAST ADMIN DASHBOARD
+  ====================================================== -->
+
+  <section
+    id="ownerDashboardScreen"
+    class="app-screen"
+  >
+
+    <div class="screen-header">
+
+      <button
+        type="button"
+        data-action="home"
+        class="icon-button"
+      >
+        ←
+      </button>
+
+      <h2>BEAST ADMIN</h2>
+
+    </div>
+
+
+    <div class="admin-grid">
+
+      <div class="admin-card">
+        <span>BEAST FEES</span>
+        <strong id="ownerFees">
+          KES 0.00
+        </strong>
+      </div>
+
+      <div class="admin-card">
+        <span>PROVIDER COSTS</span>
+        <strong id="ownerProviderCosts">
+          KES 0.00
+        </strong>
+      </div>
+
+      <div class="admin-card">
+        <span>TRANSACTION VOLUME</span>
+        <strong id="ownerVolume">
+          KES 0.00
+        </strong>
+      </div>
+
+      <div class="admin-card">
+        <span>TRANSACTIONS</span>
+        <strong id="ownerTransactions">
+          0
+        </strong>
+      </div>
+
+      <div class="admin-card">
+        <span>NET REVENUE</span>
+        <strong id="ownerNetRevenue">
+          KES 0.00
+        </strong>
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <h3>
+        BEAST Business Accounting
+      </h3>
+
+      <p class="muted">
+        BEAST fees are tracked separately from
+        customer balances.
+      </p>
+
+      <p>
+        Collected fees:
+        <strong id="adminRevenue">
+          KES 0.00
+        </strong>
+      </p>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       PIN MODAL
+  ====================================================== -->
+
+  <div
+    id="pinModal"
+    class="modal hidden"
+  >
+
+    <div class="modal-card">
+
+      <div class="modal-icon">
+        🔐
+      </div>
+
+      <h2>BEAST AUTHORIZATION</h2>
+
+      <p>
+        Enter your 4-digit BEAST PIN to authorize
+        this money movement.
+      </p>
+
+      <input
+        id="authorizationPin"
+        type="password"
+        maxlength="4"
+        inputmode="numeric"
+        placeholder="••••"
+      >
+
+      <div class="modal-actions">
+
+        <button
+          type="button"
+          id="cancelPin"
+          class="secondary-button"
+        >
+          CANCEL
+        </button>
+
+        <button
+          type="button"
+          id="confirmPin"
+          class="primary-button"
+        >
+          AUTHORIZE
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       TOAST
+  ====================================================== -->
+
+  <div
+    id="toast"
+    class="toast"
+  ></div>
+
+
+  <!-- =====================================================
+       BOTTOM NAV
+  ====================================================== -->
+
+  <nav class="bottom-nav">
+
+    <button
+      type="button"
+      data-action="home"
+    >
+      🏠
+      <span>Home</span>
+    </button>
+
+    <button
+      type="button"
+      data-go="sendScreen"
+    >
+      📤
+      <span>Send</span>
+    </button>
+
+    <button
+      type="button"
+      data-go="historyScreen"
+    >
+      📜
+      <span>History</span>
+    </button>
+
+    <button
+      type="button"
+      data-go="profileScreen"
+    >
+      👤
+      <span>Profile</span>
+    </button>
+
+    <button
+      type="button"
+      data-go="settingsScreen"
+    >
+      ⚙️
+      <span>Settings</span>
+    </button>
+
+  </nav>
+
 </div>
-<div id="pinModal" class="modal hidden"><div class="modal-box"><h3>Authorize Transaction</h3><p>Enter your 4-digit BEAST PIN.</p><input id="authorizationPin" type="password" inputmode="numeric" maxlength="4" placeholder="••••"><button class="primary" id="confirmPin">AUTHORIZE</button><button class="ghost" id="cancelPin">CANCEL</button></div></div>
-<div id="toast" class="toast"></div>
+
+
 <script src="app.js"></script>
+
 </body>
 </html>
