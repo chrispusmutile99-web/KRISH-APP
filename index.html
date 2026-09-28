@@ -236,6 +236,10 @@
       Across enabled BEAST payment sources
     </small>
 
+    <div id="receivingChip" class="receiving-chip">
+      Receiving: not configured
+    </div>
+
   </div>
 
 
@@ -515,6 +519,10 @@
           Their balance is never shown on this screen.
         </p>
 
+        <div id="recentBuyersBox" class="recent-buyers-box">
+          <small class="muted">No recent buyers yet.</small>
+        </div>
+
         <label>
           Buyer phone
           <input
@@ -644,7 +652,7 @@
     </div>
 
 
-    <!-- SUCCESS -->
+    <!-- SUCCESS + RECEIPT -->
 
     <div id="buyerSuccessPanel" class="buyer-step-panel">
 
@@ -655,6 +663,25 @@
         <h2>Payment received</h2>
 
         <p id="buyerSuccessText" class="muted">—</p>
+
+        <div class="receipt-box">
+          <div class="receipt-head">
+            <span class="pill green">RECEIPT</span>
+            <button
+              class="receipt-mini-btn"
+              id="copyReceiptButton"
+              type="button">
+              Copy
+            </button>
+            <button
+              class="receipt-mini-btn"
+              id="shareReceiptButton"
+              type="button">
+              Share
+            </button>
+          </div>
+          <pre id="receiptText" class="receipt-text">—</pre>
+        </div>
 
         <div class="countdown-bar">
           <div id="buyerCountdownFill"></div>
