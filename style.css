@@ -499,8 +499,6 @@ select:focus{
   margin-top:6px;
 }
 
-/* UNREAD NOTIFICATIONS */
-
 .list-item.unread{
   border-left:3px solid var(--green);
   background:linear-gradient(
@@ -578,9 +576,7 @@ select:focus{
 }
 
 
-/* ============================= */
-/* SECURITY STATUS SECTION       */
-/* ============================= */
+/* SECURITY STATUS */
 
 .security-status-grid{
   display:grid;
@@ -639,28 +635,6 @@ select:focus{
   border-radius:16px;
   margin-top:12px;
   transform:scaleX(-1);
-}
-
-.security-note{
-  margin-top:10px;
-  padding:11px;
-  border-radius:12px;
-  background:var(--surface2);
-  border:1px solid var(--border);
-  color:var(--muted);
-  font-size:10px;
-  line-height:1.5;
-}
-
-.security-actions{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:8px;
-  margin-top:10px;
-}
-
-.security-actions button{
-  width:100%;
 }
 
 
@@ -744,7 +718,7 @@ select:focus{
 }
 
 
-/* PIN + CONFIRM MODAL */
+/* MODAL */
 
 .modal{
   position:fixed;
@@ -826,9 +800,7 @@ select:focus{
 }
 
 
-/* ============================= */
 /* RECEIVE — TOPBAR + BACK ARROW */
-/* ============================= */
 
 .receive-topbar{
   display:flex;
@@ -863,9 +835,7 @@ select:focus{
 }
 
 
-/* ============================= */
-/* RECEIVE — TABS                */
-/* ============================= */
+/* RECEIVE — TABS */
 
 .receive-tabs{
   display:grid;
@@ -902,9 +872,7 @@ select:focus{
 }
 
 
-/* ============================= */
-/* BUYER FLOW — STEP INDICATOR   */
-/* ============================= */
+/* BUYER — STEP INDICATOR */
 
 .buyer-steps{
   display:grid;
@@ -958,9 +926,7 @@ select:focus{
 }
 
 
-/* ============================= */
-/* BUYER FLOW — STEP PANELS      */
-/* ============================= */
+/* BUYER — PANELS */
 
 .buyer-step-panel{
   display:none;
@@ -977,9 +943,7 @@ select:focus{
 }
 
 
-/* ============================= */
-/* BUYER FLOW — SOURCE PICKER    */
-/* ============================= */
+/* BUYER — SOURCE PICKER */
 
 .buyer-source-list{
   display:grid;
@@ -1042,9 +1006,7 @@ select:focus{
 }
 
 
-/* ============================= */
-/* BUYER FLOW — DESTINATION CHIPS */
-/* ============================= */
+/* BUYER — CHIPS */
 
 .buyer-destination-chip,
 .buyer-account-chip{
@@ -1088,9 +1050,7 @@ select:focus{
 }
 
 
-/* ============================= */
-/* BUYER FLOW — SUCCESS + COUNTDOWN */
-/* ============================= */
+/* BUYER — SUCCESS */
 
 .buyer-success-panel{
   text-align:center;
@@ -1135,9 +1095,7 @@ select:focus{
 }
 
 
-/* ============================= */
-/* BUYER FLOW — DEMO HINT BOX    */
-/* ============================= */
+/* BUYER — DEMO HINT */
 
 .demo-hint{
   margin-top:14px;
@@ -1158,9 +1116,7 @@ select:focus{
 }
 
 
-/* ============================= */
-/* HOME — RECEIVING CHIP         */
-/* ============================= */
+/* HOME — RECEIVING CHIP */
 
 .receiving-chip{
   display:inline-block;
@@ -1181,9 +1137,7 @@ select:focus{
 }
 
 
-/* ============================= */
-/* BUYER LOGIN — RECENT BUYERS   */
-/* ============================= */
+/* BUYER LOGIN — RECENT BUYERS */
 
 .recent-buyers-box{
   display:flex;
@@ -1223,9 +1177,7 @@ select:focus{
 }
 
 
-/* ============================= */
-/* SUCCESS — RECEIPT BOX         */
-/* ============================= */
+/* SUCCESS — RECEIPT BOX */
 
 .receipt-box{
   margin-top:16px;
@@ -1289,39 +1241,7 @@ select:focus{
 }
 
 
-/* ============================= */
-/* RECEIVE — MOBILE TWEAKS       */
-/* ============================= */
-
-@media(max-width:360px){
-
-  .receive-tab{
-    font-size:9px;
-    padding:9px 4px;
-  }
-
-  .buyer-step b{
-    width:20px;
-    height:20px;
-    font-size:9px;
-  }
-
-  .buyer-step small{
-    font-size:7px;
-  }
-
-  .back-btn{
-    width:36px;
-    height:36px;
-    font-size:18px;
-  }
-
-}
-
-
-/* ============================= */
-/* GENERAL MOBILE TWEAKS         */
-/* ============================= */
+/* MOBILE */
 
 @media(max-width:360px){
 
@@ -1353,6 +1273,27 @@ select:focus{
     font-size:8px;
   }
 
+  .receive-tab{
+    font-size:9px;
+    padding:9px 4px;
+  }
+
+  .buyer-step b{
+    width:20px;
+    height:20px;
+    font-size:9px;
+  }
+
+  .buyer-step small{
+    font-size:7px;
+  }
+
+  .back-btn{
+    width:36px;
+    height:36px;
+    font-size:18px;
+  }
+
   .security-status-grid{
     gap:5px;
   }
@@ -1369,10 +1310,6 @@ select:focus{
     font-size:7px;
   }
 
-  .security-actions{
-    grid-template-columns:1fr;
-  }
-
   .modal-card{
     padding:16px;
   }
@@ -1384,7 +1321,7 @@ select:focus{
 }
 
 
-/* VERY SMALL DEVICES */
+/* VERY SMALL */
 
 @media(max-width:300px){
 
