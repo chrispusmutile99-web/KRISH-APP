@@ -665,9 +665,6 @@ select:focus{
   line-height:1.5;
 }
 
-
-/* SECURITY BUTTON AREA */
-
 .security-actions{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -760,7 +757,7 @@ select:focus{
 }
 
 
-/* PIN MODAL + CONFIRM MODAL */
+/* PIN + CONFIRM MODAL */
 
 .modal{
   position:fixed;
@@ -800,8 +797,6 @@ select:focus{
   height:32px;
 }
 
-/* PIN error line */
-
 #pinError{
   color:var(--red);
   font-size:10px;
@@ -809,8 +804,6 @@ select:focus{
   margin-top:8px;
   display:block;
 }
-
-/* Confirm modal body (reuses summary-box) */
 
 #confirmBody{
   margin-top:12px;
@@ -846,7 +839,363 @@ select:focus{
 }
 
 
-/* KEEP 3 COLUMNS ON PHONE */
+/* ============================= */
+/* RECEIVE — TOPBAR + BACK ARROW */
+/* ============================= */
+
+.receive-topbar{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:8px 3px 4px;
+}
+
+.back-btn{
+  flex-shrink:0;
+  width:40px;
+  height:40px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--text);
+  font-size:20px;
+  font-weight:900;
+  line-height:1;
+  display:grid;
+  place-items:center;
+  margin-top:6px;
+  box-shadow:var(--shadow);
+}
+
+.back-btn:hover{
+  background:var(--surface2);
+}
+
+.back-btn:active{
+  transform:scale(.96);
+}
+
+
+/* ============================= */
+/* RECEIVE — TABS                */
+/* ============================= */
+
+.receive-tabs{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;
+  margin:10px 0 14px;
+}
+
+.receive-tab{
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--muted);
+  border-radius:12px;
+  padding:11px 6px;
+  font-size:10px;
+  font-weight:900;
+  text-align:center;
+  line-height:1.3;
+  transition:.15s;
+}
+
+.receive-tab.active{
+  background:var(--green);
+  color:#041108;
+  border-color:var(--green);
+}
+
+.receive-tab-panel{
+  display:none;
+}
+
+.receive-tab-panel.active{
+  display:block;
+}
+
+
+/* ============================= */
+/* BUYER FLOW — STEP INDICATOR   */
+/* ============================= */
+
+.buyer-steps{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:6px;
+  margin:4px 0 14px;
+}
+
+.buyer-step{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  padding:9px 4px;
+  border-radius:12px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  color:var(--muted);
+  transition:.18s;
+}
+
+.buyer-step b{
+  width:22px;
+  height:22px;
+  border-radius:50%;
+  background:var(--surface);
+  border:1px solid var(--border);
+  display:grid;
+  place-items:center;
+  font-size:10px;
+  font-weight:900;
+}
+
+.buyer-step small{
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.5px;
+  text-transform:uppercase;
+}
+
+.buyer-step.active{
+  background:rgba(22,193,114,.12);
+  border-color:var(--green);
+  color:var(--green);
+}
+
+.buyer-step.active b{
+  background:var(--green);
+  color:#041108;
+  border-color:var(--green);
+}
+
+
+/* ============================= */
+/* BUYER FLOW — STEP PANELS      */
+/* ============================= */
+
+.buyer-step-panel{
+  display:none;
+}
+
+.buyer-step-panel.active{
+  display:block;
+  animation:fadeIn .2s ease;
+}
+
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(6px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+
+/* ============================= */
+/* BUYER FLOW — SOURCE PICKER    */
+/* ============================= */
+
+.buyer-source-list{
+  display:grid;
+  gap:8px;
+  margin-top:10px;
+}
+
+.buyer-source-option{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  width:100%;
+  padding:14px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:var(--surface2);
+  color:var(--text);
+  text-align:left;
+  transition:.15s;
+}
+
+.buyer-source-option:hover{
+  border-color:var(--green);
+}
+
+.buyer-source-option.selected{
+  border-color:var(--green);
+  background:linear-gradient(
+    135deg,
+    rgba(22,193,114,.14),
+    var(--surface2)
+  );
+}
+
+.buyer-source-icon{
+  font-size:24px;
+  flex-shrink:0;
+}
+
+.buyer-source-text{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+
+.buyer-source-text strong{
+  font-size:13px;
+}
+
+.buyer-source-text small{
+  font-size:9px;
+  color:var(--muted);
+}
+
+
+/* ============================= */
+/* BUYER FLOW — DESTINATION CHIP */
+/* ============================= */
+
+.buyer-destination-chip,
+.buyer-account-chip{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  padding:13px;
+  border-radius:13px;
+  border:1px solid var(--border);
+  background:var(--surface2);
+  margin-bottom:10px;
+}
+
+.buyer-destination-chip{
+  border-color:rgba(22,193,114,.4);
+  background:linear-gradient(
+    135deg,
+    rgba(22,193,114,.10),
+    var(--surface2)
+  );
+}
+
+.buyer-destination-chip span,
+.buyer-account-chip span{
+  font-size:9px;
+  font-weight:900;
+  color:var(--muted);
+  letter-spacing:.5px;
+  text-transform:uppercase;
+}
+
+.buyer-destination-chip strong,
+.buyer-account-chip strong{
+  font-size:14px;
+}
+
+.buyer-destination-chip small{
+  font-size:10px;
+  color:var(--muted);
+}
+
+
+/* ============================= */
+/* BUYER FLOW — SUCCESS + COUNTDOWN */
+/* ============================= */
+
+.buyer-success-panel{
+  text-align:center;
+  padding:26px 18px;
+}
+
+.success-tick{
+  width:64px;
+  height:64px;
+  margin:0 auto 14px;
+  border-radius:50%;
+  background:linear-gradient(135deg,#16c172,#0e8b50);
+  color:white;
+  font-size:34px;
+  font-weight:900;
+  display:grid;
+  place-items:center;
+  box-shadow:0 10px 30px rgba(22,193,114,.4);
+  animation:popIn .35s ease;
+}
+
+@keyframes popIn{
+  0%{transform:scale(.4);opacity:0;}
+  60%{transform:scale(1.08);opacity:1;}
+  100%{transform:scale(1);}
+}
+
+.countdown-bar{
+  width:100%;
+  height:6px;
+  background:var(--surface2);
+  border-radius:999px;
+  overflow:hidden;
+  margin:18px 0 8px;
+}
+
+#buyerCountdownFill{
+  height:100%;
+  width:100%;
+  background:linear-gradient(90deg,var(--green),#0e8b50);
+  border-radius:999px;
+}
+
+
+/* ============================= */
+/* BUYER FLOW — DEMO HINT BOX    */
+/* ============================= */
+
+.demo-hint{
+  margin-top:14px;
+  padding:11px;
+  border-radius:12px;
+  background:rgba(49,130,246,.08);
+  border:1px dashed rgba(49,130,246,.4);
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.6;
+}
+
+.demo-hint b{
+  color:var(--blue);
+  font-size:11px;
+  display:block;
+  margin-bottom:4px;
+}
+
+
+/* ============================= */
+/* RECEIVE — MOBILE TWEAKS       */
+/* ============================= */
+
+@media(max-width:360px){
+
+  .receive-tab{
+    font-size:9px;
+    padding:9px 4px;
+  }
+
+  .buyer-step b{
+    width:20px;
+    height:20px;
+    font-size:9px;
+  }
+
+  .buyer-step small{
+    font-size:7px;
+  }
+
+  .back-btn{
+    width:36px;
+    height:36px;
+    font-size:18px;
+  }
+
+}
+
+
+/* ============================= */
+/* GENERAL MOBILE TWEAKS         */
+/* ============================= */
 
 @media(max-width:360px){
 
@@ -921,6 +1270,11 @@ select:focus{
 
   .security-status-card small{
     font-size:6px;
+  }
+
+  .receive-tab{
+    font-size:8px;
+    padding:8px 2px;
   }
 
 }
