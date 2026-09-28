@@ -618,348 +618,378 @@
 
 <section id="receiveScreen" class="app-screen">
 
-  <div class="page-head">
+  <!-- TOP BAR WITH BACK ARROW -->
 
-    <div>
+  <div class="receive-topbar">
 
-      <span class="pill blue">
-        RECEIVE / BUYER
-      </span>
+    <button
+      class="back-btn hidden"
+      id="receiveBackButton"
+      aria-label="Go back">
+      ←
+    </button>
 
-      <h1>Buyer payment</h1>
+    <div class="page-head" style="flex:1;padding:0;">
 
-      <p>
-        Buyer authorizes payment without giving
-        the seller their phone or card.
-      </p>
+      <div>
+        <span class="pill blue">RECEIVE</span>
+        <h1>Receive payment</h1>
+        <p id="receiveSellerLine">
+          Paying: —
+        </p>
+      </div>
 
     </div>
 
   </div>
 
 
-  <div class="panel">
+  <!-- TABS -->
 
-    <h2>1. Buyer verification</h2>
+  <div class="receive-tabs" id="receiveTabs">
 
-    <div class="two-col">
+    <button class="receive-tab active" data-rtab="buyer">
+      🤝 Buyer payment
+    </button>
+
+    <button class="receive-tab" data-rtab="deposit">
+      💰 Deposit
+    </button>
+
+    <button class="receive-tab" data-rtab="agent">
+      🏧 Agent deposit
+    </button>
+
+  </div>
+
+
+  <!-- ============================================= -->
+  <!-- TAB 1 — BUYER PAYMENT (3 internal steps)      -->
+  <!-- ============================================= -->
+
+  <div id="buyerTab" class="receive-tab-panel active">
+
+    <!-- STEP INDICATOR -->
+
+    <div class="buyer-steps">
+
+      <div class="buyer-step active" data-bstep="1">
+        <b>1</b><small>Login</small>
+      </div>
+
+      <div class="buyer-step" data-bstep="2">
+        <b>2</b><small>Account</small>
+      </div>
+
+      <div class="buyer-step" data-bstep="3">
+        <b>3</b><small>Pay</small>
+      </div>
+
+    </div>
+
+
+    <!-- STEP 1 — BUYER LOGIN -->
+
+    <div id="buyerStep1" class="buyer-step-panel active">
+
+      <div class="panel">
+
+        <h2>Buyer login</h2>
+
+        <p class="muted">
+          The buyer signs in with their own BEAST documents.
+          Their balance is never shown on this screen.
+        </p>
+
+        <label>
+          Buyer phone
+          <input
+            id="buyerLoginPhone"
+            inputmode="tel"
+            autocomplete="off"
+            placeholder="0722000001">
+        </label>
+
+        <label>
+          Buyer National ID
+          <input
+            id="buyerLoginNationalId"
+            inputmode="numeric"
+            autocomplete="off"
+            placeholder="11111111">
+        </label>
+
+        <label>
+          Buyer BEAST PIN
+          <input
+            id="buyerLoginPin"
+            type="password"
+            maxlength="4"
+            inputmode="numeric"
+            autocomplete="off"
+            placeholder="••••">
+        </label>
+
+        <button
+          class="primary-btn full"
+          id="buyerLoginButton">
+
+          LOGIN & CONTINUE
+
+        </button>
+
+        <div class="demo-hint">
+          <b>Demo buyers</b><br>
+          0722000001 / 11111111 / PIN 1111<br>
+          0722000002 / 22222222 / PIN 2222<br>
+          0722000003 / 33333333 / PIN 3333
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- STEP 2 — CHOOSE ACCOUNT -->
+
+    <div id="buyerStep2" class="buyer-step-panel">
+
+      <div class="panel">
+
+        <h2>Choose payment account</h2>
+
+        <p class="muted" id="buyerWelcomeLine">
+          Signed in as —
+        </p>
+
+        <div id="buyerSourcesList" class="buyer-source-list"></div>
+
+        <button
+          class="primary-btn full"
+          id="buyerChooseSourceButton"
+          disabled>
+
+          USE THIS ACCOUNT
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- STEP 3 — AMOUNT + PAY -->
+
+    <div id="buyerStep3" class="buyer-step-panel">
+
+      <div class="panel">
+
+        <h2>Confirm payment</h2>
+
+        <div class="buyer-destination-chip">
+          <span>Paying to</span>
+          <strong id="buyerDestinationName">—</strong>
+          <small id="buyerDestinationId">—</small>
+        </div>
+
+        <div class="buyer-account-chip">
+          <span>From account</span>
+          <strong id="buyerChosenSourceName">—</strong>
+        </div>
+
+        <label>
+          Amount (KES)
+          <input
+            id="buyerPayAmount"
+            type="number"
+            min="1"
+            inputmode="decimal"
+            autocomplete="off"
+            placeholder="100">
+        </label>
+
+        <div id="buyerCostPreview" class="cost-box"></div>
+
+        <button
+          class="primary-btn full"
+          id="buyerConfirmPayButton">
+
+          PAY & AUTHORIZE
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- SUCCESS / COUNTDOWN -->
+
+    <div id="buyerSuccessPanel" class="buyer-step-panel">
+
+      <div class="panel buyer-success-panel">
+
+        <div class="success-tick">✓</div>
+
+        <h2>Payment received</h2>
+
+        <p id="buyerSuccessText" class="muted">—</p>
+
+        <div class="countdown-bar">
+          <div id="buyerCountdownFill"></div>
+        </div>
+
+        <small class="muted" id="buyerCountdownText">
+          Returning to login…
+        </small>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ============================================= -->
+  <!-- TAB 2 — DEPOSIT TO BEAST                      -->
+  <!-- ============================================= -->
+
+  <div id="depositTab" class="receive-tab-panel">
+
+    <div class="panel">
+
+      <span class="pill green">DEPOSIT</span>
+
+      <h2>Deposit to BEAST</h2>
+
+      <p class="muted">
+        Add money to your BEAST Wallet from a linked
+        payment source.
+      </p>
 
       <label>
-        Buyer phone
-
+        Customer phone number
         <input
-          id="buyerPhone"
+          id="depositPhone"
+          inputmode="tel"
           autocomplete="off"
           placeholder="0712345678 or +254712345678">
       </label>
 
-
       <label>
-        National ID
-
-        <input id="buyerNationalId"
-               inputmode="numeric"
-               autocomplete="off"
-               placeholder="National ID">
+        Deposit source
+        <select id="depositSource">
+          <option value="mpesa">M-PESA</option>
+          <option value="tkash">T-Kash</option>
+          <option value="airtel">Airtel Money</option>
+          <option value="bank">Bank Account</option>
+          <option value="card">Card</option>
+        </select>
       </label>
 
-    </div>
-
-
-    <label>
-      Buyer password
-
-      <input id="buyerPassword"
-             type="password"
-             autocomplete="off"
-             placeholder="Demo buyer password (buyer123)">
-    </label>
-
-
-    <button class="secondary-btn full"
-            id="verifyBuyer">
-
-      VERIFY BUYER
-
-    </button>
-
-
-    <div id="buyerVerification"
-         class="verification hidden">
-    </div>
-
-
-    <h2>
-      2. Select destination
-    </h2>
-
-
-    <label>
-      Destination type
-
-      <select id="receiveDestinationType">
-
-        <option value="pochi">
-          Pochi la Biashara
-        </option>
-
-        <option value="till">
-          Till
-        </option>
-
-        <option value="paybill">
-          PayBill
-        </option>
-
-        <option value="bank">
-          Bank Account
-        </option>
-
-        <option value="card">
-          Card
-        </option>
-
-        <option value="other">
-          Other BEAST Account
-        </option>
-
-      </select>
-
-    </label>
-
-
-    <div id="receiveDestinationFields"></div>
-
-
-    <div class="two-col">
-
       <label>
-        Buyer source
-
-        <select id="receiveSource"></select>
-
+        Amount (KES)
+        <input
+          id="depositAmount"
+          type="number"
+          min="1"
+          inputmode="decimal"
+          autocomplete="off"
+          placeholder="500">
       </label>
 
+      <div id="depositCostPreview" class="cost-box"></div>
 
-      <label>
-        Amount
+      <button
+        class="primary-btn full"
+        id="performDepositButton">
 
-        <input id="receiveAmount"
-               type="number"
-               min="1"
-               inputmode="decimal"
-               autocomplete="off"
-               placeholder="100">
+        DEPOSIT TO BEAST
 
-      </label>
+      </button>
 
     </div>
-
-
-    <button class="secondary-btn full"
-            id="verifyReceiveDestination">
-
-      VERIFY DESTINATION
-
-    </button>
-
-
-    <div id="receiveDestinationVerification"
-         class="verification hidden">
-    </div>
-
-
-    <div id="receiveCostPreview"
-         class="cost-box">
-    </div>
-
-
-    <button class="primary-btn full"
-            id="buyerPayButton">
-
-      AUTHORIZE BUYER PAYMENT
-
-    </button>
-
-
-    <p class="muted center">
-      Buyer sees the destination identity and payment
-      status. Seller balance is never displayed.
-    </p>
 
   </div>
 
 
-  <!-- ================= DEPOSIT TO BEAST ================= -->
+  <!-- ============================================= -->
+  <!-- TAB 3 — AGENT DEPOSIT                         -->
+  <!-- ============================================= -->
 
-  <div class="panel">
+  <div id="agentTab" class="receive-tab-panel">
 
-    <span class="pill green">
-      DEPOSIT
-    </span>
+    <div class="panel">
 
-    <h2>Deposit to BEAST</h2>
+      <span class="pill blue">AGENT DEPOSIT</span>
 
-    <p class="muted">
-      Add money to your BEAST Wallet from a linked
-      payment source.
-    </p>
+      <h2>Deposit through agent</h2>
 
+      <p class="muted">
+        Only a registered Safaricom agent can perform
+        this demo agent deposit.
+      </p>
 
-    <label>
-      Customer phone number
+      <label>
+        Registered agent number or agent code
+        <input
+          id="agentDepositAgent"
+          inputmode="text"
+          autocomplete="off"
+          placeholder="0712345678 or AGENT-001">
+      </label>
 
-      <input
-        id="depositPhone"
-        inputmode="tel"
-        autocomplete="off"
-        placeholder="0712345678 or +254712345678">
-    </label>
+      <label>
+        Customer phone number
+        <input
+          id="agentDepositPhone"
+          inputmode="tel"
+          autocomplete="off"
+          placeholder="0712345678 or +254712345678">
+      </label>
 
+      <label>
+        Customer National ID
+        <input
+          id="agentDepositNationalId"
+          inputmode="numeric"
+          autocomplete="off"
+          placeholder="Customer National ID">
+      </label>
 
-    <label>
-      Deposit source
+      <button
+        class="secondary-btn full"
+        id="verifyAgentDeposit">
 
-      <select id="depositSource">
+        VERIFY AGENT & CUSTOMER
 
-        <option value="mpesa">
-          M-PESA
-        </option>
+      </button>
 
-        <option value="tkash">
-          T-Kash
-        </option>
+      <div
+        id="agentDepositVerification"
+        class="verification hidden">
+      </div>
 
-        <option value="airtel">
-          Airtel Money
-        </option>
+      <label>
+        Amount (KES)
+        <input
+          id="agentDepositAmount"
+          type="number"
+          min="1"
+          inputmode="decimal"
+          autocomplete="off"
+          placeholder="1000">
+      </label>
 
-        <option value="bank">
-          Bank Account
-        </option>
+      <button
+        class="primary-btn full"
+        id="agentDepositButton">
 
-        <option value="card">
-          Card
-        </option>
+        AUTHORIZE AGENT DEPOSIT
 
-      </select>
+      </button>
 
-    </label>
-
-
-    <label>
-      Amount (KES)
-
-      <input
-        id="depositAmount"
-        type="number"
-        min="1"
-        inputmode="decimal"
-        autocomplete="off"
-        placeholder="500">
-    </label>
-
-
-    <div id="depositCostPreview"
-         class="cost-box">
     </div>
-
-
-    <button
-      class="primary-btn full"
-      id="performDepositButton">
-
-      DEPOSIT TO BEAST
-
-    </button>
-
-  </div>
-
-
-  <!-- ================= AGENT DEPOSIT ================= -->
-
-  <div class="panel">
-
-    <span class="pill blue">
-      AGENT DEPOSIT
-    </span>
-
-    <h2>Deposit through agent</h2>
-
-    <p class="muted">
-      Only a registered Safaricom agent can perform
-      this demo agent deposit.
-    </p>
-
-
-    <label>
-      Registered agent number or agent code
-
-      <input
-        id="agentDepositAgent"
-        inputmode="text"
-        autocomplete="off"
-        placeholder="0712345678 or AGENT-001">
-    </label>
-
-
-    <label>
-      Customer phone number
-
-      <input
-        id="agentDepositPhone"
-        inputmode="tel"
-        autocomplete="off"
-        placeholder="0712345678 or +254712345678">
-    </label>
-
-
-    <label>
-      Customer National ID
-
-      <input
-        id="agentDepositNationalId"
-        inputmode="numeric"
-        autocomplete="off"
-        placeholder="Customer National ID">
-    </label>
-
-
-    <button
-      class="secondary-btn full"
-      id="verifyAgentDeposit">
-
-      VERIFY AGENT & CUSTOMER
-
-    </button>
-
-
-    <div
-      id="agentDepositVerification"
-      class="verification hidden">
-    </div>
-
-
-    <label>
-      Amount (KES)
-
-      <input
-        id="agentDepositAmount"
-        type="number"
-        min="1"
-        inputmode="decimal"
-        autocomplete="off"
-        placeholder="1000">
-    </label>
-
-
-    <button
-      class="primary-btn full"
-      id="agentDepositButton">
-
-      AUTHORIZE AGENT DEPOSIT
-
-    </button>
 
   </div>
 
