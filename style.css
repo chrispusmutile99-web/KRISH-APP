@@ -343,8 +343,7 @@ select:focus{
 
 .dashboard-grid,
 .quick-actions,
-.source-grid,
-.admin-grid{
+.source-grid{
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
   gap:10px;
@@ -354,8 +353,7 @@ select:focus{
 /* ALL MAIN CARDS = SQUARE */
 
 .square-card,
-.source-card,
-.stat-card{
+.source-card{
   width:100%;
   aspect-ratio:1/1;
   border:1px solid var(--border);
@@ -495,6 +493,10 @@ select:focus{
   color:var(--muted);
   margin-top:5px;
   line-height:1.5;
+}
+
+.list-item .pill{
+  margin-top:6px;
 }
 
 /* UNREAD NOTIFICATIONS */
@@ -1014,7 +1016,7 @@ select:focus{
   transition:.15s;
 }
 
-.buyer-source-option:hover{
+.buyer-source-option:hover:not(.disabled){
   border-color:var(--green);
 }
 
@@ -1025,6 +1027,13 @@ select:focus{
     rgba(22,193,114,.14),
     var(--surface2)
   );
+}
+
+.buyer-source-option.disabled{
+  opacity:.4;
+  cursor:not-allowed;
+  background:var(--surface);
+  filter:grayscale(.6);
 }
 
 .buyer-source-icon{
@@ -1049,7 +1058,7 @@ select:focus{
 
 
 /* ============================= */
-/* BUYER FLOW — DESTINATION CHIP */
+/* BUYER FLOW — DESTINATION CHIPS */
 /* ============================= */
 
 .buyer-destination-chip,
@@ -1087,7 +1096,8 @@ select:focus{
   font-size:14px;
 }
 
-.buyer-destination-chip small{
+.buyer-destination-chip small,
+.buyer-account-chip small{
   font-size:10px;
   color:var(--muted);
 }
@@ -1206,14 +1216,12 @@ select:focus{
 
   .dashboard-grid,
   .quick-actions,
-  .source-grid,
-  .admin-grid{
+  .source-grid{
     gap:6px;
   }
 
   .square-card,
-  .source-card,
-  .stat-card{
+  .source-card{
     padding:8px;
   }
 
