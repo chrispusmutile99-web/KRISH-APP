@@ -483,9 +483,7 @@
   </div>
 
 
-  <!-- ============================================= -->
-  <!-- TAB 1 — BUYER PAYMENT                         -->
-  <!-- ============================================= -->
+  <!-- TAB 1 — BUYER PAYMENT -->
 
   <div id="buyerTab" class="receive-tab-panel active">
 
@@ -505,8 +503,6 @@
 
     </div>
 
-
-    <!-- STEP 1 — LOGIN -->
 
     <div id="buyerStep1" class="buyer-step-panel active">
 
@@ -572,8 +568,6 @@
     </div>
 
 
-    <!-- STEP 2 — CHOOSE ACCOUNT -->
-
     <div id="buyerStep2" class="buyer-step-panel">
 
       <div class="panel">
@@ -599,8 +593,6 @@
 
     </div>
 
-
-    <!-- STEP 3 — AMOUNT + DESTINATION -->
 
     <div id="buyerStep3" class="buyer-step-panel">
 
@@ -652,8 +644,6 @@
     </div>
 
 
-    <!-- SUCCESS + RECEIPT -->
-
     <div id="buyerSuccessPanel" class="buyer-step-panel">
 
       <div class="panel buyer-success-panel">
@@ -667,18 +657,8 @@
         <div class="receipt-box">
           <div class="receipt-head">
             <span class="pill green">RECEIPT</span>
-            <button
-              class="receipt-mini-btn"
-              id="copyReceiptButton"
-              type="button">
-              Copy
-            </button>
-            <button
-              class="receipt-mini-btn"
-              id="shareReceiptButton"
-              type="button">
-              Share
-            </button>
+            <button class="receipt-mini-btn" id="copyReceiptButton" type="button">Copy</button>
+            <button class="receipt-mini-btn" id="shareReceiptButton" type="button">Share</button>
           </div>
           <pre id="receiptText" class="receipt-text">—</pre>
         </div>
@@ -698,9 +678,7 @@
   </div>
 
 
-  <!-- ============================================= -->
-  <!-- TAB 2 — DEPOSIT                               -->
-  <!-- ============================================= -->
+  <!-- TAB 2 — DEPOSIT -->
 
   <div id="depositTab" class="receive-tab-panel">
 
@@ -761,9 +739,7 @@
   </div>
 
 
-  <!-- ============================================= -->
-  <!-- TAB 3 — AGENT DEPOSIT                         -->
-  <!-- ============================================= -->
+  <!-- TAB 3 — AGENT DEPOSIT -->
 
   <div id="agentTab" class="receive-tab-panel">
 
@@ -975,21 +951,10 @@
 
       <select id="lipaType">
 
-        <option value="paybill">
-          PayBill
-        </option>
-
-        <option value="till">
-          Buy Goods / Till
-        </option>
-
-        <option value="account">
-          Account / Other
-        </option>
-
-        <option value="pochi">
-          Pochi la Biashara
-        </option>
+        <option value="paybill">PayBill</option>
+        <option value="till">Buy Goods / Till</option>
+        <option value="account">Account / Other</option>
+        <option value="pochi">Pochi la Biashara</option>
 
       </select>
 
@@ -1061,9 +1026,7 @@
 
   </div>
 
-  <div id="historyList"
-       class="list">
-  </div>
+  <div id="historyList" class="list"></div>
 
 </section>
 
@@ -1081,9 +1044,7 @@
 
   </div>
 
-  <div id="profileDetails"
-       class="panel">
-  </div>
+  <div id="profileDetails" class="panel"></div>
 
 </section>
 
@@ -1095,16 +1056,9 @@
   <div class="page-head">
 
     <div>
-      <span class="pill blue">
-        ACCOUNT BALANCE
-      </span>
-
+      <span class="pill blue">ACCOUNT BALANCE</span>
       <h1>Balance access</h1>
-
-      <p>
-        Verify your registered identity.
-      </p>
-
+      <p>Verify your registered identity.</p>
     </div>
 
   </div>
@@ -1114,7 +1068,6 @@
 
     <label>
       Phone or account number
-
       <input
         id="loginAccount"
         autocomplete="off"
@@ -1124,7 +1077,6 @@
 
     <label>
       Full name
-
       <input id="loginName"
              autocomplete="off"
              placeholder="Your full name">
@@ -1139,9 +1091,7 @@
     </button>
 
 
-    <div id="loginBalance"
-         class="balance-result hidden">
-    </div>
+    <div id="loginBalance" class="balance-result hidden"></div>
 
   </div>
 
@@ -1156,13 +1106,8 @@
 
     <div>
       <span class="pill red">SECURITY</span>
-
       <h1>Security center</h1>
-
-      <p>
-        Security events and controls.
-      </p>
-
+      <p>Security events and controls.</p>
     </div>
 
   </div>
@@ -1171,41 +1116,21 @@
   <div class="dashboard-grid">
 
     <div class="square-card red-card">
-
       <span>🛡️</span>
-
       <b>Screen Security</b>
-
-      <small>
-        Visibility alerts
-      </small>
-
+      <small>Visibility alerts</small>
     </div>
-
 
     <div class="square-card black-card">
-
       <span>🔐</span>
-
       <b>BEAST PIN</b>
-
-      <small>
-        Authorization
-      </small>
-
+      <small>Authorization</small>
     </div>
 
-
     <div class="square-card blue-card">
-
       <span>🔔</span>
-
       <b>Alerts</b>
-
-      <small>
-        Transaction alerts
-      </small>
-
+      <small>Transaction alerts</small>
     </div>
 
   </div>
@@ -1225,63 +1150,33 @@
     <div class="security-status-grid">
 
       <div class="security-status-card">
-
         <span>📱</span>
-
         <b>Screen visibility</b>
-
-        <small id="visibilityStatus">
-          Normal
-        </small>
-
+        <small id="visibilityStatus">Normal</small>
       </div>
 
-
       <div class="security-status-card">
-
         <span>🎥</span>
-
         <b>Front camera</b>
-
-        <small id="cameraStatus">
-          Not checked
-        </small>
-
+        <small id="cameraStatus">Not checked</small>
       </div>
 
-
       <div class="security-status-card">
-
         <span>🖥️</span>
-
         <b>Screen capture</b>
-
-        <small id="captureStatus">
-          Browser signal unavailable
-        </small>
-
+        <small id="captureStatus">Browser signal unavailable</small>
       </div>
 
     </div>
 
 
-    <button
-      class="primary-btn full"
-      id="cameraCheckButton">
-
+    <button class="primary-btn full" id="cameraCheckButton">
       CHECK FRONT CAMERA
-
     </button>
 
-
-    <button
-      class="secondary-btn full"
-      id="stopCameraButton">
-
+    <button class="secondary-btn full" id="stopCameraButton">
       STOP CAMERA CHECK
-
     </button>
-
 
     <video
       id="securityCameraPreview"
@@ -1290,7 +1185,6 @@
       muted
       playsinline>
     </video>
-
 
     <p class="muted">
       The camera is not accessed secretly. Android/Chrome
@@ -1305,9 +1199,7 @@
 
     <h2>Security events</h2>
 
-    <div id="securityList"
-         class="list">
-    </div>
+    <div id="securityList" class="list"></div>
 
   </div>
 
@@ -1316,49 +1208,32 @@
 
 <!-- ================= NOTIFICATIONS ================= -->
 
-<section id="notificationsScreen"
-         class="app-screen">
+<section id="notificationsScreen" class="app-screen">
 
   <div class="page-head">
 
     <div>
-      <span class="pill red">
-        NOTIFICATIONS
-      </span>
-
+      <span class="pill red">NOTIFICATIONS</span>
       <h1>BEAST alerts</h1>
-
     </div>
 
   </div>
 
-
-  <div id="notificationList"
-       class="list">
-  </div>
+  <div id="notificationList" class="list"></div>
 
 </section>
 
 
 <!-- ================= SETTINGS ================= -->
 
-<section id="settingsScreen"
-         class="app-screen">
+<section id="settingsScreen" class="app-screen">
 
   <div class="page-head">
 
     <div>
-
-      <span class="pill blue">
-        SETTINGS
-      </span>
-
+      <span class="pill blue">SETTINGS</span>
       <h1>App settings</h1>
-
-      <p>
-        Control appearance and security.
-      </p>
-
+      <p>Control appearance and security.</p>
     </div>
 
   </div>
@@ -1367,69 +1242,42 @@
   <div class="settings-grid">
 
     <div class="setting-card">
-
       <div>
         <b>Appearance</b>
         <small>Light or Dark mode</small>
       </div>
-
       <div class="mode-buttons">
-
-        <button id="darkModeButton">
-          Dark
-        </button>
-
-        <button id="lightModeButton">
-          Light
-        </button>
-
+        <button id="darkModeButton">Dark</button>
+        <button id="lightModeButton">Light</button>
       </div>
-
     </div>
 
-
     <label class="toggle-row">
-
       <span>
         <b>Notifications</b>
         <small>Transaction alerts</small>
       </span>
-
-      <input id="notificationsToggle"
-             type="checkbox">
-
+      <input id="notificationsToggle" type="checkbox">
     </label>
 
-
     <label class="toggle-row">
-
       <span>
         <b>Screen security</b>
         <small>Visibility events</small>
       </span>
-
-      <input id="screenSecurityToggle"
-             type="checkbox">
-
+      <input id="screenSecurityToggle" type="checkbox">
     </label>
 
-
     <label class="toggle-row">
-
       <span>
         <b>Biometric placeholder</b>
         <small>Future device authentication</small>
       </span>
-
-      <input id="biometricToggle"
-             type="checkbox">
-
+      <input id="biometricToggle" type="checkbox">
     </label>
 
   </div>
 
-
-  <!-- RECEIVING METHODS -->
 
   <div class="panel">
 
@@ -1446,26 +1294,20 @@
       Receiving channel
 
       <select id="receivingMethodType">
-
         <option value="wallet">BEAST Wallet</option>
         <option value="pochi">Pochi la Biashara</option>
         <option value="till">Till</option>
         <option value="paybill">PayBill</option>
         <option value="bank">Bank Account</option>
         <option value="card">Card</option>
-
       </select>
 
     </label>
 
     <div id="receivingMethodFields"></div>
 
-    <button
-      class="primary-btn full"
-      id="saveReceivingMethodButton">
-
+    <button class="primary-btn full" id="saveReceivingMethodButton">
       SAVE RECEIVING METHOD
-
     </button>
 
   </div>
@@ -1474,10 +1316,7 @@
   <div class="panel">
 
     <h2>Enabled receiving methods</h2>
-
-    <div id="receivingMethodsList"
-         class="list">
-    </div>
+    <div id="receivingMethodsList" class="list"></div>
 
   </div>
 
@@ -1490,51 +1329,30 @@
 
       <label>
         Current PIN
-        <input id="oldPin"
-               type="password"
-               maxlength="4"
-               inputmode="numeric"
-               autocomplete="off">
+        <input id="oldPin" type="password" maxlength="4" inputmode="numeric" autocomplete="off">
       </label>
 
       <label>
         New PIN
-        <input id="newPin"
-               type="password"
-               maxlength="4"
-               inputmode="numeric"
-               autocomplete="new-password">
+        <input id="newPin" type="password" maxlength="4" inputmode="numeric" autocomplete="new-password">
       </label>
 
     </div>
 
-
     <label>
       Confirm new PIN
-
-      <input id="confirmNewPin"
-             type="password"
-             maxlength="4"
-             inputmode="numeric"
-             autocomplete="new-password">
+      <input id="confirmNewPin" type="password" maxlength="4" inputmode="numeric" autocomplete="new-password">
     </label>
 
-
-    <button class="secondary-btn full"
-            id="changePinButton">
-
+    <button class="secondary-btn full" id="changePinButton">
       CHANGE PIN
-
     </button>
 
   </div>
 
 
-  <button class="danger-btn full"
-          id="resetDemo">
-
+  <button class="danger-btn full" id="resetDemo">
     RESET DEMO DATA
-
   </button>
 
 </section>
@@ -1542,27 +1360,17 @@
 
 <!-- ================= PIN MODAL ================= -->
 
-<div id="pinModal"
-     class="modal hidden">
+<div id="pinModal" class="modal hidden">
 
   <div class="modal-card">
 
-    <button class="modal-close"
-            id="closePinModal"
-            aria-label="Close">
-      ×
-    </button>
+    <button class="modal-close" id="closePinModal" aria-label="Close">×</button>
 
-    <span class="pill green">
-      AUTHORIZATION
-    </span>
+    <span class="pill green">AUTHORIZATION</span>
 
     <h2>Enter BEAST PIN</h2>
 
-    <p id="pinPurpose"
-       class="muted">
-      Confirm transaction.
-    </p>
+    <p id="pinPurpose" class="muted">Confirm transaction.</p>
 
     <input id="authorizationPin"
            type="password"
@@ -1576,20 +1384,12 @@
            style="color:var(--red);display:block;margin-top:8px;">
     </small>
 
-
-    <button class="primary-btn full"
-            id="confirmPin">
-
+    <button class="primary-btn full" id="confirmPin">
       AUTHORIZE
-
     </button>
 
-
-    <button class="secondary-btn full"
-            id="cancelPin">
-
+    <button class="secondary-btn full" id="cancelPin">
       CANCEL
-
     </button>
 
   </div>
@@ -1599,41 +1399,24 @@
 
 <!-- ================= CONFIRM MODAL ================= -->
 
-<div id="confirmModal"
-     class="modal hidden">
+<div id="confirmModal" class="modal hidden">
 
   <div class="modal-card">
 
-    <button class="modal-close"
-            id="confirmClose"
-            aria-label="Close">
-      ×
-    </button>
+    <button class="modal-close" id="confirmClose" aria-label="Close">×</button>
 
-    <span class="pill blue">
-      CONFIRM
-    </span>
+    <span class="pill blue">CONFIRM</span>
 
     <h2>Review before authorizing</h2>
 
-    <div id="confirmBody"
-         class="summary-box">
-    </div>
+    <div id="confirmBody" class="summary-box"></div>
 
-
-    <button class="primary-btn full"
-            id="confirmYes">
-
+    <button class="primary-btn full" id="confirmYes">
       CONFIRM & CONTINUE
-
     </button>
 
-
-    <button class="secondary-btn full"
-            id="confirmNo">
-
+    <button class="secondary-btn full" id="confirmNo">
       CANCEL
-
     </button>
 
   </div>
