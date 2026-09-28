@@ -15,6 +15,16 @@
    - All user-provided strings are escaped with escapeHTML().
    - The "SAMPLE" badge on M-PESA is intentional: the demo
      starts with a fake KES 5,000 balance.
+
+   RECEIVE FLOW (Buyer borrows seller's phone):
+   - Seller opens Receive on their own phone.
+   - Buyer taps Buyer payment, logs in with their own
+     phone + National ID + PIN.
+   - Buyer picks a source (balances hidden).
+   - App auto-fills seller as the destination.
+   - Buyer pays, authorizes with PIN.
+   - Success screen + 5s countdown, then reset.
+   - Seller session is never logged out.
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -30,38 +40,59 @@ const STORAGE_KEY =
 const THEME_KEY =
   "money_transfer_beast_theme";
 
-/*
-  Demo passwords.
-  In a real app, these would never exist client-side.
-  They are here ONLY so the prototype can demonstrate
-  a buyer-verification step and an admin screen.
-*/
-const DEMO_BUYER_PASSWORD =
-  "buyer123";
-
 const DEMO_ADMIN_PASSWORD =
   "admin123";
 
-/*
-  Demo registered Safaricom agents.
-  Production must verify agents through an
-  authorized provider/backend.
-*/
 const REGISTERED_AGENTS = {
   "0712345678": "BEAST Demo Safaricom Agent",
   "0720000000": "Safaricom Registered Agent",
   "0711111111": "Safaricom Registered Agent"
 };
 
-/*
-  Agents may also be identified by a non-phone
-  agent code in this demo. These are sample codes.
-*/
 const REGISTERED_AGENT_CODES = {
   "AGENT-001": "BEAST Demo Agent 001",
   "AGENT-002": "BEAST Demo Agent 002",
   "BEAST-AG":  "BEAST Demo Agent"
 };
+
+/*
+  Demo buyers — used on the Receive screen when a
+  buyer borrows the seller's phone.
+  These are NOT the registered user's account.
+  PINs are hashed on load; plain PINs never persist.
+*/
+const DEMO_BUYERS = [
+  {
+    phone: "0722000001",
+    nationalId: "11111111",
+    pin: "1111",
+    name: "Alice Njeri",
+    sources: {
+      mpesa: { enabled: true, balance: 12500 },
+      wallet: { enabled: true, balance: 0 }
+    }
+  },
+  {
+    phone: "0722000002",
+    nationalId: "22222222",
+    pin: "2222",
+    name: "Brian Otieno",
+    sources: {
+      mpesa: { enabled: true, balance: 3200 },
+      wallet: { enabled: true, balance: 500 }
+    }
+  },
+  {
+    phone: "0722000003",
+    nationalId: "33333333",
+    pin: "3333",
+    name: "Carol Wambui",
+    sources: {
+      mpesa: { enabled: true, balance: 48000 },
+      wallet: { enabled: true, balance: 1200 }
+    }
+  }
+];
 
 const SOURCE_NAMES = {
   mpesa:  "M-PESA",
@@ -74,24 +105,11 @@ const SOURCE_NAMES = {
 
 const SAMPLE_BALANCE_SOURCES = new Set(["mpesa"]);
 
-const BANK_NAMES = [
-  "KCB",
-  "Equity Bank",
-  "Co-operative Bank",
-  "NCBA",
-  "Absa Bank",
-  "Stanbic Bank",
-  "Standard Chartered",
-  "DTB",
-  "I&M Bank",
-  "Family Bank",
-  "Postbank",
-  "Other"
-];
-
 const MAX_PIN_ATTEMPTS = 3;
 const PIN_LOCKOUT_MS   = 30 * 1000;
 const AUTO_LOCK_MS     = 2 * 60 * 1000;
+
+const BUYER_SUCCESS_MS = 5000;
 
 
 /* ================= STATE ================= */
@@ -194,7 +212,6 @@ function loadState(){
       return {
 
         ...base,
-
         ...saved,
 
         user:{
@@ -244,6 +261,14 @@ let pendingAction = null;
 let cameraStream = null;
 
 let autoLockTimer = null;
+
+/* Buyer flow state (in-memory only) */
+
+let buyerSession = null;
+
+let buyerStep = 1;
+
+let buyerSuccessTimer = null;
 
 
 /* ================= HELPERS ================= */
@@ -359,7 +384,7 @@ function toast(message){
 }
 
 
-/* ================= PIN HASHING (Web Crypto) ================= */
+/* ================= PIN HASHING ================= */
 
 async function hashPin(pin, saltHex){
 
@@ -391,18 +416,50 @@ async function verifyPin(pin){
 }
 
 function pinLocked(){
-
   return (
     state.security.lockoutUntil &&
     Date.now() < state.security.lockoutUntil
   );
-
 }
 
 function secondsLeft(){
   return Math.ceil(
     (state.security.lockoutUntil - Date.now()) / 1000
   );
+}
+
+
+/* ================= DEMO BUYER HASHING ================= */
+
+/* Pre-hash each demo buyer's PIN once at startup */
+
+const demoBuyerHashes = {};
+
+async function buildDemoBuyerHashes(){
+
+  for(const buyer of DEMO_BUYERS){
+
+    const salt = randomHex(16);
+
+    demoBuyerHashes[buyer.phone] = {
+      salt,
+      hash: await hashPin(buyer.pin, salt)
+    };
+
+  }
+
+}
+
+async function verifyDemoBuyerPin(phone, pin){
+
+  const entry = demoBuyerHashes[phone];
+
+  if(!entry) return false;
+
+  const attempt = await hashPin(pin, entry.salt);
+
+  return attempt === entry.hash;
+
 }
 
 
@@ -442,10 +499,6 @@ const screenMap = {
   beastOwn:"beastOwnScreen"
 };
 
-/*
-  Fields cleared whenever we leave a screen,
-  to avoid leaving sensitive data on-screen.
-*/
 const SENSITIVE_FIELDS = [
   "regPin","regPin2",
   "sendAmount","sendPhone",
@@ -456,7 +509,9 @@ const SENSITIVE_FIELDS = [
   "agentDepositPin",
   "authorizationPin",
   "oldPin","newPin","confirmNewPin",
-  "adminPassword"
+  "adminPassword",
+  "buyerLoginPhone","buyerLoginNationalId","buyerLoginPin",
+  "buyerPayAmount"
 ];
 
 function clearSensitiveFields(){
@@ -494,6 +549,11 @@ function showScreen(name){
   clearSensitiveFields();
   closeMenu();
   resetAutoLock();
+
+  if(name === "receive"){
+    resetBuyerFlow();
+    renderReceiveSellerLine();
+  }
 
   window.scrollTo({ top:0, behavior:"smooth" });
 
@@ -930,7 +990,6 @@ function setupCostPreview(){
 
   const setups = [
     ["sendCostPreview","sendSource","sendAmount"],
-    ["receiveCostPreview","receiveSource","receiveAmount"],
     ["withdrawCostPreview","withdrawSource","withdrawAmount"],
     ["lipaCostPreview","lipaSource","lipaAmount"]
   ];
@@ -1007,7 +1066,6 @@ function displayVerification(id, data, title){
 function askConfirmation(summaryHTML, onConfirm){
 
   if(!$("confirmModal")){
-    // Fallback if HTML not yet updated
     pendingAction = onConfirm;
     openPinModal("Confirm");
     return;
@@ -1025,6 +1083,11 @@ function askConfirmation(summaryHTML, onConfirm){
     $("confirmModal").classList.add("hidden");
     pendingAction = null;
   };
+
+  $("confirmClose")?.addEventListener("click", () => {
+    $("confirmModal").classList.add("hidden");
+    pendingAction = null;
+  });
 
 }
 
@@ -1122,245 +1185,578 @@ function setupSend(){
 }
 
 
-/* ================= RECEIVE DESTINATION ================= */
+/* ================= RECEIVE — TABS + BUYER FLOW ================= */
 
-function receiveDestinationFields(){
+function setupReceiveTabs(){
 
-  const type = $("receiveDestinationType")?.value;
+  document.querySelectorAll("[data-rtab]").forEach(tab => {
 
-  if(!$("receiveDestinationFields")) return;
+    tab.addEventListener("click", () => {
 
-  const fields = {
+      const target = tab.dataset.rtab;
 
-    pochi: `
-      <label>
-        Pochi phone / business number
-        <input id="receiveDestNumber"
-               placeholder="0712345678 or +254712345678">
-      </label>
-    `,
+      document.querySelectorAll("[data-rtab]").forEach(t =>
+        t.classList.toggle("active", t === tab)
+      );
 
-    till: `
-      <label>
-        Till number
-        <input id="receiveDestNumber" placeholder="123456">
-      </label>
-    `,
+      document.querySelectorAll(".receive-tab-panel").forEach(panel =>
+        panel.classList.remove("active")
+      );
 
-    paybill: `
-      <div class="two-col">
-        <label>
-          PayBill number
-          <input id="receiveDestNumber" placeholder="123456">
-        </label>
-        <label>
-          Account number
-          <input id="receiveAccountNumber" placeholder="Account">
-        </label>
-      </div>
-    `,
+      const panel =
+        target === "buyer"   ? $("buyerTab")   :
+        target === "deposit" ? $("depositTab") :
+        $("agentTab");
 
-    bank: `
-      <div class="two-col">
-        <label>
-          Bank account
-          <input id="receiveDestNumber" placeholder="Account number">
-        </label>
-        <label>
-          Bank name
-          <input id="receiveBankName" placeholder="Bank">
-        </label>
-      </div>
-    `,
+      panel?.classList.add("active");
 
-    card: `
-      <label>
-        Card / merchant reference
-        <input id="receiveDestNumber" placeholder="Merchant reference">
-      </label>
-    `,
+      // resetting buyer flow when leaving it
+      if(target === "buyer"){
+        resetBuyerFlow();
+      }
 
-    other: `
-      <label>
-        BEAST ID / phone
-        <input id="receiveDestNumber" placeholder="BEAST ID or phone">
-      </label>
+      updateReceiveBackButton();
+
+    });
+
+  });
+
+}
+
+
+function renderReceiveSellerLine(){
+
+  const line = $("receiveSellerLine");
+  if(!line) return;
+
+  if(!state.registered){
+    line.textContent = "Paying: —";
+    return;
+  }
+
+  line.textContent = `Paying: ${state.user.name} • ${state.user.beastId}`;
+
+}
+
+
+/* ---- Step navigation ---- */
+
+function setBuyerStep(step){
+
+  buyerStep = step;
+
+  ["buyerStep1","buyerStep2","buyerStep3","buyerSuccessPanel"]
+    .forEach(id => $(id)?.classList.remove("active"));
+
+  if(step === 1) $("buyerStep1")?.classList.add("active");
+  if(step === 2) $("buyerStep2")?.classList.add("active");
+  if(step === 3) $("buyerStep3")?.classList.add("active");
+  if(step === "success") $("buyerSuccessPanel")?.classList.add("active");
+
+  document.querySelectorAll(".buyer-step").forEach(el => {
+
+    const n = Number(el.dataset.bstep);
+
+    el.classList.toggle("active", n === step);
+
+  });
+
+  updateReceiveBackButton();
+
+}
+
+function updateReceiveBackButton(){
+
+  const btn = $("receiveBackButton");
+  if(!btn) return;
+
+  const buyerTabActive =
+    $("buyerTab")?.classList.contains("active");
+
+  if(!buyerTabActive){
+    btn.classList.add("hidden");
+    return;
+  }
+
+  // Hide the back arrow on step 1 and on success
+  if(buyerStep === 1 || buyerStep === "success"){
+    btn.classList.add("hidden");
+  }
+  else{
+    btn.classList.remove("hidden");
+  }
+
+}
+
+function handleReceiveBack(){
+
+  if(buyerStep === 3){
+    setBuyerStep(2);
+    return;
+  }
+
+  if(buyerStep === 2){
+    // Log the buyer out and go back to login
+    buyerSession = null;
+    setBuyerStep(1);
+
+    if($("buyerLoginPhone")) $("buyerLoginPhone").value = "";
+    if($("buyerLoginNationalId")) $("buyerLoginNationalId").value = "";
+    if($("buyerLoginPin")) $("buyerLoginPin").value = "";
+
+    return;
+  }
+
+}
+
+
+/* ---- Buyer login ---- */
+
+function setupBuyerFlow(){
+
+  $("receiveBackButton")?.addEventListener("click", handleReceiveBack);
+
+  $("buyerLoginButton")?.addEventListener("click", doBuyerLogin);
+
+  $("buyerChooseSourceButton")?.addEventListener("click", () => {
+
+    if(!buyerSession) return;
+
+    if(!buyerSession.chosenSource){
+      toast("Select an account first.");
+      return;
+    }
+
+    renderBuyerStep3();
+    setBuyerStep(3);
+
+  });
+
+  $("buyerPayAmount")?.addEventListener("input", updateBuyerCostPreview);
+
+  $("buyerConfirmPayButton")?.addEventListener("click", doBuyerPay);
+
+}
+
+
+async function doBuyerLogin(){
+
+  const phone = normalizePhone($("buyerLoginPhone").value);
+  const nationalId = $("buyerLoginNationalId").value.trim();
+  const pin = $("buyerLoginPin").value;
+
+  if(!validPhone(phone)){
+    toast("Enter a valid buyer phone number.");
+    return;
+  }
+
+  if(!/^\d{5,}$/.test(nationalId)){
+    toast("Enter the buyer's National ID.");
+    return;
+  }
+
+  if(!/^\d{4}$/.test(pin)){
+    toast("Enter the buyer's 4-digit BEAST PIN.");
+    return;
+  }
+
+  const buyer = DEMO_BUYERS.find(b => b.phone === phone);
+
+  if(!buyer){
+    addSecurity(`Unknown buyer attempted login on Receive: ${phone}.`);
+    save();
+    toast("Buyer not found in the demo registry.");
+    return;
+  }
+
+  if(buyer.nationalId !== nationalId){
+    addSecurity(`Buyer National ID mismatch for ${phone}.`);
+    save();
+    toast("Buyer National ID does not match.");
+    return;
+  }
+
+  const ok = await verifyDemoBuyerPin(phone, pin);
+
+  if(!ok){
+    addSecurity(`Failed buyer PIN attempt for ${phone}.`);
+    save();
+    toast("Incorrect buyer BEAST PIN.");
+    return;
+  }
+
+  // Start a buyer session (in-memory only)
+  buyerSession = {
+    phone: buyer.phone,
+    name: buyer.name,
+    nationalId: buyer.nationalId,
+    sources: JSON.parse(JSON.stringify(buyer.sources)),
+    chosenSource: null
+  };
+
+  $("buyerLoginPin").value = "";
+
+  renderBuyerStep2();
+  setBuyerStep(2);
+
+}
+
+
+/* ---- Step 2 — show accounts, hide balances ---- */
+
+function renderBuyerStep2(){
+
+  if(!buyerSession) return;
+
+  if($("buyerWelcomeLine")){
+    $("buyerWelcomeLine").textContent =
+      `Signed in as ${buyerSession.name}`;
+  }
+
+  const list = $("buyerSourcesList");
+  if(!list) return;
+
+  const entries = Object.entries(buyerSession.sources)
+    .filter(([, src]) => src.enabled);
+
+  list.innerHTML = entries.map(([key]) => {
+
+    const icon =
+      key === "mpesa"  ? "📱" :
+      key === "tkash"  ? "📲" :
+      key === "airtel" ? "📲" :
+      key === "bank"   ? "🏦" :
+      key === "card"   ? "💳" : "🐾";
+
+    const selected =
+      buyerSession.chosenSource === key ? " selected" : "";
+
+    return `
+      <button
+        class="buyer-source-option${selected}"
+        data-bsource="${key}">
+        <span class="buyer-source-icon">${icon}</span>
+        <span class="buyer-source-text">
+          <strong>${SOURCE_NAMES[key]}</strong>
+          <small>Balance hidden</small>
+        </span>
+      </button>
+    `;
+
+  }).join("");
+
+  list.querySelectorAll("[data-bsource]").forEach(btn => {
+
+    btn.addEventListener("click", () => {
+
+      buyerSession.chosenSource = btn.dataset.bsource;
+
+      list.querySelectorAll(".buyer-source-option")
+        .forEach(b => b.classList.remove("selected"));
+
+      btn.classList.add("selected");
+
+      $("buyerChooseSourceButton").disabled = false;
+
+    });
+
+  });
+
+  $("buyerChooseSourceButton").disabled = !buyerSession.chosenSource;
+
+}
+
+
+/* ---- Step 3 — amount + destination ---- */
+
+function renderBuyerStep3(){
+
+  if(!buyerSession) return;
+
+  if($("buyerDestinationName")){
+    $("buyerDestinationName").textContent = state.user.name;
+  }
+
+  if($("buyerDestinationId")){
+    $("buyerDestinationId").textContent =
+      `${state.user.beastId} • ${internationalPhone(state.user.phone)}`;
+  }
+
+  if($("buyerChosenSourceName")){
+    $("buyerChosenSourceName").textContent =
+      SOURCE_NAMES[buyerSession.chosenSource] || "—";
+  }
+
+  if($("buyerPayAmount")) $("buyerPayAmount").value = "";
+
+  updateBuyerCostPreview();
+
+}
+
+function updateBuyerCostPreview(){
+
+  const box = $("buyerCostPreview");
+  if(!box || !buyerSession) return;
+
+  const amount = Number($("buyerPayAmount")?.value || 0);
+  const source = buyerSession.chosenSource;
+
+  if(amount <= 0){
+    box.innerHTML = `
+      <b>Cost preview</b><br>
+      Enter an amount to calculate the buyer cost.
+    `;
+    return;
+  }
+
+  box.innerHTML = costPreview(source, amount);
+
+}
+
+
+/* ---- Pay ---- */
+
+function doBuyerPay(){
+
+  if(!buyerSession) return;
+
+  const amount = Number($("buyerPayAmount").value);
+
+  if(amount <= 0){
+    toast("Enter an amount.");
+    return;
+  }
+
+  const source = buyerSession.chosenSource;
+  const fee = beastFee(amount);
+  const provider = providerCost(source, amount);
+  const total = amount + fee + provider;
+
+  const src = buyerSession.sources[source];
+
+  if(!src || src.balance < total){
+    toast("Buyer has insufficient balance for this payment.");
+    return;
+  }
+
+  askConfirmation(
+
     `
+      <b>Confirm buyer payment</b><br><br>
+      Buyer: ${escapeHTML(buyerSession.name)}<br>
+      Paying to: ${escapeHTML(state.user.name)}<br>
+      Destination: ${escapeHTML(state.user.beastId)}<br>
+      Source: ${escapeHTML(SOURCE_NAMES[source])}<br><br>
+      Amount: ${money(amount)}<br>
+      BEAST fee: ${money(fee)}<br>
+      Provider cost: ${money(provider)}<br><br>
+      <strong>Total deducted from buyer: ${money(total)}</strong>
+    `,
+
+    () => authorizeBuyerPin(amount, source, fee, provider)
+
+  );
+
+}
+
+
+function authorizeBuyerPin(amount, source, fee, provider){
+
+  // Use a scoped PIN modal for the buyer flow
+  $("pinPurpose").textContent =
+    `Buyer authorization — ${buyerSession.name}`;
+
+  $("authorizationPin").value = "";
+
+  if($("pinError")){
+    $("pinError").textContent = "";
+    $("pinError").classList.add("hidden");
+  }
+
+  $("pinModal").classList.remove("hidden");
+
+  // Temporarily override the PIN handler for this flow
+  const confirmBtn = $("confirmPin");
+
+  const handler = async () => {
+
+    const pin = $("authorizationPin").value;
+
+    if(!/^\d{4}$/.test(pin)){
+      if($("pinError")){
+        $("pinError").textContent = "Enter the buyer's 4-digit PIN.";
+        $("pinError").classList.remove("hidden");
+      }
+      return;
+    }
+
+    const ok = await verifyDemoBuyerPin(buyerSession.phone, pin);
+
+    if(!ok){
+      addSecurity(`Failed buyer PIN at payment for ${buyerSession.phone}.`);
+      save();
+
+      if($("pinError")){
+        $("pinError").textContent = "Incorrect buyer PIN.";
+        $("pinError").classList.remove("hidden");
+      }
+
+      toast("Incorrect buyer PIN.");
+      return;
+    }
+
+    confirmBtn.removeEventListener("click", handler);
+
+    $("pinModal").classList.add("hidden");
+
+    finishBuyerPayment(amount, source, fee, provider);
 
   };
 
-  $("receiveDestinationFields").innerHTML =
-    fields[type] || fields.other;
-
-}
-
-function getReceiveDestination(){
-
-  const type = $("receiveDestinationType").value;
-  const value = ($("receiveDestNumber")?.value || "").trim();
-
-  if(!value) return { valid:false };
-
-  let name = "Demo seller";
-
-  if(type === "pochi"){
-    if(!validPhone(value)) return { valid:false };
-    const recipient = getRecipient(value);
-    name = recipient?.name || "Demo Pochi seller";
-  }
-
-  if(type === "till")    name = "Demo Till merchant";
-  if(type === "paybill") name = "Demo PayBill business";
-
-  if(type === "bank"){
-    name = `Demo ${$("receiveBankName")?.value || "Bank"} account`;
-  }
-
-  if(type === "card") name = "Demo card merchant";
-
-  if(type === "other"){
-    name = validPhone(value)
-      ? (getRecipient(value)?.name || "Demo BEAST account")
-      : "Demo BEAST account";
-  }
-
-  return { valid:true, type, id:value, name };
+  confirmBtn.addEventListener("click", handler);
 
 }
 
 
-/* ================= RECEIVE ================= */
+function finishBuyerPayment(amount, source, fee, provider){
 
-function setupReceive(){
+  const src = buyerSession.sources[source];
+  const total = amount + fee + provider;
 
-  $("receiveDestinationType")
-    ?.addEventListener("change", receiveDestinationFields);
+  src.balance -= total;
 
-  receiveDestinationFields();
+  // Credit the seller's matching source if enabled, otherwise wallet
+  let sellerSourceKey = source;
 
-  $("verifyBuyer")?.addEventListener("click", () => {
+  if(!state.sources[sellerSourceKey]?.enabled){
+    sellerSourceKey = "wallet";
+    state.sources.wallet.enabled = true;
+  }
 
-    const phone = normalizePhone($("buyerPhone").value);
-    const nationalId = $("buyerNationalId").value.trim();
-    const password = $("buyerPassword").value;
+  state.sources[sellerSourceKey].balance += amount;
 
-    if(!validPhone(phone) || phone !== state.user.phone){
-      toast("Buyer phone verification failed.");
-      return;
+  state.owner.fees += fee;
+  state.owner.providerCosts += provider;
+  state.owner.transactions++;
+  state.owner.volume += amount;
+
+  const reference = generateReference();
+
+  const transaction = {
+    reference,
+    createdAt: new Date().toISOString(),
+    status: "completed",
+    type: "Buyer Payment",
+    amount,
+    fee,
+    providerCost: provider,
+    totalDeducted: total,
+    source,
+    recipient: state.user.phone,
+    recipientName: state.user.name,
+    buyerName: buyerSession.name,
+    buyerPhone: buyerSession.phone,
+    description:
+      `Buyer payment from ${buyerSession.name} (${buyerSession.phone})`
+  };
+
+  state.transactions.unshift(transaction);
+
+  addNotification(
+    "Buyer payment received",
+    `${money(amount)} from ${buyerSession.name}. Ref ${reference}.`
+  );
+
+  addSecurity(
+    `Buyer payment of ${money(amount)} received from ${buyerSession.phone}.`
+  );
+
+  save();
+
+  showBuyerSuccess(amount, reference);
+
+  renderEverything();
+
+}
+
+
+/* ---- Success + countdown + reset ---- */
+
+function showBuyerSuccess(amount, reference){
+
+  if($("buyerSuccessText")){
+    $("buyerSuccessText").textContent =
+      `${money(amount)} received. Reference ${reference}.`;
+  }
+
+  setBuyerStep("success");
+
+  clearTimeout(buyerSuccessTimer);
+
+  const fill = $("buyerCountdownFill");
+  const text = $("buyerCountdownText");
+
+  if(fill){
+    fill.style.transition = "none";
+    fill.style.width = "100%";
+  }
+
+  requestAnimationFrame(() => {
+    if(fill){
+      fill.style.transition = `width ${BUYER_SUCCESS_MS}ms linear`;
+      fill.style.width = "0%";
     }
-
-    if(nationalId !== state.user.nationalId){
-      toast("National ID verification failed.");
-      return;
-    }
-
-    if(password !== DEMO_BUYER_PASSWORD){
-      toast("Demo buyer password is incorrect.");
-      return;
-    }
-
-    $("buyerVerification").classList.remove("hidden");
-
-    $("buyerVerification").innerHTML = `
-      <strong>✓ Buyer verified (demo)</strong>
-      ${escapeHTML(state.user.name)}<br>
-      ${escapeHTML(state.user.phone)}<br>
-      Buyer can authorize payment
-      without exposing seller balance.
-    `;
-
-    toast("Buyer verified.");
-
   });
 
-  $("verifyReceiveDestination")?.addEventListener("click", () => {
+  let remaining = Math.ceil(BUYER_SUCCESS_MS / 1000);
 
-    const destination = getReceiveDestination();
+  if(text){
+    text.textContent = `Returning to login in ${remaining}s…`;
+  }
 
-    if(!destination.valid){
-      toast("Enter valid destination details.");
-      return;
+  const tick = setInterval(() => {
+
+    remaining -= 1;
+
+    if(remaining > 0 && text){
+      text.textContent = `Returning to login in ${remaining}s…`;
     }
 
-    displayVerification(
-      "receiveDestinationVerification",
-      {
-        name: destination.name,
-        phone: destination.id,
-        beastId: "Demo destination"
-      },
-      "Demo destination"
-    );
-
-    toast("Destination verified.");
-
-  });
-
-  $("buyerPayButton")?.addEventListener("click", () => {
-
-    if($("buyerVerification").classList.contains("hidden")){
-      toast("Verify buyer first.");
-      return;
+    if(remaining <= 0){
+      clearInterval(tick);
+      buyerSuccessTimer = setTimeout(() => {
+        resetBuyerFlow();
+      }, 200);
     }
 
-    if($("receiveDestinationVerification").classList.contains("hidden")){
-      toast("Verify destination first.");
-      return;
-    }
+  }, 1000);
 
-    const destination = getReceiveDestination();
-    const amount = Number($("receiveAmount").value);
-    const source = $("receiveSource").value;
+}
 
-    if(!destination.valid){
-      toast("Enter destination.");
-      return;
-    }
 
-    if(amount <= 0){
-      toast("Enter an amount.");
-      return;
-    }
+function resetBuyerFlow(){
 
-    const fee = beastFee(amount);
-    const provider = providerCost(source, amount);
+  clearTimeout(buyerSuccessTimer);
 
-    askConfirmation(
+  buyerSession = null;
 
-      buildConfirmationHTML({
-        title: "Confirm buyer payment",
-        recipientName: destination.name,
-        recipient: destination.id,
-        amount, source, fee, provider
-      }),
+  ["buyerLoginPhone","buyerLoginNationalId","buyerLoginPin","buyerPayAmount"]
+    .forEach(id => { if($(id)) $(id).value = ""; });
 
-      () => authorize("Buyer payment", () => {
+  if($("buyerSourcesList")) $("buyerSourcesList").innerHTML = "";
 
-        completeTransaction({
-          type: "Buyer Payment",
-          amount,
-          source,
-          recipient: destination.id,
-          recipientName: destination.name,
-          description: `Buyer payment to ${destination.name}`
-        });
+  if($("buyerChosenSourceName")) $("buyerChosenSourceName").textContent = "—";
 
-      })
+  if($("buyerDestinationName")) $("buyerDestinationName").textContent = "—";
+  if($("buyerDestinationId"))   $("buyerDestinationId").textContent = "—";
 
-    );
+  if($("buyerCostPreview")) $("buyerCostPreview").innerHTML = "";
 
-  });
+  if($("buyerChooseSourceButton")) $("buyerChooseSourceButton").disabled = true;
 
-  $("performDepositButton")?.addEventListener("click", performDeposit);
-  $("performDeposit")?.addEventListener("click", performDeposit);
+  setBuyerStep(1);
 
-  $("depositSource")?.addEventListener("change", updateDepositPreview);
-  $("depositAmount")?.addEventListener("input", updateDepositPreview);
-
-  updateDepositPreview();
-
-  $("verifyAgentDeposit")?.addEventListener("click", verifyAgentDeposit);
-  $("agentDepositButton")?.addEventListener("click", agentDeposit);
+  renderReceiveSellerLine();
 
 }
 
@@ -1713,10 +2109,6 @@ function completeAgentDeposit(data){
 
 /* ================= WITHDRAW ================= */
 
-/*
-  Agent ID no longer needs to be a phone number.
-  It accepts any agent code, e.g. AGENT-001.
-*/
 function setupWithdraw(){
 
   $("verifyAgent")?.addEventListener("click", () => {
@@ -1908,7 +2300,7 @@ function setupLipa(){
 }
 
 
-/* ================= PIN AUTHORIZATION ================= */
+/* ================= PIN AUTHORIZATION (SELLER) ================= */
 
 function openPinModal(purpose){
 
@@ -1946,8 +2338,7 @@ async function attemptPin(pin){
     const s = secondsLeft();
 
     if($("pinError")){
-      $("pinError").textContent =
-        `Locked. Try again in ${s}s.`;
+      $("pinError").textContent = `Locked. Try again in ${s}s.`;
       $("pinError").classList.remove("hidden");
     }
 
@@ -1993,7 +2384,6 @@ async function attemptPin(pin){
 
   }
 
-  // Success
   state.security.failedPinAttempts = 0;
   state.security.lockoutUntil = 0;
   save();
@@ -2008,11 +2398,18 @@ async function attemptPin(pin){
 function setupPin(){
 
   $("confirmPin")?.addEventListener("click", () => {
+    // If a buyer flow is active, the buyer handler is attached separately
+    if(buyerSession && $("confirmPin")._buyerHandler){
+      return;
+    }
     attemptPin($("authorizationPin").value);
   });
 
   $("authorizationPin")?.addEventListener("keydown", e => {
-    if(e.key === "Enter") attemptPin($("authorizationPin").value);
+    if(e.key === "Enter"){
+      if(buyerSession && $("confirmPin")._buyerHandler) return;
+      attemptPin($("authorizationPin").value);
+    }
   });
 
   $("cancelPin").onclick = closePin;
@@ -2021,7 +2418,7 @@ function setupPin(){
 }
 
 
-/* ================= COMPLETE TRANSACTION ================= */
+/* ================= COMPLETE TRANSACTION (SELLER) ================= */
 
 function completeTransaction(data){
 
@@ -2086,11 +2483,6 @@ function completeTransaction(data){
     $("recipientVerification").classList.add("hidden");
   }
 
-  if(data.type === "Buyer Payment"){
-    $("receiveAmount").value = "";
-    $("receiveDestinationVerification").classList.add("hidden");
-  }
-
   renderEverything();
 
 }
@@ -2139,10 +2531,6 @@ function renderNotifications(){
 
 }
 
-/*
-  Mark notifications as read ONLY when the
-  notifications screen is actually active.
-*/
 function markNotificationsReadIfOpen(){
 
   const screen = $("notificationsScreen");
@@ -2217,10 +2605,6 @@ function renderSecurity(){
 
 /* ================= CAMERA / DEVICE SECURITY ================= */
 
-/*
-  Colour the PARENT card, since the CSS targets
-  .security-status-card.green/.red/.blue
-*/
 function setSecurityStatus(id, text, className=""){
 
   const element = $(id);
@@ -2306,17 +2690,14 @@ function stopFrontCamera(){
 function checkCaptureSecurity(){
 
   const captureStatus = $("captureStatus");
-  const visibilityStatus = $("visibilityStatus");
 
-  if(visibilityStatus){
-
+  if($("visibilityStatus")){
     if(document.hidden){
       setSecurityStatus("visibilityStatus", "APP HIDDEN", "red");
     }
     else{
       setSecurityStatus("visibilityStatus", "APP VISIBLE", "green");
     }
-
   }
 
   if(captureStatus){
@@ -2381,7 +2762,8 @@ function renderHistory(){
 
       const direction =
         transaction.type === "Deposit to BEAST" ||
-        transaction.type === "Agent Deposit"
+        transaction.type === "Agent Deposit" ||
+        transaction.type === "Buyer Payment"
           ? "+" : "-";
 
       return `
@@ -2673,17 +3055,23 @@ function renderEverything(){
   checkCaptureSecurity();
   markNotificationsReadIfOpen();
 
+  renderReceiveSellerLine();
+  updateReceiveBackButton();
+
 }
 
 
 /* ================= START ================= */
 
-function initialize(){
+async function initialize(){
+
+  await buildDemoBuyerHashes();
 
   setupRegistration();
   setupMenu();
   setupSend();
-  setupReceive();
+  setupReceiveTabs();
+  setupBuyerFlow();
   setupWithdraw();
   setupLipa();
   setupPin();
@@ -2692,6 +3080,13 @@ function initialize(){
   setupSettings();
   setupSourceManager();
   setupCameraSecurity();
+
+  $("performDepositButton")?.addEventListener("click", performDeposit);
+  $("depositSource")?.addEventListener("change", updateDepositPreview);
+  $("depositAmount")?.addEventListener("input", updateDepositPreview);
+  $("verifyAgentDeposit")?.addEventListener("click", verifyAgentDeposit);
+  $("agentDepositButton")?.addEventListener("click", agentDeposit);
+
   loadTheme();
 
   if(state.registered){
@@ -2699,6 +3094,7 @@ function initialize(){
     $("homeScreen")?.classList.add("active");
   }
 
+  resetBuyerFlow();
   renderEverything();
   resetAutoLock();
 
