@@ -62,7 +62,6 @@
     <button data-menu="notifications">🔔 <span>Notifications</span></button>
     <button data-menu="settings">⚙️ <span>Settings</span></button>
 
-    <button data-menu="admin">📊 <span>BEAST Admin</span></button>
     <button data-menu="logout">🚪 <span>Logout</span></button>
 
   </nav>
@@ -242,16 +241,6 @@
 
   <div class="dashboard-grid">
 
-    <button class="square-card black-card"
-            data-menu="beastOwn">
-
-      <span>🏦</span>
-      <b>BEAST Own</b>
-      <small>Sources & balance</small>
-
-    </button>
-
-
     <button class="square-card green-card"
             data-menu="balance">
 
@@ -263,11 +252,21 @@
 
 
     <button class="square-card blue-card"
-            data-menu="admin">
+            data-menu="receive">
 
-      <span>📊</span>
-      <b>BEAST Admin</b>
-      <small>Demo revenue</small>
+      <span>🤝</span>
+      <b>Receive</b>
+      <small>Buyer payment</small>
+
+    </button>
+
+
+    <button class="square-card black-card"
+            data-menu="send">
+
+      <span>📤</span>
+      <b>Send</b>
+      <small>Phone / BEAST ID</small>
 
     </button>
 
@@ -345,185 +344,6 @@
   </h2>
 
   <div id="sourceList" class="source-grid"></div>
-
-</section>
-
-
-<!-- ================= BEAST OWN ================= -->
-
-<section id="beastOwnScreen" class="app-screen">
-
-  <div class="page-head">
-
-    <div>
-      <span class="pill green">BEAST OWN</span>
-      <h1>Payment sources</h1>
-      <p>
-        Connected payment sources.
-      </p>
-    </div>
-
-  </div>
-
-  <div id="beastOwnSourceList"
-       class="source-grid">
-  </div>
-
-
-  <!-- PAYMENT SOURCE DETAILS -->
-
-  <div class="panel">
-
-    <h2>Add / update payment source</h2>
-
-    <p class="muted">
-      Connect a simulated payment source to your BEAST identity.
-    </p>
-
-    <label>
-      Payment source
-
-      <select id="sourceType">
-
-        <option value="mpesa">M-PESA</option>
-        <option value="tkash">T-Kash</option>
-        <option value="airtel">Airtel Money</option>
-        <option value="bank">Bank Account</option>
-        <option value="card">Card</option>
-        <option value="wallet">BEAST Wallet</option>
-
-      </select>
-    </label>
-
-
-    <label>
-      Phone / account number
-
-      <input
-        id="sourceAccount"
-        autocomplete="off"
-        placeholder="+2547XXXXXXXX / account number">
-    </label>
-
-
-    <!-- BANK -->
-
-    <div id="bankSourceFields" class="hidden">
-
-      <label>
-        Bank name
-
-        <select id="bankName">
-
-          <option value="">
-            Select bank
-          </option>
-
-          <option value="KCB">
-            KCB Bank Kenya
-          </option>
-
-          <option value="Equity">
-            Equity Bank Kenya
-          </option>
-
-          <option value="Co-operative Bank">
-            Co-operative Bank of Kenya
-          </option>
-
-          <option value="NCBA">
-            NCBA Bank Kenya
-          </option>
-
-          <option value="Absa">
-            Absa Bank Kenya
-          </option>
-
-          <option value="Stanbic">
-            Stanbic Bank Kenya
-          </option>
-
-          <option value="Standard Chartered">
-            Standard Chartered Kenya
-          </option>
-
-          <option value="DTB">
-            Diamond Trust Bank Kenya
-          </option>
-
-          <option value="I&M">
-            I&M Bank Kenya
-          </option>
-
-          <option value="Family Bank">
-            Family Bank
-          </option>
-
-          <option value="Postbank">
-            Postbank Kenya
-          </option>
-
-          <option value="Other">
-            Other Bank
-          </option>
-
-        </select>
-
-      </label>
-
-    </div>
-
-
-    <!-- CARD -->
-
-    <div id="cardSourceFields" class="hidden">
-
-      <label>
-        Card name
-
-        <input
-          id="cardName"
-          autocomplete="off"
-          placeholder="Visa / Mastercard / BEAST Card">
-      </label>
-
-      <label>
-        Card last 4 digits
-
-        <input
-          id="cardLast4"
-          maxlength="4"
-          inputmode="numeric"
-          autocomplete="off"
-          placeholder="1234">
-      </label>
-
-    </div>
-
-
-    <label>
-      Demo balance
-
-      <input
-        id="sourceBalance"
-        type="number"
-        min="0"
-        step="0.01"
-        inputmode="decimal"
-        autocomplete="off"
-        placeholder="0">
-    </label>
-
-
-    <button
-      class="primary-btn full"
-      id="saveSourceButton">
-
-      SAVE PAYMENT SOURCE
-
-    </button>
-
-  </div>
 
 </section>
 
@@ -618,8 +438,6 @@
 
 <section id="receiveScreen" class="app-screen">
 
-  <!-- TOP BAR WITH BACK ARROW -->
-
   <div class="receive-topbar">
 
     <button
@@ -644,8 +462,6 @@
   </div>
 
 
-  <!-- TABS -->
-
   <div class="receive-tabs" id="receiveTabs">
 
     <button class="receive-tab active" data-rtab="buyer">
@@ -664,12 +480,10 @@
 
 
   <!-- ============================================= -->
-  <!-- TAB 1 — BUYER PAYMENT (3 internal steps)      -->
+  <!-- TAB 1 — BUYER PAYMENT                         -->
   <!-- ============================================= -->
 
   <div id="buyerTab" class="receive-tab-panel active">
-
-    <!-- STEP INDICATOR -->
 
     <div class="buyer-steps">
 
@@ -688,7 +502,7 @@
     </div>
 
 
-    <!-- STEP 1 — BUYER LOGIN -->
+    <!-- STEP 1 — LOGIN -->
 
     <div id="buyerStep1" class="buyer-step-panel active">
 
@@ -778,7 +592,7 @@
     </div>
 
 
-    <!-- STEP 3 — AMOUNT + PAY -->
+    <!-- STEP 3 — AMOUNT + DESTINATION -->
 
     <div id="buyerStep3" class="buyer-step-panel">
 
@@ -791,6 +605,13 @@
           <strong id="buyerDestinationName">—</strong>
           <small id="buyerDestinationId">—</small>
         </div>
+
+        <label>
+          Where to send
+          <select id="buyerDestinationChannel"></select>
+        </label>
+
+        <div id="buyerDestinationFields"></div>
 
         <div class="buyer-account-chip">
           <span>From account</span>
@@ -823,7 +644,7 @@
     </div>
 
 
-    <!-- SUCCESS / COUNTDOWN -->
+    <!-- SUCCESS -->
 
     <div id="buyerSuccessPanel" class="buyer-step-panel">
 
@@ -851,7 +672,7 @@
 
 
   <!-- ============================================= -->
-  <!-- TAB 2 — DEPOSIT TO BEAST                      -->
+  <!-- TAB 2 — DEPOSIT                               -->
   <!-- ============================================= -->
 
   <div id="depositTab" class="receive-tab-panel">
@@ -1363,8 +1184,6 @@
   </div>
 
 
-  <!-- DEVICE SECURITY -->
-
   <div class="panel">
 
     <h2>Device security monitoring</h2>
@@ -1583,6 +1402,59 @@
   </div>
 
 
+  <!-- RECEIVING METHODS -->
+
+  <div class="panel">
+
+    <span class="pill green">RECEIVING</span>
+
+    <h2>Receiving methods</h2>
+
+    <p class="muted">
+      Choose which channels buyers can use to pay you.
+      These appear in the buyer flow on the Receive screen.
+    </p>
+
+    <label>
+      Receiving channel
+
+      <select id="receivingMethodType">
+
+        <option value="wallet">BEAST Wallet</option>
+        <option value="pochi">Pochi la Biashara</option>
+        <option value="till">Till</option>
+        <option value="paybill">PayBill</option>
+        <option value="bank">Bank Account</option>
+        <option value="card">Card</option>
+
+      </select>
+
+    </label>
+
+    <div id="receivingMethodFields"></div>
+
+    <button
+      class="primary-btn full"
+      id="saveReceivingMethodButton">
+
+      SAVE RECEIVING METHOD
+
+    </button>
+
+  </div>
+
+
+  <div class="panel">
+
+    <h2>Enabled receiving methods</h2>
+
+    <div id="receivingMethodsList"
+         class="list">
+    </div>
+
+  </div>
+
+
   <div class="panel">
 
     <h2>Change BEAST PIN</h2>
@@ -1637,121 +1509,6 @@
     RESET DEMO DATA
 
   </button>
-
-</section>
-
-
-<!-- ================= ADMIN ================= -->
-
-<section id="adminScreen"
-         class="app-screen">
-
-  <div class="page-head">
-
-    <div>
-
-      <span class="pill blue">
-        BEAST ADMIN
-      </span>
-
-      <h1>Owner dashboard</h1>
-
-      <p>
-        BEAST fees and provider costs are tracked separately.
-      </p>
-
-    </div>
-
-  </div>
-
-
-  <div id="adminLocked"
-       class="panel">
-
-    <h2>Admin authorization</h2>
-
-    <label>
-      Demo admin password
-
-      <input id="adminPassword"
-             type="password"
-             autocomplete="off"
-             placeholder="Demo admin password">
-    </label>
-
-
-    <button class="primary-btn full"
-            id="adminLoginButton">
-
-      UNLOCK ADMIN
-
-    </button>
-
-  </div>
-
-
-  <div id="adminDashboard"
-       class="hidden">
-
-    <div class="admin-grid">
-
-      <div class="stat-card">
-        <small>BEAST fees</small>
-        <strong id="ownerFees">
-          KES 0.00
-        </strong>
-      </div>
-
-      <div class="stat-card">
-        <small>Provider costs</small>
-        <strong id="ownerProviderCosts">
-          KES 0.00
-        </strong>
-      </div>
-
-      <div class="stat-card">
-        <small>Net revenue</small>
-        <strong id="ownerNetRevenue">
-          KES 0.00
-        </strong>
-      </div>
-
-      <div class="stat-card">
-        <small>Transactions</small>
-        <strong id="ownerTransactions">
-          0
-        </strong>
-      </div>
-
-      <div class="stat-card">
-        <small>Transaction volume</small>
-        <strong id="ownerVolume">
-          KES 0.00
-        </strong>
-      </div>
-
-      <div class="stat-card">
-        <small>Settlement</small>
-        <strong>
-          BEAST ACCOUNT
-        </strong>
-      </div>
-
-    </div>
-
-
-    <div class="panel">
-
-      <h2>Accounting rule</h2>
-
-      <p class="muted">
-        Customer balances remain separate from BEAST fees.
-        Provider costs are also tracked separately.
-      </p>
-
-    </div>
-
-  </div>
 
 </section>
 
