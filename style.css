@@ -45,6 +45,11 @@ button{
   cursor:pointer;
 }
 
+button:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+}
+
 .topbar{
   height:64px;
   position:sticky;
@@ -416,6 +421,7 @@ select:focus{
 
 .source-card{
   justify-content:space-between;
+  gap:5px;
 }
 
 .source-top{
@@ -489,6 +495,21 @@ select:focus{
   color:var(--muted);
   margin-top:5px;
   line-height:1.5;
+}
+
+/* UNREAD NOTIFICATIONS */
+
+.list-item.unread{
+  border-left:3px solid var(--green);
+  background:linear-gradient(
+    90deg,
+    rgba(22,193,114,.06),
+    var(--surface)
+  );
+}
+
+.list-item.unread strong{
+  color:var(--green);
 }
 
 .settings-grid{
@@ -739,7 +760,7 @@ select:focus{
 }
 
 
-/* PIN MODAL */
+/* PIN MODAL + CONFIRM MODAL */
 
 .modal{
   position:fixed;
@@ -749,6 +770,7 @@ select:focus{
   display:grid;
   place-items:center;
   padding:20px;
+  overflow-y:auto;
 }
 
 .modal-card{
@@ -761,6 +783,11 @@ select:focus{
   box-shadow:var(--shadow);
 }
 
+.modal-card h2{
+  font-size:17px;
+  margin:10px 0 8px;
+}
+
 .modal-close{
   position:absolute;
   right:10px;
@@ -771,6 +798,27 @@ select:focus{
   border-radius:9px;
   width:32px;
   height:32px;
+}
+
+/* PIN error line */
+
+#pinError{
+  color:var(--red);
+  font-size:10px;
+  font-weight:700;
+  margin-top:8px;
+  display:block;
+}
+
+/* Confirm modal body (reuses summary-box) */
+
+#confirmBody{
+  margin-top:12px;
+  margin-bottom:6px;
+}
+
+#confirmBody b{
+  font-size:13px;
 }
 
 .toast{
@@ -852,6 +900,10 @@ select:focus{
     grid-template-columns:1fr;
   }
 
+  .modal-card{
+    padding:16px;
+  }
+
 }
 
 
@@ -869,6 +921,20 @@ select:focus{
 
   .security-status-card small{
     font-size:6px;
+  }
+
+}
+
+
+/* REDUCED MOTION */
+
+@media(prefers-reduced-motion:reduce){
+
+  *{
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:.01ms!important;
+    scroll-behavior:auto!important;
   }
 
 }
