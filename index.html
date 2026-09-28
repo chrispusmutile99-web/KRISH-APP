@@ -13,7 +13,7 @@
 <div id="toast" class="toast"></div>
 
 <header class="topbar">
-  <button class="icon-btn" id="menuButton">☰</button>
+  <button class="icon-btn" id="menuButton" aria-label="Open menu">☰</button>
 
   <div class="brand">
     <div class="brand-mark">B</div>
@@ -23,7 +23,7 @@
     </div>
   </div>
 
-  <button class="icon-btn" id="notificationButton">
+  <button class="icon-btn" id="notificationButton" aria-label="Notifications">
     🔔
     <span id="notificationBadge" class="badge">0</span>
   </button>
@@ -44,7 +44,7 @@
       <small id="menuUser">Guest</small>
     </div>
 
-    <button class="icon-btn" id="closeMenu">×</button>
+    <button class="icon-btn" id="closeMenu" aria-label="Close menu">×</button>
 
   </div>
 
@@ -109,7 +109,7 @@
 
       <label>
         Full name
-        <input id="regName" placeholder="Your full name">
+        <input id="regName" placeholder="Your full name" autocomplete="name">
       </label>
 
       <label>
@@ -117,6 +117,7 @@
         <input
           id="regPhone"
           inputmode="tel"
+          autocomplete="tel"
           placeholder="0712345678 or +254712345678">
       </label>
 
@@ -130,6 +131,7 @@
         <input
           id="regNationalId"
           inputmode="numeric"
+          autocomplete="off"
           placeholder="National ID">
       </label>
 
@@ -150,6 +152,7 @@
           type="password"
           maxlength="4"
           inputmode="numeric"
+          autocomplete="new-password"
           placeholder="••••">
       </label>
 
@@ -160,8 +163,14 @@
           type="password"
           maxlength="4"
           inputmode="numeric"
+          autocomplete="new-password"
           placeholder="••••">
       </label>
+
+      <small class="muted">
+        Your PIN is stored as a salted SHA-256 hash.
+        It is never saved as plaintext.
+      </small>
 
       <button class="primary-btn full" id="regNext2">
         REVIEW
@@ -214,7 +223,8 @@
 
       <button
         class="mini-btn"
-        id="refreshBalance">
+        id="refreshBalance"
+        aria-label="Refresh balance">
         ↻
       </button>
     </div>
@@ -391,6 +401,7 @@
 
       <input
         id="sourceAccount"
+        autocomplete="off"
         placeholder="+2547XXXXXXXX / account number">
     </label>
 
@@ -472,6 +483,7 @@
 
         <input
           id="cardName"
+          autocomplete="off"
           placeholder="Visa / Mastercard / BEAST Card">
       </label>
 
@@ -482,6 +494,7 @@
           id="cardLast4"
           maxlength="4"
           inputmode="numeric"
+          autocomplete="off"
           placeholder="1234">
       </label>
 
@@ -496,6 +509,8 @@
         type="number"
         min="0"
         step="0.01"
+        inputmode="decimal"
+        autocomplete="off"
         placeholder="0">
     </label>
 
@@ -541,6 +556,7 @@
 
       <input
         id="sendPhone"
+        autocomplete="off"
         placeholder="0712345678 or +254712345678">
     </label>
 
@@ -565,6 +581,8 @@
         <input id="sendAmount"
                type="number"
                min="1"
+               inputmode="decimal"
+               autocomplete="off"
                placeholder="100">
       </label>
 
@@ -631,6 +649,7 @@
 
         <input
           id="buyerPhone"
+          autocomplete="off"
           placeholder="0712345678 or +254712345678">
       </label>
 
@@ -640,6 +659,7 @@
 
         <input id="buyerNationalId"
                inputmode="numeric"
+               autocomplete="off"
                placeholder="National ID">
       </label>
 
@@ -651,7 +671,8 @@
 
       <input id="buyerPassword"
              type="password"
-             placeholder="Demo password">
+             autocomplete="off"
+             placeholder="Demo buyer password (buyer123)">
     </label>
 
 
@@ -726,6 +747,8 @@
         <input id="receiveAmount"
                type="number"
                min="1"
+               inputmode="decimal"
+               autocomplete="off"
                placeholder="100">
 
       </label>
@@ -789,6 +812,7 @@
       <input
         id="depositPhone"
         inputmode="tel"
+        autocomplete="off"
         placeholder="0712345678 or +254712345678">
     </label>
 
@@ -830,6 +854,8 @@
         id="depositAmount"
         type="number"
         min="1"
+        inputmode="decimal"
+        autocomplete="off"
         placeholder="500">
     </label>
 
@@ -841,7 +867,7 @@
 
     <button
       class="primary-btn full"
-      id="depositButton">
+      id="performDepositButton">
 
       DEPOSIT TO BEAST
 
@@ -867,12 +893,13 @@
 
 
     <label>
-      Registered Safaricom agent number
+      Registered agent number or agent code
 
       <input
         id="agentDepositAgent"
-        inputmode="tel"
-        placeholder="0712345678 or +254712345678">
+        inputmode="text"
+        autocomplete="off"
+        placeholder="0712345678 or AGENT-001">
     </label>
 
 
@@ -882,6 +909,7 @@
       <input
         id="agentDepositPhone"
         inputmode="tel"
+        autocomplete="off"
         placeholder="0712345678 or +254712345678">
     </label>
 
@@ -892,6 +920,7 @@
       <input
         id="agentDepositNationalId"
         inputmode="numeric"
+        autocomplete="off"
         placeholder="Customer National ID">
     </label>
 
@@ -918,26 +947,10 @@
         id="agentDepositAmount"
         type="number"
         min="1"
-        placeholder="1,000">
+        inputmode="decimal"
+        autocomplete="off"
+        placeholder="1000">
     </label>
-
-
-    <label>
-      Agent authorization PIN
-
-      <input
-        id="agentDepositPin"
-        type="password"
-        maxlength="4"
-        inputmode="numeric"
-        placeholder="••••">
-    </label>
-
-
-    <div
-      id="agentDepositCostPreview"
-      class="cost-box">
-    </div>
 
 
     <button
@@ -971,18 +984,25 @@
   <div class="panel">
 
     <label>
-      Agent number
+      Agent ID or code
 
       <input
         id="agentNumber"
-        placeholder="0712345678 or +254712345678">
+        autocomplete="off"
+        placeholder="e.g. AGENT-001 or 0712345678">
     </label>
+
+    <small class="muted">
+      Demo accepts any agent ID. Real agents are verified
+      by the provider backend.
+    </small>
 
 
     <label>
       Store / agent reference
 
       <input id="withdrawStore"
+             autocomplete="off"
              placeholder="Optional store number">
     </label>
 
@@ -1013,6 +1033,8 @@
         <input id="withdrawAmount"
                type="number"
                min="1"
+               inputmode="decimal"
+               autocomplete="off"
                placeholder="500">
       </label>
 
@@ -1111,6 +1133,8 @@
       <input id="lipaAmount"
              type="number"
              min="1"
+             inputmode="decimal"
+             autocomplete="off"
              placeholder="100">
     </label>
 
@@ -1215,6 +1239,7 @@
 
       <input
         id="loginAccount"
+        autocomplete="off"
         placeholder="0712345678 or +254712345678">
     </label>
 
@@ -1223,6 +1248,7 @@
       Full name
 
       <input id="loginName"
+             autocomplete="off"
              placeholder="Your full name">
     </label>
 
@@ -1537,14 +1563,18 @@
         Current PIN
         <input id="oldPin"
                type="password"
-               maxlength="4">
+               maxlength="4"
+               inputmode="numeric"
+               autocomplete="off">
       </label>
 
       <label>
         New PIN
         <input id="newPin"
                type="password"
-               maxlength="4">
+               maxlength="4"
+               inputmode="numeric"
+               autocomplete="new-password">
       </label>
 
     </div>
@@ -1555,7 +1585,9 @@
 
       <input id="confirmNewPin"
              type="password"
-             maxlength="4">
+             maxlength="4"
+             inputmode="numeric"
+             autocomplete="new-password">
     </label>
 
 
@@ -1613,7 +1645,8 @@
 
       <input id="adminPassword"
              type="password"
-             placeholder="beast123">
+             autocomplete="off"
+             placeholder="Demo admin password">
     </label>
 
 
@@ -1701,7 +1734,8 @@
   <div class="modal-card">
 
     <button class="modal-close"
-            id="closePinModal">
+            id="closePinModal"
+            aria-label="Close">
       ×
     </button>
 
@@ -1720,7 +1754,13 @@
            type="password"
            maxlength="4"
            inputmode="numeric"
+           autocomplete="off"
            placeholder="••••">
+
+    <small id="pinError"
+           class="muted hidden"
+           style="color:var(--red);display:block;margin-top:8px;">
+    </small>
 
 
     <button class="primary-btn full"
@@ -1733,6 +1773,50 @@
 
     <button class="secondary-btn full"
             id="cancelPin">
+
+      CANCEL
+
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- ================= CONFIRM MODAL ================= -->
+
+<div id="confirmModal"
+     class="modal hidden">
+
+  <div class="modal-card">
+
+    <button class="modal-close"
+            id="confirmClose"
+            aria-label="Close">
+      ×
+    </button>
+
+    <span class="pill blue">
+      CONFIRM
+    </span>
+
+    <h2>Review before authorizing</h2>
+
+    <div id="confirmBody"
+         class="summary-box">
+    </div>
+
+
+    <button class="primary-btn full"
+            id="confirmYes">
+
+      CONFIRM & CONTINUE
+
+    </button>
+
+
+    <button class="secondary-btn full"
+            id="confirmNo">
 
       CANCEL
 
