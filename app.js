@@ -1,15 +1,14 @@
 /* =========================================================
    MONEY TRANSFER BEAST
    DEMO / PROTOTYPE ONLY
-   No real money moves here.
 
-   SAFETY:
-   - PINs hashed (SHA-256 + salt)
-   - 3 failed PIN attempts → 30s lockout (seller + buyer)
-   - Confirm modal before every payment
-   - Buyer session auto-expires after 60s
-   - All user strings escaped
-   - "SAMPLE BALANCE" badge is intentional
+   Round 8 additions:
+   - Bank list expanded (ABC, Absa, Co-op, Equity, NBK,
+     KCB, NCBA, Prime, Family, National)
+   - Airtel + T-Kash enabled by default
+   - Tappable source cards (tap to set current source)
+   - Account number accepts letters + numbers (ABC123)
+   - Mini statements + balance summary
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -19,10 +18,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /* ================= CONFIG ================= */
 
-const STORAGE_KEY = "money_transfer_beast_v6";
+const STORAGE_KEY = "money_transfer_beast_v8";
 const THEME_KEY   = "money_transfer_beast_theme";
-
-const DEMO_ADMIN_PASSWORD = "admin123"; // unused in this build, kept for future
 
 const REGISTERED_AGENTS = {
   "0712345678": "BEAST Demo Safaricom Agent",
@@ -56,10 +53,23 @@ const SOURCE_ICONS = {
 
 const ALL_SOURCES = ["mpesa","wallet","bank","card","airtel","tkash"];
 
+/* Expanded Kenya bank list */
 const BANK_LIST = [
-  "KCB","Equity","Co-operative Bank","NCBA","Absa",
-  "Stanbic","Standard Chartered","DTB","I&M",
-  "Family Bank","Postbank","Other"
+  "ABC Bank",
+  "Absa Bank Kenya",
+  "Co-operative Bank",
+  "Equity Bank",
+  "National Bank of Kenya (NBK)",
+  "KCB Bank",
+  "NCBA Bank",
+  "Prime Bank",
+  "Family Bank",
+  "Postbank",
+  "Stanbic Bank",
+  "Standard Chartered",
+  "DTB",
+  "I&M Bank",
+  "Other"
 ];
 
 const CARD_LIST = ["Visa","Mastercard","BEAST Card","Other"];
@@ -84,9 +94,9 @@ const DEMO_BUYERS = [
     sources: {
       mpesa:  { enabled: true, balance: 12500 },
       wallet: { enabled: true, balance: 0 },
-      bank:   { enabled: true, balance: 8000,  bankName: "Equity" },
+      bank:   { enabled: true, balance: 8000,  bankName: "Equity Bank" },
       card:   { enabled: true, balance: 15000, cardName: "Visa", last4: "4321" },
-      airtel: { enabled: false, balance: 0 },
+      airtel: { enabled: true, balance: 2500 },
       tkash:  { enabled: false, balance: 0 }
     }
   },
@@ -98,10 +108,10 @@ const DEMO_BUYERS = [
     sources: {
       mpesa:  { enabled: true, balance: 3200 },
       wallet: { enabled: true, balance: 500 },
-      bank:   { enabled: true, balance: 2500,  bankName: "KCB" },
+      bank:   { enabled: true, balance: 2500,  bankName: "KCB Bank" },
       card:   { enabled: false, balance: 0, cardName: "", last4: "" },
       airtel: { enabled: true, balance: 1000 },
-      tkash:  { enabled: false, balance: 0 }
+      tkash:  { enabled: true, balance: 800 }
     }
   },
   {
@@ -136,10 +146,14 @@ function defaultState(){
       pinSalt: ""
     },
 
+    /*
+      Airtel + T-Kash enabled by default now.
+      M-PESA starts with sample balance.
+    */
     sources: {
       mpesa:  { balance: 5000, enabled: true,  account: "0712345678" },
-      tkash:  { balance: 0,    enabled: false, account: "" },
-      airtel: { balance: 0,    enabled: false, account: "" },
+      tkash:  { balance: 1000, enabled: true,  account: "0712345678" },
+      airtel: { balance: 1000, enabled: true,  account: "0712345678" },
       bank:   { balance: 0,    enabled: false, account: "", bankName: "" },
       card:   { balance: 0,    enabled: false, account: "", cardName: "", last4: "" },
       wallet: { balance: 0,    enabled: true,  account: "BEAST-WALLET" }
@@ -153,6 +167,9 @@ function defaultState(){
       bank:    { enabled: false, bankName: "", account: "" },
       card:    { enabled: false, cardName: "", last4: "" }
     },
+
+    /* Currently selected source on Home */
+    currentSource: "mpesa",
 
     transactions: [],
     notifications: [],
@@ -234,6 +251,11 @@ function internationalPhone(value){
 }
 
 function validAgent(value){ return String(value || "").trim().length >= 4; }
+
+/* Account numbers: allow letters, digits, dashes, spaces (min 4 chars) */
+function validAccount(value){
+  return /^[A-Za-z0-9][A-Za-z0-9\- ]{3,}$/.test(String(value || "").trim());
+}
 
 function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
@@ -450,7 +472,8 @@ const screenMap = {
   security:"securityScreen",
   notifications:"notificationsScreen",
   settings:"settingsScreen",
-  balance:"balanceScreen"
+  balance:"balanceScreen",
+  statements:"statementsScreen"
 };
 
 const SENSITIVE_FIELDS = [
@@ -480,6 +503,9 @@ function showScreen(name){
   if(name === "receive"){
     resetBuyerFlow();
     renderReceiveSellerLine();
+  }
+  if(name === "statements"){
+    renderStatements();
   }
   window.scrollTo({ top:0, behavior:"smooth" });
   renderEverything();
@@ -534,9 +560,7 @@ function setupRegistration(){
 
     $("regStep1").classList.add("hidden");
     $("regStep2").classList.remove("hidden");
-
     document.querySelectorAll(".step")[1]?.classList.add("active");
-
   });
 
   $("regNext2")?.addEventListener("click", async () => {
@@ -564,24 +588,18 @@ function setupRegistration(){
     $("regStep2").classList.add("hidden");
     $("regStep3").classList.remove("hidden");
     document.querySelectorAll(".step")[2]?.classList.add("active");
-
   });
 
   $("finishRegistration")?.addEventListener("click", () => {
-
     state.user.beastId = generateBeastId();
     state.registered = true;
-
     addNotification("BEAST ID created",
       `Your BEAST ID is ${state.user.beastId}.`);
     addSecurity("New BEAST registration completed.");
     save();
-
     toast("BEAST account created.");
     showScreen("home");
-
   });
-
 }
 
 
@@ -594,7 +612,7 @@ function totalBalance(){
 }
 
 
-/* ================= SOURCE CARDS ================= */
+/* ================= SOURCE CARDS (tappable) ================= */
 
 function renderSources(containerId){
   const container = $(containerId);
@@ -611,9 +629,14 @@ function renderSources(containerId){
         : "Not linked";
 
     const isSample = SAMPLE_BALANCE_SOURCES.has(key);
+    const isCurrent = state.currentSource === key && source.enabled;
 
     return `
-      <div class="source-card">
+      <div
+        class="source-card ${isCurrent ? "current-source" : ""} ${source.enabled ? "" : "source-disabled"}"
+        data-source="${key}"
+        role="button"
+        tabindex="0">
         <div class="source-top">
           <span class="source-icon">${icon}</span>
           <span class="pill ${source.enabled ? "green" : "red"}">
@@ -624,11 +647,30 @@ function renderSources(containerId){
           <strong>${SOURCE_NAMES[key]}</strong>
           <small>${escapeHTML(details)}</small>
           ${isSample ? `<span class="pill blue" style="margin-top:4px;">SAMPLE BALANCE</span>` : ""}
+          ${isCurrent ? `<span class="pill green" style="margin-top:4px;">CURRENT</span>` : ""}
         </div>
         <strong>${money(source.balance)}</strong>
       </div>
     `;
   }).join("");
+
+  /* Make cards tappable */
+  container.querySelectorAll("[data-source]").forEach(card => {
+    card.addEventListener("click", () => {
+      const key = card.dataset.source;
+      const source = state.sources[key];
+      if(!source || !source.enabled){
+        toast(`${SOURCE_NAMES[key]} is not linked.`);
+        return;
+      }
+      state.currentSource = key;
+      save();
+      renderSources(containerId);
+      renderSources("sourceList"); // keep both in sync
+      fillSourceSelects();
+      toast(`${SOURCE_NAMES[key]} is now your current source.`);
+    });
+  });
 }
 
 
@@ -638,7 +680,7 @@ function fillSourceSelects(){
   ["sendSource","withdrawSource","lipaSource"].forEach(id => {
     const select = $(id);
     if(!select) return;
-    const current = select.value;
+    const current = select.value || state.currentSource;
     select.innerHTML = Object.entries(state.sources)
       .filter(([, s]) => s.enabled)
       .map(([key]) => `<option value="${key}">${SOURCE_NAMES[key]}</option>`)
@@ -674,7 +716,14 @@ function setupSourceManager(){
       return;
     }
 
-    if(sourceType !== "wallet" && sourceType !== "bank" && sourceType !== "card" && !validPhone(account)){
+    /* For bank: allow alphanumeric account */
+    if(sourceType === "bank" && !validAccount(account)){
+      toast("Enter a valid account number (letters and digits ok).");
+      return;
+    }
+
+    /* For phone-based sources: must be valid Kenyan phone */
+    if((sourceType === "mpesa" || sourceType === "airtel" || sourceType === "tkash") && !validPhone(account)){
       toast("Enter a valid Kenyan phone number.");
       return;
     }
@@ -686,9 +735,9 @@ function setupSourceManager(){
     source.account = account;
 
     if(sourceType === "bank"){
-      const bankName = $("bankName")?.value.trim();
+      const bankName = $("bankName")?.value;
       if(!bankName){
-        toast("Select or enter the bank name.");
+        toast("Select the bank name.");
         source.enabled = false;
         return;
       }
@@ -714,7 +763,6 @@ function setupSourceManager(){
     save();
     toast(`${SOURCE_NAMES[sourceType]} linked successfully.`);
     renderEverything();
-
   });
 
   updateFields();
@@ -748,7 +796,7 @@ function setupReceivingMethods(){
       fields.innerHTML = `
         <div class="two-col">
           <label>PayBill number<input id="recPaybillNumber" placeholder="123456"></label>
-          <label>Account number<input id="recPaybillAccount" placeholder="Account"></label>
+          <label>Account number<input id="recPaybillAccount" placeholder="ABC123"></label>
         </div>`;
       return;
     }
@@ -761,7 +809,7 @@ function setupReceivingMethods(){
               ${BANK_LIST.map(b => `<option value="${b}">${b}</option>`).join("")}
             </select>
           </label>
-          <label>Account number<input id="recBankAccount" placeholder="Account number"></label>
+          <label>Account number<input id="recBankAccount" placeholder="ABC123456"></label>
         </div>`;
       return;
     }
@@ -818,7 +866,7 @@ function setupReceivingMethods(){
       const bankName = $("recBankName")?.value;
       const account = ($("recBankAccount")?.value || "").trim();
       if(!bankName){ toast("Select a bank."); return; }
-      if(account.length < 4){ toast("Enter a valid account number."); return; }
+      if(!validAccount(account)){ toast("Enter a valid account number."); return; }
       state.receiving.bank = { enabled: true, bankName, account };
     }
 
@@ -834,7 +882,6 @@ function setupReceivingMethods(){
     save();
     toast(`${t} enabled for receiving.`);
     renderReceivingMethodsList();
-
   });
 
   renderReceivingMethodsList();
@@ -863,6 +910,103 @@ function renderReceivingMethodsList(){
         <strong>${labels[key]}</strong>
         <span class="pill ${r.enabled ? "green" : "red"}">${r.enabled ? "ON" : "OFF"}</span>
         <small>${escapeHTML(detail)}</small>
+      </div>
+    `;
+  }).join("");
+}
+
+
+/* ================= MINI STATEMENTS ================= */
+
+function computeStatementSummary(days = 30){
+  const since = Date.now() - days * 24 * 60 * 60 * 1000;
+  const recent = state.transactions.filter(t =>
+    new Date(t.createdAt).getTime() >= since);
+
+  let sent = 0, received = 0, fees = 0, provider = 0;
+  let sendCount = 0, receiveCount = 0;
+
+  recent.forEach(t => {
+    const amt = Number(t.amount || 0);
+    fees += Number(t.fee || 0);
+    provider += Number(t.providerCost || 0);
+
+    if(t.type === "Buyer Payment" || t.type === "Deposit to BEAST" || t.type === "Agent Deposit"){
+      received += amt;
+      receiveCount++;
+    } else {
+      sent += amt;
+      sendCount++;
+    }
+  });
+
+  return {
+    days,
+    count: recent.length,
+    sent, received, fees, provider,
+    sendCount, receiveCount,
+    net: received - sent
+  };
+}
+
+function renderStatements(){
+
+  const summaryBox = $("statementsSummary");
+  const listBox = $("statementsList");
+  if(!summaryBox || !listBox) return;
+
+  const s = computeStatementSummary(30);
+
+  summaryBox.innerHTML = `
+    <div class="statements-grid">
+      <div class="stat-card">
+        <small>Transactions (30d)</small>
+        <strong>${s.count}</strong>
+      </div>
+      <div class="stat-card">
+        <small>Money in</small>
+        <strong style="color:var(--green)">${money(s.received)}</strong>
+      </div>
+      <div class="stat-card">
+        <small>Money out</small>
+        <strong style="color:var(--red)">${money(s.sent)}</strong>
+      </div>
+      <div class="stat-card">
+        <small>Net</small>
+        <strong>${money(s.net)}</strong>
+      </div>
+      <div class="stat-card">
+        <small>BEAST fees paid</small>
+        <strong>${money(s.fees)}</strong>
+      </div>
+      <div class="stat-card">
+        <small>Provider costs</small>
+        <strong>${money(s.provider)}</strong>
+      </div>
+    </div>
+  `;
+
+  if(!state.transactions.length){
+    listBox.innerHTML = `<div class="panel muted">No transactions yet.</div>`;
+    return;
+  }
+
+  listBox.innerHTML = state.transactions.slice(0, 20).map(t => {
+    const dir =
+      t.type === "Deposit to BEAST" ||
+      t.type === "Agent Deposit" ||
+      t.type === "Buyer Payment"
+        ? "+" : "-";
+
+    return `
+      <div class="list-item">
+        <strong>${escapeHTML(t.type)}</strong>
+        <span>${dir} ${money(t.amount)}</span>
+        <small>
+          ${escapeHTML(t.description || "")}<br>
+          Ref: ${escapeHTML(t.reference)}<br>
+          ${dateText(t.createdAt)}
+        </small>
       </div>
     `;
   }).join("");
@@ -956,17 +1100,6 @@ function setupBuyerFlow(){
   $("buyerDestinationChannel")?.addEventListener("change", renderBuyerDestinationFields);
   $("buyerConfirmPayButton")?.addEventListener("click", doBuyerPay);
 
-  document.querySelectorAll("[data-recent-buyer]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const buyer = DEMO_BUYERS.find(b => b.phone === btn.dataset.recentBuyer);
-      if(!buyer) return;
-      $("buyerLoginPhone").value = buyer.phone;
-      $("buyerLoginNationalId").value = buyer.nationalId;
-      $("buyerLoginPin").value = buyer.pin;
-      toast(`Loaded ${buyer.name} — tap LOGIN`);
-    });
-  });
-
   $("copyReceiptButton")?.addEventListener("click", () => {
     const text = $("receiptText")?.textContent || "";
     navigator.clipboard?.writeText(text)
@@ -980,7 +1113,7 @@ function setupBuyerFlow(){
       navigator.share({ title:"BEAST Receipt", text }).catch(() => {});
     } else {
       navigator.clipboard?.writeText(text)
-        .then(() => toast("Receipt copied (share unavailable)."));
+        .then(() => toast("Receipt copied."));
     }
   });
 }
@@ -1580,7 +1713,7 @@ function lipaFields(){
     $("lipaDestinationFields").innerHTML = `
       <div class="two-col">
         <label>PayBill number<input id="lipaDestNumber" placeholder="123456"></label>
-        <label>Account number<input id="lipaAccount" placeholder="Account"></label>
+        <label>Account number<input id="lipaAccount" placeholder="ABC123"></label>
       </div>`;
   } else if(type === "till"){
     $("lipaDestinationFields").innerHTML = `<label>Till number<input id="lipaDestNumber" placeholder="123456"></label>`;
@@ -1784,7 +1917,7 @@ function setupPin(){
 }
 
 
-/* ================= COMPLETE TRANSACTION (SELLER) ================= */
+/* ================= COMPLETE TRANSACTION ================= */
 
 function completeTransaction(data){
 
@@ -1834,7 +1967,7 @@ function completeTransaction(data){
 }
 
 
-/* ================= DEPOSIT (from Receive tab 2) ================= */
+/* ================= DEPOSIT ================= */
 
 function setupDeposit(){
 
@@ -1925,7 +2058,7 @@ function updateDepositPreview(){
 }
 
 
-/* ================= AGENT DEPOSIT (from Receive tab 3) ================= */
+/* ================= AGENT DEPOSIT ================= */
 
 function setupAgentDeposit(){
 
@@ -2419,7 +2552,6 @@ function renderHome(){
         return `<button class="recent-buyer-btn" data-recent-buyer="${escapeHTML(phone)}">${escapeHTML(buyer.name)}</button>`;
       }).join("");
 
-      // Re-bind after render
       recentBox.querySelectorAll("[data-recent-buyer]").forEach(btn => {
         btn.addEventListener("click", () => {
           const buyer = DEMO_BUYERS.find(b => b.phone === btn.dataset.recentBuyer);
@@ -2476,6 +2608,7 @@ function renderEverything(){
   renderReceiveSellerLine();
   renderReceivingMethodsList();
   updateReceiveBackButton();
+  if($("statementsScreen")?.classList.contains("active")) renderStatements();
 }
 
 
