@@ -71,22 +71,122 @@
 
 <main class="app-shell">
 
-<!-- ================= REGISTRATION ================= -->
+<!-- ================= WELCOME ================= -->
 
-<section id="registrationScreen" class="app-screen active">
+<section id="welcomeScreen" class="app-screen">
 
-  <div class="hero">
+  <div class="welcome-hero">
+
+    <div class="welcome-logo">B</div>
+
+    <h1 class="welcome-title">MONEY TRANSFER BEAST</h1>
+
+    <p class="welcome-sub">
+      Kenya payment prototype
+    </p>
 
     <span class="pill red">DEMO / PROTOTYPE</span>
 
-    <h1>Build your BEAST identity.</h1>
-
-    <p>
-      One BEAST ID can connect authorized payment sources
-      in one place.
+    <p class="welcome-note muted">
+      No real money moves here.
+      M-PESA, T-Kash, bank, card and Airtel connections are simulated.
     </p>
 
   </div>
+
+  <div class="panel welcome-actions">
+
+    <button class="primary-btn full" id="goLoginButton">
+      LOGIN
+    </button>
+
+    <button class="secondary-btn full" id="goRegisterButton">
+      REGISTER
+    </button>
+
+    <small class="muted center" style="display:block;margin-top:12px;">
+      First time? Tap REGISTER.
+    </small>
+
+  </div>
+
+</section>
+
+
+<!-- ================= LOGIN ================= -->
+
+<section id="loginScreen" class="app-screen">
+
+  <div class="login-topbar">
+    <button class="back-btn" id="backToWelcomeFromLogin" aria-label="Back">
+      ←
+    </button>
+
+    <div class="page-head" style="flex:1;padding:0;">
+      <div>
+        <span class="pill green">LOGIN</span>
+        <h1>Welcome back</h1>
+        <p>Enter your phone number and password.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="panel">
+
+    <label>
+      Registered phone number
+      <input
+        id="loginPhone"
+        inputmode="tel"
+        autocomplete="tel"
+        placeholder="0712345678 or +254712345678">
+    </label>
+
+    <label>
+      Password
+      <input
+        id="loginPassword"
+        type="password"
+        autocomplete="current-password"
+        placeholder="Your BEAST password">
+    </label>
+
+    <button class="primary-btn full" id="loginSubmitButton">
+      CONTINUE
+    </button>
+
+    <small class="muted center" style="display:block;margin-top:12px;">
+      After password, you'll enter your 4-digit BEAST PIN.
+    </small>
+
+    <small class="muted center" style="display:block;margin-top:6px;">
+      Forgot password? Use Reset Demo Data (wipes everything).
+    </small>
+
+  </div>
+
+</section>
+
+
+<!-- ================= REGISTRATION ================= -->
+
+<section id="registrationScreen" class="app-screen">
+
+  <div class="login-topbar">
+    <button class="back-btn" id="backToWelcomeFromRegister" aria-label="Back">
+      ←
+    </button>
+
+    <div class="page-head" style="flex:1;padding:0;">
+      <div>
+        <span class="pill red">REGISTER</span>
+        <h1>Build your BEAST identity.</h1>
+        <p>One BEAST ID connects your payment sources.</p>
+      </div>
+    </div>
+  </div>
+
 
   <div class="security-banner">
     ⚠️ No real money moves in this prototype.
@@ -98,7 +198,7 @@
     <div class="stepper">
 
       <span class="step active">1 Identity</span>
-      <span class="step">2 PIN</span>
+      <span class="step">2 Password + PIN</span>
       <span class="step">3 Confirm</span>
 
     </div>
@@ -143,10 +243,33 @@
 
     <div id="regStep2" class="hidden">
 
-      <h2>Create BEAST PIN</h2>
+      <h2>Password & PIN</h2>
+
+      <p class="muted">
+        Your password is used to log in.
+        Your PIN is used to authorize transactions.
+      </p>
 
       <label>
-        BEAST PIN
+        BEAST Password (min 6 characters)
+        <input
+          id="regPassword"
+          type="password"
+          autocomplete="new-password"
+          placeholder="At least 6 characters">
+      </label>
+
+      <label>
+        Confirm Password
+        <input
+          id="regPassword2"
+          type="password"
+          autocomplete="new-password"
+          placeholder="Repeat your password">
+      </label>
+
+      <label>
+        BEAST PIN (4 digits)
         <input
           id="regPin"
           type="password"
@@ -168,8 +291,8 @@
       </label>
 
       <small class="muted">
-        Your PIN is stored as a salted SHA-256 hash.
-        It is never saved as plaintext.
+        Both are stored as salted SHA-256 hashes.
+        Neither is stored as plaintext.
       </small>
 
       <button class="primary-btn full" id="regNext2">
@@ -203,9 +326,7 @@
 
     <div>
       <span class="pill green">LIVE DEMO</span>
-
       <h1>BEAST Dashboard</h1>
-
       <p id="welcomeText">Welcome.</p>
     </div>
 
@@ -220,7 +341,6 @@
 
     <div>
       <span>Total available balance</span>
-
       <button
         class="mini-btn"
         id="refreshBalance"
@@ -233,9 +353,7 @@
       KES 0.00
     </strong>
 
-    <small>
-      Across enabled BEAST payment sources
-    </small>
+    <small>Across enabled BEAST payment sources</small>
 
     <div id="receivingChip" class="receiving-chip">
       Receiving: not configured
@@ -246,22 +364,19 @@
 
   <div class="dashboard-grid">
 
-    <button class="square-card green-card"
-            data-menu="balance">
+    <button class="square-card green-card" data-menu="balance">
       <span>💰</span>
       <b>Account Balance</b>
       <small>Check access</small>
     </button>
 
-    <button class="square-card blue-card"
-            data-menu="statements">
+    <button class="square-card blue-card" data-menu="statements">
       <span>📊</span>
       <b>Statements</b>
       <small>Mini summary</small>
     </button>
 
-    <button class="square-card black-card"
-            data-menu="send">
+    <button class="square-card black-card" data-menu="send">
       <span>📤</span>
       <b>Send</b>
       <small>Phone / BEAST ID</small>
@@ -270,71 +385,59 @@
   </div>
 
 
-  <h2 class="section-title">
-    Quick actions
-  </h2>
-
+  <h2 class="section-title">Quick actions</h2>
 
   <div class="quick-actions">
 
-    <button class="square-card green-card"
-            data-menu="send">
+    <button class="square-card green-card" data-menu="send">
       <span>📤</span>
       <b>Send</b>
       <small>Phone / BEAST ID</small>
     </button>
 
-    <button class="square-card blue-card"
-            data-menu="receive">
+    <button class="square-card blue-card" data-menu="receive">
       <span>🤝</span>
       <b>Receive</b>
       <small>Buyer authorization</small>
     </button>
 
-    <button class="square-card black-card"
-            data-menu="withdraw">
+    <button class="square-card black-card" data-menu="withdraw">
       <span>🏧</span>
       <b>Withdraw</b>
       <small>Agent cash-out</small>
     </button>
 
-    <button class="square-card green-card"
-            data-menu="lipa">
+    <button class="square-card green-card" data-menu="lipa">
       <span>🛒</span>
       <b>Lipa Na</b>
       <small>Pay a business</small>
     </button>
 
-    <button class="square-card blue-card"
-            data-menu="history">
+    <button class="square-card blue-card" data-menu="history">
       <span>🧾</span>
       <b>History</b>
       <small>Transactions</small>
     </button>
 
-    <button class="square-card blue-card"
-            data-menu="statements">
+    <button class="square-card blue-card" data-menu="statements">
       <span>📊</span>
       <b>Statements</b>
       <small>Mini summary</small>
     </button>
 
-    <button class="square-card black-card"
-            data-menu="profile">
+    <button class="square-card black-card" data-menu="profile">
       <span>👤</span>
       <b>Profile</b>
       <small>BEAST identity</small>
     </button>
 
-    <button class="square-card red-card"
-            data-menu="security">
+    <button class="square-card red-card" data-menu="security">
       <span>🛡️</span>
       <b>Security</b>
       <small>Security events</small>
     </button>
 
-    <button class="square-card blue-card"
-            data-menu="settings">
+    <button class="square-card blue-card" data-menu="settings">
       <span>⚙️</span>
       <b>Settings</b>
       <small>App controls</small>
@@ -343,9 +446,7 @@
   </div>
 
 
-  <h2 class="section-title">
-    Linked accounts
-  </h2>
+  <h2 class="section-title">Linked accounts</h2>
 
   <div id="sourceList" class="source-grid"></div>
 
@@ -357,15 +458,12 @@
 <section id="sendScreen" class="app-screen">
 
   <div class="page-head">
-
     <div>
       <span class="pill green">SEND</span>
       <h1>Send money</h1>
       <p>Recipient, amount, source and authorization stay together.</p>
     </div>
-
   </div>
-
 
   <div class="panel">
 
@@ -384,7 +482,6 @@
     <div id="recipientVerification" class="verification hidden"></div>
 
     <div class="two-col">
-
       <label>
         Amount
         <input id="sendAmount"
@@ -399,7 +496,6 @@
         Source
         <select id="sendSource"></select>
       </label>
-
     </div>
 
     <div id="sendCostPreview" class="cost-box"></div>
@@ -544,9 +640,7 @@
           class="primary-btn full"
           id="buyerChooseSourceButton"
           disabled>
-
           USE THIS ACCOUNT
-
         </button>
 
       </div>
@@ -642,8 +736,7 @@
       <h2>Deposit to BEAST</h2>
 
       <p class="muted">
-        Add money to your BEAST Wallet from a linked
-        payment source.
+        Add money to your BEAST Wallet from a linked payment source.
       </p>
 
       <label>
@@ -695,8 +788,7 @@
       <h2>Deposit through agent</h2>
 
       <p class="muted">
-        Only a registered Safaricom agent can perform
-        this demo agent deposit.
+        Only a registered Safaricom agent can perform this demo agent deposit.
       </p>
 
       <label>
@@ -762,7 +854,6 @@
     </div>
   </div>
 
-
   <div class="panel">
 
     <label>
@@ -773,8 +864,7 @@
     </label>
 
     <small class="muted">
-      Demo accepts any agent ID. Real agents are verified
-      by the provider backend.
+      Demo accepts any agent ID. Real agents are verified by the provider backend.
     </small>
 
     <label>
@@ -791,7 +881,6 @@
     <div id="agentVerification" class="verification hidden"></div>
 
     <div class="two-col">
-
       <label>
         Source
         <select id="withdrawSource"></select>
@@ -806,7 +895,6 @@
                autocomplete="off"
                placeholder="500">
       </label>
-
     </div>
 
     <div id="withdrawCostPreview" class="cost-box"></div>
@@ -831,7 +919,6 @@
       <p>Verify destination before payment.</p>
     </div>
   </div>
-
 
   <div class="panel">
 
@@ -958,7 +1045,6 @@
     </div>
   </div>
 
-
   <div class="panel">
 
     <label>
@@ -998,7 +1084,6 @@
     </div>
   </div>
 
-
   <div class="dashboard-grid">
 
     <div class="square-card red-card">
@@ -1021,15 +1106,13 @@
 
   </div>
 
-
   <div class="panel">
 
     <h2>Device security monitoring</h2>
 
     <p class="muted">
       BEAST can use browser security signals to detect
-      visibility changes. Camera access always requires
-      user permission.
+      visibility changes. Camera access always requires user permission.
     </p>
 
     <div class="security-status-grid">
@@ -1077,12 +1160,9 @@
 
   </div>
 
-
   <div class="panel">
-
     <h2>Security events</h2>
     <div id="securityList" class="list"></div>
-
   </div>
 
 </section>
@@ -1115,7 +1195,6 @@
       <p>Control appearance and security.</p>
     </div>
   </div>
-
 
   <div class="settings-grid">
 
@@ -1189,10 +1268,8 @@
 
 
   <div class="panel">
-
     <h2>Enabled receiving methods</h2>
     <div id="receivingMethodsList" class="list"></div>
-
   </div>
 
 
@@ -1310,6 +1387,34 @@
 
     <button class="secondary-btn full" id="changePinButton">
       CHANGE PIN
+    </button>
+
+  </div>
+
+
+  <div class="panel">
+
+    <h2>Change BEAST password</h2>
+
+    <div class="two-col">
+      <label>
+        Current password
+        <input id="oldPassword" type="password" autocomplete="off">
+      </label>
+
+      <label>
+        New password
+        <input id="newPassword" type="password" autocomplete="new-password">
+      </label>
+    </div>
+
+    <label>
+      Confirm new password
+      <input id="confirmNewPassword" type="password" autocomplete="new-password">
+    </label>
+
+    <button class="secondary-btn full" id="changePasswordButton">
+      CHANGE PASSWORD
     </button>
 
   </div>
