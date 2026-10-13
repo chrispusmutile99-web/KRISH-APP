@@ -339,7 +339,7 @@ select:focus{
 }
 
 
-/* ALL CARD GRIDS = 3 COLUMNS */
+/* CARD GRIDS */
 
 .dashboard-grid,
 .quick-actions,
@@ -350,7 +350,7 @@ select:focus{
 }
 
 
-/* ALL MAIN CARDS = SQUARE */
+/* MAIN CARDS */
 
 .square-card,
 .source-card{
@@ -420,6 +420,35 @@ select:focus{
 .source-card{
   justify-content:space-between;
   gap:5px;
+  position:relative;
+  cursor:pointer;
+  transition:.15s;
+}
+
+.source-card:hover{
+  transform:translateY(-2px);
+}
+
+.source-card:active{
+  transform:translateY(0);
+}
+
+/* Selected source */
+.source-card.current-source{
+  border-color:var(--green);
+  box-shadow:0 0 0 2px rgba(22,193,114,.35),
+             0 14px 35px rgba(22,193,114,.18);
+}
+
+/* Disabled / not linked */
+.source-card.source-disabled{
+  opacity:.55;
+  filter:grayscale(.4);
+  cursor:not-allowed;
+}
+
+.source-card.source-disabled:hover{
+  transform:none;
 }
 
 .source-top{
@@ -576,6 +605,40 @@ select:focus{
 }
 
 
+/* STATEMENTS */
+
+.statements-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;
+}
+
+.statements-grid .stat-card{
+  width:100%;
+  aspect-ratio:auto;
+  padding:13px;
+  border:1px solid var(--border);
+  background:var(--surface2);
+  border-radius:13px;
+  box-shadow:none;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:flex-start;
+}
+
+.statements-grid .stat-card small{
+  color:var(--muted);
+  font-size:10px;
+}
+
+.statements-grid .stat-card strong{
+  font-size:15px;
+  margin-top:6px;
+  overflow-wrap:anywhere;
+}
+
+
 /* SECURITY STATUS */
 
 .security-status-grid{
@@ -665,6 +728,7 @@ select:focus{
   transition:.22s;
   padding:14px;
   box-shadow:20px 0 45px rgba(0,0,0,.3);
+  overflow-y:auto;
 }
 
 .drawer.open{
@@ -718,7 +782,7 @@ select:focus{
 }
 
 
-/* MODAL */
+/* MODALS */
 
 .modal{
   position:fixed;
@@ -800,7 +864,7 @@ select:focus{
 }
 
 
-/* RECEIVE — TOPBAR + BACK ARROW */
+/* RECEIVE — TOPBAR */
 
 .receive-topbar{
   display:flex;
@@ -1316,6 +1380,10 @@ select:focus{
 
   .receipt-text{
     font-size:9px;
+  }
+
+  .statements-grid{
+    grid-template-columns:1fr 1fr;
   }
 
 }
