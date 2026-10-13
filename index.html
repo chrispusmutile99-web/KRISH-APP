@@ -52,6 +52,7 @@
 
     <button data-menu="home">🏠 <span>Home</span></button>
     <button data-menu="send">📤 <span>Send</span></button>
+    <button data-menu="bulk">📥 <span>Bulk Send</span></button>
     <button data-menu="receive">🤝 <span>Receive</span></button>
     <button data-menu="withdraw">🏧 <span>Withdraw</span></button>
     <button data-menu="lipa">🛒 <span>Lipa Na</span></button>
@@ -131,7 +132,6 @@
     </div>
   </div>
 
-
   <div class="panel">
 
     <label>
@@ -160,10 +160,6 @@
       After password, you'll enter your 4-digit BEAST PIN.
     </small>
 
-    <small class="muted center" style="display:block;margin-top:6px;">
-      Forgot password? Use Reset Demo Data (wipes everything).
-    </small>
-
   </div>
 
 </section>
@@ -186,7 +182,6 @@
       </div>
     </div>
   </div>
-
 
   <div class="security-banner">
     ⚠️ No real money moves in this prototype.
@@ -323,7 +318,6 @@
 <section id="homeScreen" class="app-screen">
 
   <div class="page-head">
-
     <div>
       <span class="pill green">LIVE DEMO</span>
       <h1>BEAST Dashboard</h1>
@@ -333,9 +327,7 @@
     <div id="dashboardBeastId" class="beast-id-chip">
       BEAST-000000
     </div>
-
   </div>
-
 
   <div class="balance-card">
 
@@ -361,7 +353,6 @@
 
   </div>
 
-
   <div class="dashboard-grid">
 
     <button class="square-card green-card" data-menu="balance">
@@ -376,14 +367,13 @@
       <small>Mini summary</small>
     </button>
 
-    <button class="square-card black-card" data-menu="send">
-      <span>📤</span>
-      <b>Send</b>
-      <small>Phone / BEAST ID</small>
+    <button class="square-card black-card" data-menu="bulk">
+      <span>📥</span>
+      <b>Bulk Send</b>
+      <small>Many at once</small>
     </button>
 
   </div>
-
 
   <h2 class="section-title">Quick actions</h2>
 
@@ -393,6 +383,12 @@
       <span>📤</span>
       <b>Send</b>
       <small>Phone / BEAST ID</small>
+    </button>
+
+    <button class="square-card black-card" data-menu="bulk">
+      <span>📥</span>
+      <b>Bulk Send</b>
+      <small>Many recipients</small>
     </button>
 
     <button class="square-card blue-card" data-menu="receive">
@@ -444,7 +440,6 @@
     </button>
 
   </div>
-
 
   <h2 class="section-title">Linked accounts</h2>
 
@@ -509,6 +504,62 @@
 </section>
 
 
+<!-- ================= BULK SEND ================= -->
+
+<section id="bulkScreen" class="app-screen">
+
+  <div class="page-head">
+    <div>
+      <span class="pill green">BULK SEND</span>
+      <h1>Send to many at once</h1>
+      <p>Paste a list of phone,amount lines. One PIN authorizes the batch.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+
+    <label>
+      Recipients — one per line as <code>phone,amount</code>
+      <textarea
+        id="bulkList"
+        rows="10"
+        autocomplete="off"
+        placeholder="0712345678,500
+0720000000,250
+0711111111,1000
+0799999999,100"></textarea>
+    </label>
+
+    <label>
+      Source
+      <select id="bulkSource"></select>
+    </label>
+
+    <button class="secondary-btn full" id="bulkParseButton">
+      PARSE LIST
+    </button>
+
+    <button class="secondary-btn full" id="bulkClearButton">
+      CLEAR
+    </button>
+
+    <div id="bulkPreview" class="bulk-preview-wrap"></div>
+
+    <button class="primary-btn full" id="bulkSendButton">
+      SEND BATCH & AUTHORIZE
+    </button>
+
+    <div id="bulkResult" class="bulk-result-wrap hidden"></div>
+
+    <small class="muted center" style="display:block;margin-top:12px;">
+      The batch stops automatically if your balance runs out.
+    </small>
+
+  </div>
+
+</section>
+
+
 <!-- ================= RECEIVE ================= -->
 
 <section id="receiveScreen" class="app-screen">
@@ -532,7 +583,6 @@
 
   </div>
 
-
   <div class="receive-tabs" id="receiveTabs">
 
     <button class="receive-tab active" data-rtab="buyer">
@@ -548,7 +598,6 @@
     </button>
 
   </div>
-
 
   <div id="buyerTab" class="receive-tab-panel active">
 
@@ -567,7 +616,6 @@
       </div>
 
     </div>
-
 
     <div id="buyerStep1" class="buyer-step-panel active">
 
@@ -625,7 +673,6 @@
 
     </div>
 
-
     <div id="buyerStep2" class="buyer-step-panel">
 
       <div class="panel">
@@ -646,7 +693,6 @@
       </div>
 
     </div>
-
 
     <div id="buyerStep3" class="buyer-step-panel">
 
@@ -692,7 +738,6 @@
 
     </div>
 
-
     <div id="buyerSuccessPanel" class="buyer-step-panel">
 
       <div class="panel buyer-success-panel">
@@ -725,7 +770,6 @@
     </div>
 
   </div>
-
 
   <div id="depositTab" class="receive-tab-panel">
 
@@ -777,7 +821,6 @@
     </div>
 
   </div>
-
 
   <div id="agentTab" class="receive-tab-panel">
 
@@ -1235,7 +1278,6 @@
 
   </div>
 
-
   <div class="panel">
 
     <span class="pill green">RECEIVING</span>
@@ -1266,12 +1308,10 @@
 
   </div>
 
-
   <div class="panel">
     <h2>Enabled receiving methods</h2>
     <div id="receivingMethodsList" class="list"></div>
   </div>
-
 
   <div class="panel">
 
@@ -1301,7 +1341,6 @@
         placeholder="Phone or account (letters and digits ok)">
     </label>
 
-
     <div id="bankSourceFields" class="hidden">
       <label>
         Bank name
@@ -1326,7 +1365,6 @@
       </label>
     </div>
 
-
     <div id="cardSourceFields" class="hidden">
       <label>
         Card name
@@ -1345,7 +1383,6 @@
       </label>
     </div>
 
-
     <label>
       Demo balance
       <input id="sourceBalance"
@@ -1362,7 +1399,6 @@
     </button>
 
   </div>
-
 
   <div class="panel">
 
@@ -1391,7 +1427,6 @@
 
   </div>
 
-
   <div class="panel">
 
     <h2>Change BEAST password</h2>
@@ -1418,7 +1453,6 @@
     </button>
 
   </div>
-
 
   <button class="danger-btn full" id="resetDemo">
     RESET DEMO DATA
