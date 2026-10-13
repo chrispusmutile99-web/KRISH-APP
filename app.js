@@ -2,17 +2,14 @@
    MONEY TRANSFER BEAST
    DEMO / PROTOTYPE ONLY
 
-   Round 9:
-   - Welcome screen (Login or Register)
-   - Password + PIN stored separately (both hashed)
-   - Login = phone + password → then PIN
-   - Session persists until Logout
-   - Reset Demo Data for forgotten password
+   Round 10:
+   - Bulk Send (paste list, one PIN, stop on empty)
 
-   Round 8 features retained:
-   - Real tariffs, buyer flow, receiving methods, statements
-   - Tappable source cards, alphanumeric accounts
-   - Airtel + T-Kash enabled by default
+   Round 9:
+   - Welcome screen, Login/Register, Password + PIN
+
+   Round 8:
+   - Real tariffs, tappable cards, statements, etc.
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -22,11 +19,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /* ================= CONFIG ================= */
 
-const STORAGE_KEY   = "money_transfer_beast_v9";
-const SESSION_KEY   = "money_transfer_beast_session_v9";
+const STORAGE_KEY   = "money_transfer_beast_v10";
+const SESSION_KEY   = "money_transfer_beast_session_v10";
 const THEME_KEY     = "money_transfer_beast_theme";
 
 const MIN_PASSWORD_LENGTH = 6;
+const MAX_BULK_ROWS = 200;
 
 const REGISTERED_AGENTS = {
   "0712345678": "BEAST Demo Safaricom Agent",
@@ -229,6 +227,9 @@ let buyerSession = null;
 let buyerStep = 1;
 let buyerSuccessTimer = null;
 let buyerSessionTimer = null;
+
+/* Bulk send state (in-memory) */
+let bulkRows = [];
 
 
 /* ================= HELPERS ================= */
@@ -498,6 +499,7 @@ const screenMap = {
   registration:"registrationScreen",
   home:"homeScreen",
   send:"sendScreen",
+  bulk:"bulkScreen",
   receive:"receiveScreen",
   withdraw:"withdrawScreen",
   lipa:"lipaScreen",
@@ -517,7 +519,9 @@ const SENSITIVE_FIELDS = [
   "withdrawAmount","agentNumber","lipaAmount",
   "depositAmount","agentDepositAmount","authorizationPin",
   "oldPin","newPin","confirmNewPin",
-  "buyerLoginPhone","buyerLoginNationalId","buyerLoginPin","buyerPayAmount"
+  "oldPassword","newPassword","confirmNewPassword",
+  "buyerLoginPhone","buyerLoginNationalId","buyerLoginPin","buyerPayAmount",
+  "bulkList"
 ];
 
 function clearSensitiveFields(){
@@ -543,6 +547,9 @@ function showScreen(name){
   if(name === "statements"){
     renderStatements();
   }
+  if(name === "bulk"){
+    resetBulkFlow();
+  }
   window.scrollTo({ top:0, behavior:"smooth" });
   renderEverything();
 }
@@ -567,7 +574,6 @@ function setupWelcome(){
   });
 
   $("goLoginButton")?.addEventListener("click", () => {
-    // If nothing is registered yet, warn
     if(!state.registered){
       toast("No BEAST account yet. Please register.");
       showScreen("registration");
@@ -610,7 +616,6 @@ function setupLogin(){
       return;
     }
 
-    // Password OK → ask for PIN
     $("loginPassword").value = "";
     authorize("Login", () => {
       startSession();
@@ -683,18 +688,9 @@ function setupRegistration(){
       toast(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
       return;
     }
-    if(password !== password2){
-      toast("Passwords do not match.");
-      return;
-    }
-    if(!/^\d{4}$/.test(pin)){
-      toast("PIN must contain 4 digits.");
-      return;
-    }
-    if(pin !== confirmPin){
-      toast("PINs do not match.");
-      return;
-    }
+    if(password !== password2){ toast("Passwords do not match."); return; }
+    if(!/^\d{4}$/.test(pin)){ toast("PIN must contain 4 digits."); return; }
+    if(pin !== confirmPin){ toast("PINs do not match."); return; }
 
     await setPassword(password);
     await setPin(pin);
@@ -804,7 +800,7 @@ function renderSources(containerId){
 /* ================= SOURCE SELECTS ================= */
 
 function fillSourceSelects(){
-  ["sendSource","withdrawSource","lipaSource"].forEach(id => {
+  ["sendSource","withdrawSource","lipaSource","bulkSource"].forEach(id => {
     const select = $(id);
     if(!select) return;
     const current = select.value || state.currentSource;
@@ -1049,26 +1045,20 @@ function computeStatementSummary(days = 30){
     new Date(t.createdAt).getTime() >= since);
 
   let sent = 0, received = 0, fees = 0, provider = 0;
-  let sendCount = 0, receiveCount = 0;
-
   recent.forEach(t => {
     const amt = Number(t.amount || 0);
     fees += Number(t.fee || 0);
     provider += Number(t.providerCost || 0);
-
     if(t.type === "Buyer Payment" || t.type === "Deposit to BEAST" || t.type === "Agent Deposit"){
       received += amt;
-      receiveCount++;
     } else {
       sent += amt;
-      sendCount++;
     }
   });
 
   return {
     days, count: recent.length,
     sent, received, fees, provider,
-    sendCount, receiveCount,
     net: received - sent
   };
 }
@@ -1765,6 +1755,266 @@ function setupSend(){
       })
     );
   });
+}
+
+
+/* ================= BULK SEND ================= */
+
+function parseBulkList(text){
+
+  const rows = [];
+  const errors = [];
+
+  const lines = String(text || "")
+    .split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(l => l.length > 0);
+
+  lines.forEach((line, index) => {
+
+    // Accept comma, semicolon, or whitespace as separator
+    const parts = line.split(/[,\s;]+/).filter(p => p.length);
+
+    if(parts.length < 2){
+      errors.push(`Line ${index + 1}: needs phone and amount`);
+      return;
+    }
+
+    const phone = normalizePhone(parts[0]);
+    const amount = Number(parts[1]);
+
+    if(!validPhone(phone)){
+      errors.push(`Line ${index + 1}: invalid phone "${parts[0]}"`);
+      return;
+    }
+
+    if(phone === state.user.phone){
+      errors.push(`Line ${index + 1}: cannot send to yourself`);
+      return;
+    }
+
+    if(!isFinite(amount) || amount <= 0){
+      errors.push(`Line ${index + 1}: invalid amount "${parts[1]}"`);
+      return;
+    }
+
+    rows.push({ phone, amount });
+  });
+
+  return { rows, errors };
+}
+
+function resetBulkFlow(){
+  bulkRows = [];
+  if($("bulkList")) $("bulkList").value = "";
+  if($("bulkPreview")) $("bulkPreview").innerHTML = "";
+  if($("bulkResult")){
+    $("bulkResult").innerHTML = "";
+    $("bulkResult").classList.add("hidden");
+  }
+}
+
+function setupBulk(){
+
+  $("bulkParseButton")?.addEventListener("click", () => {
+
+    const text = $("bulkList")?.value || "";
+
+    if(!text.trim()){
+      toast("Paste a list of phone,amount lines.");
+      return;
+    }
+
+    const { rows, errors } = parseBulkList(text);
+
+    if(errors.length){
+      $("bulkPreview").innerHTML = `
+        <div class="bulk-errors">
+          <b>${errors.length} problem${errors.length === 1 ? "" : "s"} found</b>
+          ${errors.map(e => `<div>• ${escapeHTML(e)}</div>`).join("")}
+        </div>
+      `;
+      bulkRows = [];
+      return;
+    }
+
+    if(!rows.length){
+      toast("No valid rows found.");
+      return;
+    }
+
+    if(rows.length > MAX_BULK_ROWS){
+      toast(`Too many rows. Max ${MAX_BULK_ROWS}.`);
+      return;
+    }
+
+    bulkRows = rows;
+
+    const source = $("bulkSource")?.value || state.currentSource;
+    const src = state.sources[source];
+
+    // Estimate total
+    let totalAmount = 0;
+    let totalFee = 0;
+    let totalProvider = 0;
+
+    rows.forEach(r => {
+      totalAmount += r.amount;
+      totalFee += beastFee(r.amount);
+      totalProvider += providerCost(source, r.amount);
+    });
+
+    const grandTotal = totalAmount + totalFee + totalProvider;
+
+    $("bulkPreview").innerHTML = `
+      <div class="bulk-preview">
+        <div class="bulk-summary">
+          <div><small>Recipients</small><strong>${rows.length}</strong></div>
+          <div><small>Total amount</small><strong>${money(totalAmount)}</strong></div>
+          <div><small>BEAST fees</small><strong>${money(totalFee)}</strong></div>
+          <div><small>Provider costs</small><strong>${money(totalProvider)}</strong></div>
+        </div>
+
+        <div class="bulk-grand">
+          <span>Total deducted from ${escapeHTML(SOURCE_NAMES[source])}</span>
+          <strong>${money(grandTotal)}</strong>
+        </div>
+
+        ${src && src.balance < grandTotal
+          ? `<div class="bulk-warn">
+               Insufficient balance. ${escapeHTML(SOURCE_NAMES[source])} has ${money(src.balance)}.
+             </div>`
+          : ""}
+      </div>
+    `;
+  });
+
+  $("bulkClearButton")?.addEventListener("click", () => {
+    resetBulkFlow();
+    toast("Cleared.");
+  });
+
+  $("bulkSendButton")?.addEventListener("click", () => {
+
+    if(!bulkRows.length){
+      toast("Parse a list first.");
+      return;
+    }
+
+    const source = $("bulkSource")?.value || state.currentSource;
+    const src = state.sources[source];
+
+    if(!src || !src.enabled){
+      toast("Source is not enabled.");
+      return;
+    }
+
+    askConfirmation(
+      `
+        <b>Confirm bulk send</b><br><br>
+        Recipients: ${bulkRows.length}<br>
+        Source: ${escapeHTML(SOURCE_NAMES[source])}<br><br>
+        <strong>One PIN will authorize the whole batch.</strong><br>
+        <small>Batch stops if balance runs out.</small>
+      `,
+      () => authorize("Bulk send", () => executeBulkSend(source))
+    );
+  });
+}
+
+function executeBulkSend(source){
+
+  const src = state.sources[source];
+  if(!src){ toast("Invalid source."); return; }
+
+  const results = [];
+  let succeeded = 0;
+  let failed = 0;
+  let stoppedAt = null;
+
+  for(const row of bulkRows){
+
+    const fee = beastFee(row.amount);
+    const provider = providerCost(source, row.amount);
+    const total = row.amount + fee + provider;
+
+    if(src.balance < total){
+      failed++;
+      stoppedAt = row;
+      results.push({
+        phone: row.phone,
+        amount: row.amount,
+        status: "failed",
+        reason: "Insufficient balance"
+      });
+      break; // stop on insufficient balance
+    }
+
+    src.balance -= total;
+    succeeded++;
+
+    const reference = generateReference();
+
+    state.transactions.unshift({
+      reference,
+      createdAt: new Date().toISOString(),
+      status: "completed",
+      type: "Bulk Send",
+      amount: row.amount,
+      fee,
+      providerCost: provider,
+      totalDeducted: total,
+      source,
+      recipient: row.phone,
+      recipientName: "Demo recipient",
+      description: `Bulk send to ${row.phone}`
+    });
+
+    results.push({
+      phone: row.phone,
+      amount: row.amount,
+      status: "sent",
+      reference
+    });
+  }
+
+  addNotification("Bulk send completed",
+    `${succeeded} sent · ${failed} failed · Source ${SOURCE_NAMES[source]}.`);
+  addSecurity(`Bulk send executed: ${succeeded} succeeded, ${failed} failed.`);
+  save();
+
+  // Show results
+  const resultBox = $("bulkResult");
+  if(resultBox){
+    resultBox.classList.remove("hidden");
+    resultBox.innerHTML = `
+      <div class="bulk-result-head">
+        <div><small>Sent</small><strong style="color:var(--green)">${succeeded}</strong></div>
+        <div><small>Failed</small><strong style="color:var(--red)">${failed}</strong></div>
+      </div>
+
+      <div class="bulk-results">
+        ${results.map(r => `
+          <div class="bulk-row ${r.status === "sent" ? "ok" : "bad"}">
+            <span>${r.status === "sent" ? "✓" : "✕"}</span>
+            <div>
+              <strong>${escapeHTML(r.phone)}</strong>
+              <small>${money(r.amount)}${r.reason ? " — " + escapeHTML(r.reason) : ""}</small>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+
+      ${stoppedAt ? `
+        <div class="bulk-warn">
+          Stopped at ${escapeHTML(stoppedAt.phone)} — insufficient balance.
+        </div>
+      ` : ""}
+    `;
+  }
+
+  toast(`Bulk send: ${succeeded} sent, ${failed} failed.`);
+  renderEverything();
 }
 
 
@@ -2803,6 +3053,7 @@ async function initialize(){
   setupRegistration();
   setupMenu();
   setupSend();
+  setupBulk();
   setupReceiveTabs();
   setupBuyerFlow();
   setupReceivingMethods();
@@ -2818,7 +3069,6 @@ async function initialize(){
 
   loadTheme();
 
-  // Decide which screen to show on open
   if(!state.registered){
     showScreen("welcome");
   } else if(!isLoggedIn()){
@@ -2828,6 +3078,7 @@ async function initialize(){
   }
 
   resetBuyerFlow();
+  resetBulkFlow();
   renderEverything();
   resetAutoLock();
 }
