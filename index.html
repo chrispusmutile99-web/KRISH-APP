@@ -57,6 +57,7 @@
     <button data-menu="lipa">🛒 <span>Lipa Na</span></button>
 
     <button data-menu="history">🧾 <span>History</span></button>
+    <button data-menu="statements">📊 <span>Statements</span></button>
     <button data-menu="profile">👤 <span>Profile</span></button>
     <button data-menu="security">🛡️ <span>Security</span></button>
     <button data-menu="notifications">🔔 <span>Notifications</span></button>
@@ -247,31 +248,23 @@
 
     <button class="square-card green-card"
             data-menu="balance">
-
       <span>💰</span>
       <b>Account Balance</b>
       <small>Check access</small>
-
     </button>
-
 
     <button class="square-card blue-card"
-            data-menu="receive">
-
-      <span>🤝</span>
-      <b>Receive</b>
-      <small>Buyer payment</small>
-
+            data-menu="statements">
+      <span>📊</span>
+      <b>Statements</b>
+      <small>Mini summary</small>
     </button>
-
 
     <button class="square-card black-card"
             data-menu="send">
-
       <span>📤</span>
       <b>Send</b>
       <small>Phone / BEAST ID</small>
-
     </button>
 
   </div>
@@ -319,6 +312,13 @@
       <small>Transactions</small>
     </button>
 
+    <button class="square-card blue-card"
+            data-menu="statements">
+      <span>📊</span>
+      <b>Statements</b>
+      <small>Mini summary</small>
+    </button>
+
     <button class="square-card black-card"
             data-menu="profile">
       <span>👤</span>
@@ -360,14 +360,8 @@
 
     <div>
       <span class="pill green">SEND</span>
-
       <h1>Send money</h1>
-
-      <p>
-        Recipient, amount, source and authorization
-        stay together.
-      </p>
-
+      <p>Recipient, amount, source and authorization stay together.</p>
     </div>
 
   </div>
@@ -377,31 +371,22 @@
 
     <label>
       Recipient phone / BEAST ID
-
       <input
         id="sendPhone"
         autocomplete="off"
         placeholder="0712345678 or +254712345678">
     </label>
 
-    <button class="secondary-btn full"
-            id="verifyRecipient">
-
+    <button class="secondary-btn full" id="verifyRecipient">
       VERIFY RECIPIENT
-
     </button>
 
-
-    <div id="recipientVerification"
-         class="verification hidden">
-    </div>
-
+    <div id="recipientVerification" class="verification hidden"></div>
 
     <div class="two-col">
 
       <label>
         Amount
-
         <input id="sendAmount"
                type="number"
                min="1"
@@ -410,27 +395,17 @@
                placeholder="100">
       </label>
 
-
       <label>
         Source
-
         <select id="sendSource"></select>
-
       </label>
 
     </div>
 
+    <div id="sendCostPreview" class="cost-box"></div>
 
-    <div id="sendCostPreview"
-         class="cost-box">
-    </div>
-
-
-    <button class="primary-btn full"
-            id="sendMoneyButton">
-
+    <button class="primary-btn full" id="sendMoneyButton">
       SEND & AUTHORIZE
-
     </button>
 
   </div>
@@ -452,15 +427,11 @@
     </button>
 
     <div class="page-head" style="flex:1;padding:0;">
-
       <div>
         <span class="pill blue">RECEIVE</span>
         <h1>Receive payment</h1>
-        <p id="receiveSellerLine">
-          Paying: —
-        </p>
+        <p id="receiveSellerLine">Paying: —</p>
       </div>
-
     </div>
 
   </div>
@@ -482,8 +453,6 @@
 
   </div>
 
-
-  <!-- TAB 1 — BUYER PAYMENT -->
 
   <div id="buyerTab" class="receive-tab-panel active">
 
@@ -521,39 +490,32 @@
 
         <label>
           Buyer phone
-          <input
-            id="buyerLoginPhone"
-            inputmode="tel"
-            autocomplete="off"
-            placeholder="0722000001">
+          <input id="buyerLoginPhone"
+                 inputmode="tel"
+                 autocomplete="off"
+                 placeholder="0722000001">
         </label>
 
         <label>
           Buyer National ID
-          <input
-            id="buyerLoginNationalId"
-            inputmode="numeric"
-            autocomplete="off"
-            placeholder="11111111">
+          <input id="buyerLoginNationalId"
+                 inputmode="numeric"
+                 autocomplete="off"
+                 placeholder="11111111">
         </label>
 
         <label>
           Buyer BEAST PIN
-          <input
-            id="buyerLoginPin"
-            type="password"
-            maxlength="4"
-            inputmode="numeric"
-            autocomplete="off"
-            placeholder="••••">
+          <input id="buyerLoginPin"
+                 type="password"
+                 maxlength="4"
+                 inputmode="numeric"
+                 autocomplete="off"
+                 placeholder="••••">
         </label>
 
-        <button
-          class="primary-btn full"
-          id="buyerLoginButton">
-
+        <button class="primary-btn full" id="buyerLoginButton">
           LOGIN & CONTINUE
-
         </button>
 
         <div class="demo-hint">
@@ -574,9 +536,7 @@
 
         <h2>Choose payment account</h2>
 
-        <p class="muted" id="buyerWelcomeLine">
-          Signed in as —
-        </p>
+        <p class="muted" id="buyerWelcomeLine">Signed in as —</p>
 
         <div id="buyerSourcesList" class="buyer-source-list"></div>
 
@@ -620,23 +580,18 @@
 
         <label>
           Amount (KES)
-          <input
-            id="buyerPayAmount"
-            type="number"
-            min="1"
-            inputmode="decimal"
-            autocomplete="off"
-            placeholder="100">
+          <input id="buyerPayAmount"
+                 type="number"
+                 min="1"
+                 inputmode="decimal"
+                 autocomplete="off"
+                 placeholder="100">
         </label>
 
         <div id="buyerCostPreview" class="cost-box"></div>
 
-        <button
-          class="primary-btn full"
-          id="buyerConfirmPayButton">
-
+        <button class="primary-btn full" id="buyerConfirmPayButton">
           PAY & AUTHORIZE
-
         </button>
 
       </div>
@@ -678,8 +633,6 @@
   </div>
 
 
-  <!-- TAB 2 — DEPOSIT -->
-
   <div id="depositTab" class="receive-tab-panel">
 
     <div class="panel">
@@ -695,11 +648,10 @@
 
       <label>
         Customer phone number
-        <input
-          id="depositPhone"
-          inputmode="tel"
-          autocomplete="off"
-          placeholder="0712345678 or +254712345678">
+        <input id="depositPhone"
+               inputmode="tel"
+               autocomplete="off"
+               placeholder="0712345678 or +254712345678">
       </label>
 
       <label>
@@ -715,31 +667,24 @@
 
       <label>
         Amount (KES)
-        <input
-          id="depositAmount"
-          type="number"
-          min="1"
-          inputmode="decimal"
-          autocomplete="off"
-          placeholder="500">
+        <input id="depositAmount"
+               type="number"
+               min="1"
+               inputmode="decimal"
+               autocomplete="off"
+               placeholder="500">
       </label>
 
       <div id="depositCostPreview" class="cost-box"></div>
 
-      <button
-        class="primary-btn full"
-        id="performDepositButton">
-
+      <button class="primary-btn full" id="performDepositButton">
         DEPOSIT TO BEAST
-
       </button>
 
     </div>
 
   </div>
 
-
-  <!-- TAB 3 — AGENT DEPOSIT -->
 
   <div id="agentTab" class="receive-tab-panel">
 
@@ -756,61 +701,46 @@
 
       <label>
         Registered agent number or agent code
-        <input
-          id="agentDepositAgent"
-          inputmode="text"
-          autocomplete="off"
-          placeholder="0712345678 or AGENT-001">
+        <input id="agentDepositAgent"
+               inputmode="text"
+               autocomplete="off"
+               placeholder="0712345678 or AGENT-001">
       </label>
 
       <label>
         Customer phone number
-        <input
-          id="agentDepositPhone"
-          inputmode="tel"
-          autocomplete="off"
-          placeholder="0712345678 or +254712345678">
+        <input id="agentDepositPhone"
+               inputmode="tel"
+               autocomplete="off"
+               placeholder="0712345678 or +254712345678">
       </label>
 
       <label>
         Customer National ID
-        <input
-          id="agentDepositNationalId"
-          inputmode="numeric"
-          autocomplete="off"
-          placeholder="Customer National ID">
+        <input id="agentDepositNationalId"
+               inputmode="numeric"
+               autocomplete="off"
+               placeholder="Customer National ID">
       </label>
 
-      <button
-        class="secondary-btn full"
-        id="verifyAgentDeposit">
-
+      <button class="secondary-btn full" id="verifyAgentDeposit">
         VERIFY AGENT & CUSTOMER
-
       </button>
 
-      <div
-        id="agentDepositVerification"
-        class="verification hidden">
-      </div>
+      <div id="agentDepositVerification" class="verification hidden"></div>
 
       <label>
         Amount (KES)
-        <input
-          id="agentDepositAmount"
-          type="number"
-          min="1"
-          inputmode="decimal"
-          autocomplete="off"
-          placeholder="1000">
+        <input id="agentDepositAmount"
+               type="number"
+               min="1"
+               inputmode="decimal"
+               autocomplete="off"
+               placeholder="1000">
       </label>
 
-      <button
-        class="primary-btn full"
-        id="agentDepositButton">
-
+      <button class="primary-btn full" id="agentDepositButton">
         AUTHORIZE AGENT DEPOSIT
-
       </button>
 
     </div>
@@ -825,13 +755,11 @@
 <section id="withdrawScreen" class="app-screen">
 
   <div class="page-head">
-
     <div>
       <span class="pill black">WITHDRAW</span>
       <h1>Agent withdrawal</h1>
       <p>Verify the agent before authorization.</p>
     </div>
-
   </div>
 
 
@@ -839,11 +767,9 @@
 
     <label>
       Agent ID or code
-
-      <input
-        id="agentNumber"
-        autocomplete="off"
-        placeholder="e.g. AGENT-001 or 0712345678">
+      <input id="agentNumber"
+             autocomplete="off"
+             placeholder="e.g. AGENT-001 or 0712345678">
     </label>
 
     <small class="muted">
@@ -851,28 +777,18 @@
       by the provider backend.
     </small>
 
-
     <label>
       Store / agent reference
-
       <input id="withdrawStore"
              autocomplete="off"
              placeholder="Optional store number">
     </label>
 
-
-    <button class="secondary-btn full"
-            id="verifyAgent">
-
+    <button class="secondary-btn full" id="verifyAgent">
       VERIFY AGENT
-
     </button>
 
-
-    <div id="agentVerification"
-         class="verification hidden">
-    </div>
-
+    <div id="agentVerification" class="verification hidden"></div>
 
     <div class="two-col">
 
@@ -880,7 +796,6 @@
         Source
         <select id="withdrawSource"></select>
       </label>
-
 
       <label>
         Amount
@@ -894,17 +809,10 @@
 
     </div>
 
+    <div id="withdrawCostPreview" class="cost-box"></div>
 
-    <div id="withdrawCostPreview"
-         class="cost-box">
-    </div>
-
-
-    <button class="primary-btn full"
-            id="withdrawButton">
-
+    <button class="primary-btn full" id="withdrawButton">
       WITHDRAW & AUTHORIZE
-
     </button>
 
   </div>
@@ -917,13 +825,11 @@
 <section id="lipaScreen" class="app-screen">
 
   <div class="page-head">
-
     <div>
       <span class="pill green">LIPA NA</span>
       <h1>Pay a business</h1>
       <p>Verify destination before payment.</p>
     </div>
-
   </div>
 
 
@@ -931,48 +837,35 @@
 
     <label>
       Payment method
-
       <select id="lipaMethod">
-
         <option value="mpesa">M-PESA</option>
         <option value="tkash">T-Kash</option>
         <option value="airtel">Airtel Money</option>
         <option value="bank">Bank</option>
         <option value="card">Card</option>
         <option value="wallet">BEAST Wallet</option>
-
       </select>
-
     </label>
-
 
     <label>
       Payment type
-
       <select id="lipaType">
-
         <option value="paybill">PayBill</option>
         <option value="till">Buy Goods / Till</option>
         <option value="account">Account / Other</option>
         <option value="pochi">Pochi la Biashara</option>
-
       </select>
-
     </label>
 
-
     <div id="lipaDestinationFields"></div>
-
 
     <label>
       Source
       <select id="lipaSource"></select>
     </label>
 
-
     <label>
       Amount
-
       <input id="lipaAmount"
              type="number"
              min="1"
@@ -981,30 +874,16 @@
              placeholder="100">
     </label>
 
-
-    <button class="secondary-btn full"
-            id="verifyLipa">
-
+    <button class="secondary-btn full" id="verifyLipa">
       VERIFY DESTINATION
-
     </button>
 
+    <div id="lipaVerification" class="verification hidden"></div>
 
-    <div id="lipaVerification"
-         class="verification hidden">
-    </div>
+    <div id="lipaCostPreview" class="cost-box"></div>
 
-
-    <div id="lipaCostPreview"
-         class="cost-box">
-    </div>
-
-
-    <button class="primary-btn full"
-            id="lipaPayButton">
-
+    <button class="primary-btn full" id="lipaPayButton">
       PAY & AUTHORIZE
-
     </button>
 
   </div>
@@ -1017,16 +896,36 @@
 <section id="historyScreen" class="app-screen">
 
   <div class="page-head">
-
     <div>
       <span class="pill blue">HISTORY</span>
       <h1>Transactions</h1>
       <p>Demo transaction records.</p>
     </div>
-
   </div>
 
   <div id="historyList" class="list"></div>
+
+</section>
+
+
+<!-- ================= STATEMENTS ================= -->
+
+<section id="statementsScreen" class="app-screen">
+
+  <div class="page-head">
+    <div>
+      <span class="pill blue">STATEMENTS</span>
+      <h1>Mini statements</h1>
+      <p>Last 30 days summary and recent activity.</p>
+    </div>
+  </div>
+
+  <div id="statementsSummary" class="panel">
+    <div class="muted">No activity yet.</div>
+  </div>
+
+  <h2 class="section-title">Recent activity</h2>
+  <div id="statementsList" class="list"></div>
 
 </section>
 
@@ -1036,12 +935,10 @@
 <section id="profileScreen" class="app-screen">
 
   <div class="page-head">
-
     <div>
       <span class="pill green">PROFILE</span>
       <h1>BEAST identity</h1>
     </div>
-
   </div>
 
   <div id="profileDetails" class="panel"></div>
@@ -1054,13 +951,11 @@
 <section id="balanceScreen" class="app-screen">
 
   <div class="page-head">
-
     <div>
       <span class="pill blue">ACCOUNT BALANCE</span>
       <h1>Balance access</h1>
       <p>Verify your registered identity.</p>
     </div>
-
   </div>
 
 
@@ -1068,12 +963,10 @@
 
     <label>
       Phone or account number
-      <input
-        id="loginAccount"
-        autocomplete="off"
-        placeholder="0712345678 or +254712345678">
+      <input id="loginAccount"
+             autocomplete="off"
+             placeholder="0712345678 or +254712345678">
     </label>
-
 
     <label>
       Full name
@@ -1082,14 +975,9 @@
              placeholder="Your full name">
     </label>
 
-
-    <button class="primary-btn full"
-            id="loginButton">
-
+    <button class="primary-btn full" id="loginButton">
       CHECK BALANCE
-
     </button>
-
 
     <div id="loginBalance" class="balance-result hidden"></div>
 
@@ -1103,13 +991,11 @@
 <section id="securityScreen" class="app-screen">
 
   <div class="page-head">
-
     <div>
       <span class="pill red">SECURITY</span>
       <h1>Security center</h1>
       <p>Security events and controls.</p>
     </div>
-
   </div>
 
 
@@ -1146,7 +1032,6 @@
       user permission.
     </p>
 
-
     <div class="security-status-grid">
 
       <div class="security-status-card">
@@ -1169,7 +1054,6 @@
 
     </div>
 
-
     <button class="primary-btn full" id="cameraCheckButton">
       CHECK FRONT CAMERA
     </button>
@@ -1188,8 +1072,7 @@
 
     <p class="muted">
       The camera is not accessed secretly. Android/Chrome
-      permission is required. Screen-recording detection
-      depends on signals exposed by the browser and device.
+      permission is required.
     </p>
 
   </div>
@@ -1198,7 +1081,6 @@
   <div class="panel">
 
     <h2>Security events</h2>
-
     <div id="securityList" class="list"></div>
 
   </div>
@@ -1211,12 +1093,10 @@
 <section id="notificationsScreen" class="app-screen">
 
   <div class="page-head">
-
     <div>
       <span class="pill red">NOTIFICATIONS</span>
       <h1>BEAST alerts</h1>
     </div>
-
   </div>
 
   <div id="notificationList" class="list"></div>
@@ -1229,13 +1109,11 @@
 <section id="settingsScreen" class="app-screen">
 
   <div class="page-head">
-
     <div>
       <span class="pill blue">SETTINGS</span>
       <h1>App settings</h1>
       <p>Control appearance and security.</p>
     </div>
-
   </div>
 
 
@@ -1287,12 +1165,10 @@
 
     <p class="muted">
       Choose which channels buyers can use to pay you.
-      These appear in the buyer flow on the Receive screen.
     </p>
 
     <label>
       Receiving channel
-
       <select id="receivingMethodType">
         <option value="wallet">BEAST Wallet</option>
         <option value="pochi">Pochi la Biashara</option>
@@ -1301,7 +1177,6 @@
         <option value="bank">Bank Account</option>
         <option value="card">Card</option>
       </select>
-
     </label>
 
     <div id="receivingMethodFields"></div>
@@ -1323,10 +1198,100 @@
 
   <div class="panel">
 
+    <h2>Add / update payment source</h2>
+
+    <p class="muted">
+      Connect a simulated payment source to your BEAST identity.
+    </p>
+
+    <label>
+      Payment source
+      <select id="sourceType">
+        <option value="mpesa">M-PESA</option>
+        <option value="tkash">T-Kash</option>
+        <option value="airtel">Airtel Money</option>
+        <option value="bank">Bank Account</option>
+        <option value="card">Card</option>
+        <option value="wallet">BEAST Wallet</option>
+      </select>
+    </label>
+
+    <label>
+      Phone / account number
+      <input
+        id="sourceAccount"
+        autocomplete="off"
+        placeholder="Phone or account (letters and digits ok)">
+    </label>
+
+
+    <div id="bankSourceFields" class="hidden">
+      <label>
+        Bank name
+        <select id="bankName">
+          <option value="">Select bank</option>
+          <option value="ABC Bank">ABC Bank</option>
+          <option value="Absa Bank Kenya">Absa Bank Kenya</option>
+          <option value="Co-operative Bank">Co-operative Bank</option>
+          <option value="Equity Bank">Equity Bank</option>
+          <option value="National Bank of Kenya (NBK)">National Bank of Kenya (NBK)</option>
+          <option value="KCB Bank">KCB Bank</option>
+          <option value="NCBA Bank">NCBA Bank</option>
+          <option value="Prime Bank">Prime Bank</option>
+          <option value="Family Bank">Family Bank</option>
+          <option value="Postbank">Postbank</option>
+          <option value="Stanbic Bank">Stanbic Bank</option>
+          <option value="Standard Chartered">Standard Chartered</option>
+          <option value="DTB">Diamond Trust Bank (DTB)</option>
+          <option value="I&M Bank">I&M Bank</option>
+          <option value="Other">Other</option>
+        </select>
+      </label>
+    </div>
+
+
+    <div id="cardSourceFields" class="hidden">
+      <label>
+        Card name
+        <input id="cardName"
+               autocomplete="off"
+               placeholder="Visa / Mastercard / BEAST Card">
+      </label>
+
+      <label>
+        Card last 4 digits
+        <input id="cardLast4"
+               maxlength="4"
+               inputmode="numeric"
+               autocomplete="off"
+               placeholder="1234">
+      </label>
+    </div>
+
+
+    <label>
+      Demo balance
+      <input id="sourceBalance"
+             type="number"
+             min="0"
+             step="0.01"
+             inputmode="decimal"
+             autocomplete="off"
+             placeholder="0">
+    </label>
+
+    <button class="primary-btn full" id="saveSourceButton">
+      SAVE PAYMENT SOURCE
+    </button>
+
+  </div>
+
+
+  <div class="panel">
+
     <h2>Change BEAST PIN</h2>
 
     <div class="two-col">
-
       <label>
         Current PIN
         <input id="oldPin" type="password" maxlength="4" inputmode="numeric" autocomplete="off">
@@ -1336,7 +1301,6 @@
         New PIN
         <input id="newPin" type="password" maxlength="4" inputmode="numeric" autocomplete="new-password">
       </label>
-
     </div>
 
     <label>
