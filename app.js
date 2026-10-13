@@ -2,13 +2,17 @@
    MONEY TRANSFER BEAST
    DEMO / PROTOTYPE ONLY
 
-   Round 8 additions:
-   - Bank list expanded (ABC, Absa, Co-op, Equity, NBK,
-     KCB, NCBA, Prime, Family, National)
+   Round 9:
+   - Welcome screen (Login or Register)
+   - Password + PIN stored separately (both hashed)
+   - Login = phone + password → then PIN
+   - Session persists until Logout
+   - Reset Demo Data for forgotten password
+
+   Round 8 features retained:
+   - Real tariffs, buyer flow, receiving methods, statements
+   - Tappable source cards, alphanumeric accounts
    - Airtel + T-Kash enabled by default
-   - Tappable source cards (tap to set current source)
-   - Account number accepts letters + numbers (ABC123)
-   - Mini statements + balance summary
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -18,8 +22,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /* ================= CONFIG ================= */
 
-const STORAGE_KEY = "money_transfer_beast_v8";
-const THEME_KEY   = "money_transfer_beast_theme";
+const STORAGE_KEY   = "money_transfer_beast_v9";
+const SESSION_KEY   = "money_transfer_beast_session_v9";
+const THEME_KEY     = "money_transfer_beast_theme";
+
+const MIN_PASSWORD_LENGTH = 6;
 
 const REGISTERED_AGENTS = {
   "0712345678": "BEAST Demo Safaricom Agent",
@@ -53,7 +60,6 @@ const SOURCE_ICONS = {
 
 const ALL_SOURCES = ["mpesa","wallet","bank","card","airtel","tkash"];
 
-/* Expanded Kenya bank list */
 const BANK_LIST = [
   "ABC Bank",
   "Absa Bank Kenya",
@@ -143,13 +149,11 @@ function defaultState(){
       nationalId: "",
       beastId: "",
       pinHash: "",
-      pinSalt: ""
+      pinSalt: "",
+      passwordHash: "",
+      passwordSalt: ""
     },
 
-    /*
-      Airtel + T-Kash enabled by default now.
-      M-PESA starts with sample balance.
-    */
     sources: {
       mpesa:  { balance: 5000, enabled: true,  account: "0712345678" },
       tkash:  { balance: 1000, enabled: true,  account: "0712345678" },
@@ -168,7 +172,6 @@ function defaultState(){
       card:    { enabled: false, cardName: "", last4: "" }
     },
 
-    /* Currently selected source on Home */
     currentSource: "mpesa",
 
     transactions: [],
@@ -217,6 +220,8 @@ function loadState(){
 
 const state = loadState();
 
+let sessionToken = sessionStorage.getItem(SESSION_KEY) || null;
+
 let pendingAction = null;
 let cameraStream = null;
 let autoLockTimer = null;
@@ -252,7 +257,6 @@ function internationalPhone(value){
 
 function validAgent(value){ return String(value || "").trim().length >= 4; }
 
-/* Account numbers: allow letters, digits, dashes, spaces (min 4 chars) */
 function validAccount(value){
   return /^[A-Za-z0-9][A-Za-z0-9\- ]{3,}$/.test(String(value || "").trim());
 }
@@ -297,10 +301,10 @@ function toast(msg){
 }
 
 
-/* ================= PIN HASHING ================= */
+/* ================= HASHING ================= */
 
-async function hashPin(pin, saltHex){
-  const data = new TextEncoder().encode(saltHex + ":" + pin);
+async function hashValue(value, saltHex){
+  const data = new TextEncoder().encode(saltHex + ":" + value);
   const digest = await crypto.subtle.digest("SHA-256", data);
   return Array.from(new Uint8Array(digest))
     .map(b => b.toString(16).padStart(2,"0")).join("");
@@ -308,12 +312,22 @@ async function hashPin(pin, saltHex){
 
 async function setPin(pin){
   state.user.pinSalt = randomHex(16);
-  state.user.pinHash = await hashPin(pin, state.user.pinSalt);
+  state.user.pinHash = await hashValue(pin, state.user.pinSalt);
 }
 
 async function verifyPin(pin){
   if(!state.user.pinHash || !state.user.pinSalt) return false;
-  return (await hashPin(pin, state.user.pinSalt)) === state.user.pinHash;
+  return (await hashValue(pin, state.user.pinSalt)) === state.user.pinHash;
+}
+
+async function setPassword(password){
+  state.user.passwordSalt = randomHex(16);
+  state.user.passwordHash = await hashValue(password, state.user.passwordSalt);
+}
+
+async function verifyPassword(password){
+  if(!state.user.passwordHash || !state.user.passwordSalt) return false;
+  return (await hashValue(password, state.user.passwordSalt)) === state.user.passwordHash;
 }
 
 const demoBuyerHashes = {};
@@ -323,7 +337,7 @@ async function buildDemoBuyerHashes(){
     const salt = randomHex(16);
     demoBuyerHashes[b.phone] = {
       salt,
-      hash: await hashPin(b.pin, salt)
+      hash: await hashValue(b.pin, salt)
     };
   }
 }
@@ -331,7 +345,7 @@ async function buildDemoBuyerHashes(){
 async function verifyDemoBuyerPin(phone, pin){
   const entry = demoBuyerHashes[phone];
   if(!entry) return false;
-  return (await hashPin(pin, entry.salt)) === entry.hash;
+  return (await hashValue(pin, entry.salt)) === entry.hash;
 }
 
 
@@ -459,25 +473,47 @@ function setTheme(theme){
 function loadTheme(){ setTheme(localStorage.getItem(THEME_KEY) || "dark"); }
 
 
+/* ================= SESSION ================= */
+
+function isLoggedIn(){
+  return state.registered && sessionToken === "active";
+}
+
+function startSession(){
+  sessionToken = "active";
+  sessionStorage.setItem(SESSION_KEY, sessionToken);
+}
+
+function endSession(){
+  sessionToken = null;
+  sessionStorage.removeItem(SESSION_KEY);
+}
+
+
 /* ================= NAVIGATION ================= */
 
 const screenMap = {
+  welcome:"welcomeScreen",
+  login:"loginScreen",
+  registration:"registrationScreen",
   home:"homeScreen",
   send:"sendScreen",
   receive:"receiveScreen",
   withdraw:"withdrawScreen",
   lipa:"lipaScreen",
   history:"historyScreen",
+  statements:"statementsScreen",
   profile:"profileScreen",
   security:"securityScreen",
   notifications:"notificationsScreen",
   settings:"settingsScreen",
-  balance:"balanceScreen",
-  statements:"statementsScreen"
+  balance:"balanceScreen"
 };
 
 const SENSITIVE_FIELDS = [
-  "regPin","regPin2","sendAmount","sendPhone",
+  "regPin","regPin2","regPassword","regPassword2",
+  "loginPassword","loginPin",
+  "sendAmount","sendPhone",
   "withdrawAmount","agentNumber","lipaAmount",
   "depositAmount","agentDepositAmount","authorizationPin",
   "oldPin","newPin","confirmNewPin",
@@ -522,13 +558,82 @@ function closeMenu(){
 }
 
 
+/* ================= WELCOME / LOGIN ================= */
+
+function setupWelcome(){
+
+  $("goRegisterButton")?.addEventListener("click", () => {
+    showScreen("registration");
+  });
+
+  $("goLoginButton")?.addEventListener("click", () => {
+    // If nothing is registered yet, warn
+    if(!state.registered){
+      toast("No BEAST account yet. Please register.");
+      showScreen("registration");
+      return;
+    }
+    showScreen("login");
+  });
+}
+
+function setupLogin(){
+
+  $("loginSubmitButton")?.addEventListener("click", async () => {
+
+    const phone = normalizePhone($("loginPhone")?.value || "");
+    const password = $("loginPassword")?.value || "";
+
+    if(!validPhone(phone)){
+      toast("Enter a valid Kenyan phone number.");
+      return;
+    }
+
+    if(password.length < MIN_PASSWORD_LENGTH){
+      toast(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+      return;
+    }
+
+    if(phone !== state.user.phone){
+      addSecurity("Login attempt: unknown phone.");
+      save();
+      toast("Phone number not registered.");
+      return;
+    }
+
+    const ok = await verifyPassword(password);
+
+    if(!ok){
+      addSecurity("Failed password login attempt.");
+      save();
+      toast("Incorrect password.");
+      return;
+    }
+
+    // Password OK → ask for PIN
+    $("loginPassword").value = "";
+    authorize("Login", () => {
+      startSession();
+      addSecurity("Logged in successfully.");
+      save();
+      toast("Welcome back.");
+      showScreen("home");
+    });
+  });
+
+  $("backToWelcomeFromLogin")?.addEventListener("click", () => {
+    showScreen("welcome");
+  });
+}
+
+
 /* ================= AUTO LOCK ================= */
 
 function resetAutoLock(){
   clearTimeout(autoLockTimer);
-  if(!state.registered) return;
+  if(!isLoggedIn()) return;
   autoLockTimer = setTimeout(() => {
-    if(!state.registered) return;
+    if(!isLoggedIn()) return;
     addSecurity("Session auto-locked after inactivity.");
     save();
     showScreen("balance");
@@ -540,6 +645,10 @@ function resetAutoLock(){
 /* ================= REGISTRATION ================= */
 
 function setupRegistration(){
+
+  $("backToWelcomeFromRegister")?.addEventListener("click", () => {
+    showScreen("welcome");
+  });
 
   const btn1 = $("regNext1");
   if(!btn1) return;
@@ -565,12 +674,29 @@ function setupRegistration(){
 
   $("regNext2")?.addEventListener("click", async () => {
 
+    const password = $("regPassword").value;
+    const password2 = $("regPassword2").value;
     const pin = $("regPin").value;
     const confirmPin = $("regPin2").value;
 
-    if(!/^\d{4}$/.test(pin)){ toast("PIN must contain 4 digits."); return; }
-    if(pin !== confirmPin){ toast("PINs do not match."); return; }
+    if(password.length < MIN_PASSWORD_LENGTH){
+      toast(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+      return;
+    }
+    if(password !== password2){
+      toast("Passwords do not match.");
+      return;
+    }
+    if(!/^\d{4}$/.test(pin)){
+      toast("PIN must contain 4 digits.");
+      return;
+    }
+    if(pin !== confirmPin){
+      toast("PINs do not match.");
+      return;
+    }
 
+    await setPassword(password);
     await setPin(pin);
 
     $("registrationSummary").innerHTML = `
@@ -581,7 +707,7 @@ function setupRegistration(){
       Your BEAST ID will be generated after confirmation.
       <br><br>
       <small class="muted">
-        Your PIN is stored as a salted SHA-256 hash.
+        Password and PIN are stored as salted SHA-256 hashes.
       </small>
     `;
 
@@ -596,7 +722,10 @@ function setupRegistration(){
     addNotification("BEAST ID created",
       `Your BEAST ID is ${state.user.beastId}.`);
     addSecurity("New BEAST registration completed.");
+
+    startSession();
     save();
+
     toast("BEAST account created.");
     showScreen("home");
   });
@@ -612,7 +741,7 @@ function totalBalance(){
 }
 
 
-/* ================= SOURCE CARDS (tappable) ================= */
+/* ================= SOURCE CARDS ================= */
 
 function renderSources(containerId){
   const container = $(containerId);
@@ -654,7 +783,6 @@ function renderSources(containerId){
     `;
   }).join("");
 
-  /* Make cards tappable */
   container.querySelectorAll("[data-source]").forEach(card => {
     card.addEventListener("click", () => {
       const key = card.dataset.source;
@@ -665,8 +793,7 @@ function renderSources(containerId){
       }
       state.currentSource = key;
       save();
-      renderSources(containerId);
-      renderSources("sourceList"); // keep both in sync
+      renderSources("sourceList");
       fillSourceSelects();
       toast(`${SOURCE_NAMES[key]} is now your current source.`);
     });
@@ -716,13 +843,11 @@ function setupSourceManager(){
       return;
     }
 
-    /* For bank: allow alphanumeric account */
     if(sourceType === "bank" && !validAccount(account)){
       toast("Enter a valid account number (letters and digits ok).");
       return;
     }
 
-    /* For phone-based sources: must be valid Kenyan phone */
     if((sourceType === "mpesa" || sourceType === "airtel" || sourceType === "tkash") && !validPhone(account)){
       toast("Enter a valid Kenyan phone number.");
       return;
@@ -941,8 +1066,7 @@ function computeStatementSummary(days = 30){
   });
 
   return {
-    days,
-    count: recent.length,
+    days, count: recent.length,
     sent, received, fees, provider,
     sendCount, receiveCount,
     net: received - sent
@@ -950,7 +1074,6 @@ function computeStatementSummary(days = 30){
 }
 
 function renderStatements(){
-
   const summaryBox = $("statementsSummary");
   const listBox = $("statementsList");
   if(!summaryBox || !listBox) return;
@@ -1019,7 +1142,6 @@ function setupReceiveTabs(){
   document.querySelectorAll("[data-rtab]").forEach(tab => {
     tab.addEventListener("click", () => {
       const target = tab.dataset.rtab;
-
       document.querySelectorAll("[data-rtab]").forEach(t =>
         t.classList.toggle("active", t === tab));
       document.querySelectorAll(".receive-tab-panel").forEach(p =>
@@ -1049,7 +1171,6 @@ function renderReceiveSellerLine(){
 
 function setBuyerStep(step){
   buyerStep = step;
-
   ["buyerStep1","buyerStep2","buyerStep3","buyerSuccessPanel"]
     .forEach(id => $(id)?.classList.remove("active"));
 
@@ -1819,7 +1940,7 @@ function buildConfirmHTML({title, recipientName, recipient, amount, source, fee,
 }
 
 
-/* ================= PIN MODAL (SELLER) ================= */
+/* ================= PIN MODAL ================= */
 
 function openPinModal(purpose){
   $("pinPurpose").textContent = purpose;
@@ -2397,7 +2518,8 @@ function renderProfile(){
         International: ${escapeHTML(internationalPhone(state.user.phone) || "-")}<br>
         National ID: ${escapeHTML(state.user.nationalId || "-")}<br>
         Total balance: ${money(totalBalance())}<br>
-        PIN storage: <b>salted SHA-256 hash</b>
+        PIN storage: <b>salted SHA-256 hash</b><br>
+        Password storage: <b>salted SHA-256 hash</b>
       </small>
     </div>
   `;
@@ -2478,9 +2600,43 @@ function setupSettings(){
     $("confirmNewPin").value = "";
   });
 
+  $("changePasswordButton")?.addEventListener("click", async () => {
+
+    const oldPw = $("oldPassword").value;
+    const newPw = $("newPassword").value;
+    const confirmPw = $("confirmNewPassword").value;
+
+    if(!(await verifyPassword(oldPw))){
+      toast("Current password is incorrect.");
+      addSecurity("Failed password change attempt.");
+      save();
+      return;
+    }
+
+    if(newPw.length < MIN_PASSWORD_LENGTH){
+      toast(`New password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+      return;
+    }
+
+    if(newPw !== confirmPw){
+      toast("New passwords do not match.");
+      return;
+    }
+
+    await setPassword(newPw);
+    addSecurity("BEAST password changed.");
+    save();
+    toast("BEAST password changed successfully.");
+
+    $("oldPassword").value = "";
+    $("newPassword").value = "";
+    $("confirmNewPassword").value = "";
+  });
+
   $("resetDemo")?.addEventListener("click", () => {
-    if(!confirm("Reset all BEAST demo data?")) return;
+    if(!confirm("Reset all BEAST demo data? You will be logged out.")) return;
     localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
     location.reload();
   });
 }
@@ -2497,12 +2653,34 @@ function setupMenu(){
   document.querySelectorAll("[data-menu]").forEach(button => {
     button.addEventListener("click", () => {
       const target = button.dataset.menu;
-      if(target === "logout"){ toast("Demo session ended."); closeMenu(); return; }
+
+      if(target === "logout"){
+        endSession();
+        addSecurity("Logged out.");
+        save();
+        toast("Logged out.");
+        closeMenu();
+        showScreen("welcome");
+        return;
+      }
+
+      if(!isLoggedIn() && target !== "welcome"){
+        toast("Please log in first.");
+        showScreen("welcome");
+        return;
+      }
+
       showScreen(target);
     });
   });
 
-  $("notificationButton")?.addEventListener("click", () => showScreen("notifications"));
+  $("notificationButton")?.addEventListener("click", () => {
+    if(!isLoggedIn()){
+      showScreen("welcome");
+      return;
+    }
+    showScreen("notifications");
+  });
 
   $("refreshBalance")?.addEventListener("click", () => {
     renderEverything();
@@ -2515,7 +2693,7 @@ function setupMenu(){
 
 function renderHome(){
 
-  if(!state.registered) return;
+  if(!isLoggedIn()) return;
 
   if($("welcomeText")) $("welcomeText").textContent = `Welcome, ${state.user.name}.`;
   if($("dashboardBeastId")) $("dashboardBeastId").textContent = state.user.beastId;
@@ -2592,6 +2770,8 @@ function setupCostPreview(){
 }
 
 function renderEverything(){
+  if(!isLoggedIn()) return;
+
   renderHome();
   renderSources("sourceList");
   renderHistory();
@@ -2618,6 +2798,8 @@ async function initialize(){
 
   await buildDemoBuyerHashes();
 
+  setupWelcome();
+  setupLogin();
   setupRegistration();
   setupMenu();
   setupSend();
@@ -2636,9 +2818,13 @@ async function initialize(){
 
   loadTheme();
 
-  if(state.registered){
-    $("registrationScreen")?.classList.remove("active");
-    $("homeScreen")?.classList.add("active");
+  // Decide which screen to show on open
+  if(!state.registered){
+    showScreen("welcome");
+  } else if(!isLoggedIn()){
+    showScreen("login");
+  } else {
+    showScreen("home");
   }
 
   resetBuyerFlow();
